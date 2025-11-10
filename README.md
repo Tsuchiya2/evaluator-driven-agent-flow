@@ -1,8 +1,8 @@
 # EDAF (Evaluator-Driven Agent Flow) - Self-Adapting System
 
-**Version**: 1.0
-**Status**: Production Ready
-**License**: MIT
+![Version](https://img.shields.io/badge/version-1.0-blue)
+![License](https://img.shields.io/badge/license-MIT-green)
+![Status](https://img.shields.io/badge/status-production%20ready-brightgreen)
 
 A framework-agnostic system for AI-powered code generation with automatic quality gates.
 
