@@ -490,6 +490,26 @@ Then restart Claude Code and run `/setup` again.
 
 ---
 
+## Step 1.5: Configure Agent Files / ステップ1.5: エージェントファイルの設定
+
+**Action / アクション**: Add YAML frontmatter to agent files for Claude Code recognition:
+
+```typescript
+console.log('\n🔧 Configuring agents for Claude Code... / Claude Code用にエージェントを設定中...')
+
+const { execSync } = require('child_process')
+
+try {
+  execSync('bash .claude/scripts/add-frontmatter.sh', { stdio: 'inherit' })
+  console.log('✅ Agents configured successfully / エージェント設定が完了しました')
+} catch (error) {
+  console.log('⚠️  Warning: Could not configure agents / 警告: エージェント設定に失敗しました')
+  console.log('   This may happen if agents are already configured / エージェントが既に設定されている可能性があります')
+}
+```
+
+---
+
 ## Step 2: Auto-Detect Project Configuration / ステップ2: プロジェクト設定の自動検出
 
 Let me analyze your project to detect:

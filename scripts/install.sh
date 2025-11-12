@@ -90,12 +90,14 @@ else
   echo -e "${YELLOW}  ⚠️  Warning: setup.md not found (skipped) / 警告: setup.mdが見つかりません（スキップ）${NC}"
 fi
 
-# 7. Copy notification system
-echo -e "${BLUE}📋 Installing notification system... / 通知システムをインストール中...${NC}"
+# 7. Copy scripts (notification + frontmatter injection)
+echo -e "${BLUE}📋 Installing scripts... / スクリプトをインストール中...${NC}"
 if [ -d "$EDAF_DIR/.claude/scripts" ]; then
   cp -r $EDAF_DIR/.claude/scripts/* .claude/scripts/
   chmod +x .claude/scripts/*.sh 2>/dev/null
-  echo -e "${GREEN}  ✅ Notification scripts installed / 通知スクリプトをインストールしました${NC}"
+  echo -e "${GREEN}  ✅ Scripts installed / スクリプトをインストールしました${NC}"
+  echo -e "${GREEN}     - notification.sh (Sound notifications / 音声通知)${NC}"
+  echo -e "${GREEN}     - add-frontmatter.sh (Agent configuration / エージェント設定)${NC}"
 fi
 
 if [ -d "$EDAF_DIR/.claude/sounds" ]; then
