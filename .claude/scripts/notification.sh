@@ -27,7 +27,7 @@ play_sound() {
   case "$OS" in
     macos)
       # macOS: afplay使用（フォアグラウンドで実行）
-      afplay "$sound_file" 2>/dev/null
+      afplay "$sound_file"
       ;;
     wsl)
       # WSL: PowerShellを使ってWindows側で再生
@@ -76,19 +76,19 @@ elif [ "$SOUND" = "TaskComplete" ]; then
   if [ -f "$SOUNDS_DIR/task-complete.mp3" ]; then
     play_sound "$SOUNDS_DIR/task-complete.mp3"
   elif [ "$OS" = "macos" ]; then
-    afplay "/System/Library/Sounds/Glass.aiff" 2>/dev/null &
+    afplay "/System/Library/Sounds/Glass.aiff"
   fi
 elif [ "$SOUND" = "Error" ]; then
   # エラー音 / Error sound
   if [ -f "$SOUNDS_DIR/error.mp3" ]; then
     play_sound "$SOUNDS_DIR/error.mp3"
   elif [ "$OS" = "macos" ]; then
-    afplay "/System/Library/Sounds/Basso.aiff" 2>/dev/null &
+    afplay "/System/Library/Sounds/Basso.aiff"
   fi
 else
   # システムサウンド / System sound
   if [ "$OS" = "macos" ]; then
-    afplay "/System/Library/Sounds/${SOUND}.aiff" 2>/dev/null &
+    afplay "/System/Library/Sounds/${SOUND}.aiff"
   else
     echo "Warning: System sounds only supported on macOS" >&2
   fi
