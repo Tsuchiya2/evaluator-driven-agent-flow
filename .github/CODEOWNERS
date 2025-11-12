@@ -13,16 +13,15 @@
 /.claude/edaf-config.example.yml @Tsuchiya2
 /.claude/settings.json.example @Tsuchiya2
 
-# Workers (critical for code generation)
-/.claude/agents/database-worker-v1-self-adapting.md @Tsuchiya2
-/.claude/agents/backend-worker-v1-self-adapting.md @Tsuchiya2
-/.claude/agents/frontend-worker-v1-self-adapting.md @Tsuchiya2
-/.claude/agents/test-worker-v1-self-adapting.md @Tsuchiya2
+# Core Agents (critical for design and planning)
 /.claude/agents/designer.md @Tsuchiya2
 /.claude/agents/planner.md @Tsuchiya2
 
+# Workers (critical for code generation)
+/.claude/agents/workers/ @Tsuchiya2
+
 # Evaluators (critical for quality gates)
-/.claude/evaluators/ @Tsuchiya2
+/.claude/agents/evaluators/ @Tsuchiya2
 
 # Scripts (execute in user's environment)
 /.claude/scripts/ @Tsuchiya2

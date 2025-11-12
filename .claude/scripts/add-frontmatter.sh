@@ -8,7 +8,8 @@ set -e
 
 CLAUDE_DIR=".claude"
 AGENTS_DIR="$CLAUDE_DIR/agents"
-EVALUATORS_DIR="$CLAUDE_DIR/evaluators"
+WORKERS_DIR="$AGENTS_DIR/workers"
+EVALUATORS_DIR="$AGENTS_DIR/evaluators"
 
 # Color definitions
 GREEN='\033[0;32m'
@@ -53,8 +54,8 @@ EOF
   echo -e "${GREEN}  ✅ Added frontmatter: $name${NC}"
 }
 
-# Process Agents (Workers, Designer, Planner)
-echo -e "${BLUE}📋 Processing Agents...${NC}"
+# Process Core Agents (Designer, Planner)
+echo -e "${BLUE}📋 Processing Core Agents...${NC}"
 
 if [ -f "$AGENTS_DIR/designer.md" ]; then
   add_frontmatter \
@@ -72,33 +73,38 @@ if [ -f "$AGENTS_DIR/planner.md" ]; then
     "Read, Write, Grep, Glob"
 fi
 
-if [ -f "$AGENTS_DIR/database-worker-v1-self-adapting.md" ]; then
+echo ""
+
+# Process Workers
+echo -e "${BLUE}📋 Processing Workers...${NC}"
+
+if [ -f "$WORKERS_DIR/database-worker-v1-self-adapting.md" ]; then
   add_frontmatter \
-    "$AGENTS_DIR/database-worker-v1-self-adapting.md" \
+    "$WORKERS_DIR/database-worker-v1-self-adapting.md" \
     "database-worker-v1-self-adapting" \
     "Auto-detects ORM and generates database models, migrations, and schemas" \
     "Read, Write, Edit, Grep, Glob, Bash"
 fi
 
-if [ -f "$AGENTS_DIR/backend-worker-v1-self-adapting.md" ]; then
+if [ -f "$WORKERS_DIR/backend-worker-v1-self-adapting.md" ]; then
   add_frontmatter \
-    "$AGENTS_DIR/backend-worker-v1-self-adapting.md" \
+    "$WORKERS_DIR/backend-worker-v1-self-adapting.md" \
     "backend-worker-v1-self-adapting" \
     "Auto-detects framework and generates backend logic, APIs, and services" \
     "Read, Write, Edit, Grep, Glob, Bash"
 fi
 
-if [ -f "$AGENTS_DIR/frontend-worker-v1-self-adapting.md" ]; then
+if [ -f "$WORKERS_DIR/frontend-worker-v1-self-adapting.md" ]; then
   add_frontmatter \
-    "$AGENTS_DIR/frontend-worker-v1-self-adapting.md" \
+    "$WORKERS_DIR/frontend-worker-v1-self-adapting.md" \
     "frontend-worker-v1-self-adapting" \
     "Auto-detects UI framework and generates frontend components and styles" \
     "Read, Write, Edit, Grep, Glob, Bash"
 fi
 
-if [ -f "$AGENTS_DIR/test-worker-v1-self-adapting.md" ]; then
+if [ -f "$WORKERS_DIR/test-worker-v1-self-adapting.md" ]; then
   add_frontmatter \
-    "$AGENTS_DIR/test-worker-v1-self-adapting.md" \
+    "$WORKERS_DIR/test-worker-v1-self-adapting.md" \
     "test-worker-v1-self-adapting" \
     "Auto-detects testing framework and generates unit, integration, and E2E tests" \
     "Read, Write, Edit, Grep, Glob, Bash"
@@ -119,7 +125,7 @@ for evaluator in \
   "design-reusability-evaluator:Evaluates design for component reusability and modularity"
 do
   IFS=':' read -r name desc <<< "$evaluator"
-  file="$EVALUATORS_DIR/${name}.md"
+  file="$EVALUATORS_DIR/phase1-design/${name}.md"
 
   if [ -f "$file" ]; then
     add_frontmatter \
@@ -145,7 +151,7 @@ for evaluator in \
   "planner-reusability-evaluator:Evaluates task plan for reusable components and patterns"
 do
   IFS=':' read -r name desc <<< "$evaluator"
-  file="$EVALUATORS_DIR/${name}.md"
+  file="$EVALUATORS_DIR/phase2-planner/${name}.md"
 
   if [ -f "$file" ]; then
     add_frontmatter \
@@ -171,7 +177,7 @@ for evaluator in \
   "code-implementation-alignment-evaluator-v1-self-adapting:Evaluates code alignment with design and requirements"
 do
   IFS=':' read -r name desc <<< "$evaluator"
-  file="$EVALUATORS_DIR/${name}.md"
+  file="$EVALUATORS_DIR/phase3-code/${name}.md"
 
   if [ -f "$file" ]; then
     add_frontmatter \
@@ -195,7 +201,7 @@ for evaluator in \
   "rollback-plan-evaluator:Evaluates rollback strategy and disaster recovery plan"
 do
   IFS=':' read -r name desc <<< "$evaluator"
-  file="$EVALUATORS_DIR/${name}.md"
+  file="$EVALUATORS_DIR/phase4-deployment/${name}.md"
 
   if [ -f "$file" ]; then
     add_frontmatter \
