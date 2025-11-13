@@ -23,22 +23,22 @@
   "hooks": {
     "Notification": [
       {
-        "matcher": "",
+        "matcher": "permission_prompt | idle_prompt | elicitation_dialog",
         "hooks": [
           {
             "type": "command",
             "command": "bash .claude/scripts/notification.sh 'Input needed / 入力が必要です' WarblerSong"
           }
         ]
-      }
+      },
     ],
-    "Stop": [
+    "PostToolUse": [
       {
-        "matcher": "",
+        "matcher": "*",
         "hooks": [
           {
             "type": "command",
-            "command": "bash .claude/scripts/notification.sh 'Task completed / タスクが完了しました' CatMeow"
+            "command": "bash .claude/scripts/notification.sh \"Task completed / タスク終了\" CatMeow"
           }
         ]
       }
