@@ -52,32 +52,43 @@ fi
 # 3. Create .claude directory structure
 echo -e "${BLUE}📦 Creating .claude directory structure... / .claudeディレクトリ構造を作成中...${NC}"
 mkdir -p .claude/agents
-mkdir -p .claude/evaluators
+mkdir -p .claude/agents/workers
+mkdir -p .claude/agents/evaluators/phase1-design
+mkdir -p .claude/agents/evaluators/phase2-planner
+mkdir -p .claude/agents/evaluators/phase3-code
+mkdir -p .claude/agents/evaluators/phase4-deployment
 mkdir -p .claude/commands
 mkdir -p .claude/scripts
 mkdir -p .claude/sounds
 
-# 4. Copy Agents (Workers + Designer + Planner)
-echo -e "${BLUE}📋 Installing Agents... / エージェントをインストール中...${NC}"
+# 4. Copy Agents (Workers + Designer + Planner + Evaluators)
+echo -e "${BLUE}📋 Installing Agents and Evaluators... / エージェントとエバリュエーターをインストール中...${NC}"
 if [ -d "$EDAF_DIR/.claude/agents" ]; then
-  cp $EDAF_DIR/.claude/agents/*.md .claude/agents/
-  echo -e "${GREEN}  ✅ Installed 6 Agents (4 Workers + Designer + Planner) / 6つのエージェント（4ワーカー + デザイナー + プランナー）をインストールしました${NC}"
-else
-  echo -e "${RED}  ❌ Error: Agents not found / エラー: エージェントが見つかりません${NC}"
-  exit 1
-fi
+  # Copy top-level agents (designer, planner)
+  cp $EDAF_DIR/.claude/agents/*.md .claude/agents/ 2>/dev/null || true
 
-# 5. Copy All Evaluators (26 total)
-echo -e "${BLUE}📋 Installing Evaluators... / エバリュエーターをインストール中...${NC}"
-if [ -d "$EDAF_DIR/.claude/evaluators" ]; then
-  cp $EDAF_DIR/.claude/evaluators/*.md .claude/evaluators/
-  echo -e "${GREEN}  ✅ Installed 26 Evaluators / 26個のエバリュエーターをインストールしました${NC}"
+  # Copy workers
+  if [ -d "$EDAF_DIR/.claude/agents/workers" ]; then
+    cp $EDAF_DIR/.claude/agents/workers/*.md .claude/agents/workers/
+  fi
+
+  # Copy evaluators
+  if [ -d "$EDAF_DIR/.claude/agents/evaluators" ]; then
+    cp $EDAF_DIR/.claude/agents/evaluators/phase1-design/*.md .claude/agents/evaluators/phase1-design/
+    cp $EDAF_DIR/.claude/agents/evaluators/phase2-planner/*.md .claude/agents/evaluators/phase2-planner/
+    cp $EDAF_DIR/.claude/agents/evaluators/phase3-code/*.md .claude/agents/evaluators/phase3-code/
+    cp $EDAF_DIR/.claude/agents/evaluators/phase4-deployment/*.md .claude/agents/evaluators/phase4-deployment/
+  fi
+
+  echo -e "${GREEN}  ✅ Installed 32 Agents (2 + 4 Workers + 26 Evaluators) / 32個のエージェント（2 + 4ワーカー + 26エバリュエーター）をインストールしました${NC}"
+  echo -e "${GREEN}     - Core: Designer + Planner / コア: デザイナー + プランナー${NC}"
+  echo -e "${GREEN}     - Workers: 4 (Database, Backend, Frontend, Test) / ワーカー: 4個${NC}"
   echo -e "${GREEN}     - Phase 1: 7 Design Evaluators / フェーズ1: 7つのデザインエバリュエーター${NC}"
-  echo -e "${GREEN}     - Phase 2.5: 7 Planner Evaluators / フェーズ2.5: 7つのプランナーエバリュエーター${NC}"
+  echo -e "${GREEN}     - Phase 2: 7 Planner Evaluators / フェーズ2: 7つのプランナーエバリュエーター${NC}"
   echo -e "${GREEN}     - Phase 3: 7 Code Evaluators / フェーズ3: 7つのコードエバリュエーター${NC}"
   echo -e "${GREEN}     - Phase 4: 5 Deployment Evaluators / フェーズ4: 5つのデプロイエバリュエーター${NC}"
 else
-  echo -e "${RED}  ❌ Error: Evaluators not found / エラー: エバリュエーターが見つかりません${NC}"
+  echo -e "${RED}  ❌ Error: Agents not found / エラー: エージェントが見つかりません${NC}"
   exit 1
 fi
 
@@ -90,12 +101,14 @@ else
   echo -e "${YELLOW}  ⚠️  Warning: setup.md not found (skipped) / 警告: setup.mdが見つかりません（スキップ）${NC}"
 fi
 
-# 7. Copy notification system
-echo -e "${BLUE}📋 Installing notification system... / 通知システムをインストール中...${NC}"
+# 7. Copy scripts (notification + frontmatter injection)
+echo -e "${BLUE}📋 Installing scripts... / スクリプトをインストール中...${NC}"
 if [ -d "$EDAF_DIR/.claude/scripts" ]; then
   cp -r $EDAF_DIR/.claude/scripts/* .claude/scripts/
   chmod +x .claude/scripts/*.sh 2>/dev/null
-  echo -e "${GREEN}  ✅ Notification scripts installed / 通知スクリプトをインストールしました${NC}"
+  echo -e "${GREEN}  ✅ Scripts installed / スクリプトをインストールしました${NC}"
+  echo -e "${GREEN}     - notification.sh (Sound notifications / 音声通知)${NC}"
+  echo -e "${GREEN}     - add-frontmatter.sh (Agent configuration / エージェント設定)${NC}"
 fi
 
 if [ -d "$EDAF_DIR/.claude/sounds" ]; then
@@ -139,49 +152,50 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 echo -e "${GREEN}🎉 What was installed / インストールされたもの${NC}"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
-echo "📁 .claude/agents/ (6 total)"
-echo "  ├── 4 Worker Agents (Self-Adapting)"
+echo "📁 .claude/agents/ (32 total)"
+echo "  ├── designer.md (Phase 1)"
+echo "  ├── planner.md (Phase 2)"
+echo "  │"
+echo "  ├── workers/ (4 total - Self-Adapting)"
 echo "  │   ├── database-worker-v1-self-adapting.md"
 echo "  │   ├── backend-worker-v1-self-adapting.md"
 echo "  │   ├── frontend-worker-v1-self-adapting.md"
 echo "  │   └── test-worker-v1-self-adapting.md"
-echo "  ├── designer.md (Phase 1)"
-echo "  └── planner.md (Phase 2)"
-echo ""
-echo "📁 .claude/evaluators/ (26 total)"
-echo "  ├── Phase 1: Design Evaluators (7)"
-echo "  │   ├── design-consistency-evaluator.md"
-echo "  │   ├── design-extensibility-evaluator.md"
-echo "  │   ├── design-goal-alignment-evaluator.md"
-echo "  │   ├── design-maintainability-evaluator.md"
-echo "  │   ├── design-observability-evaluator.md"
-echo "  │   ├── design-reliability-evaluator.md"
-echo "  │   └── design-reusability-evaluator.md"
 echo "  │"
-echo "  ├── Phase 2.5: Planner Evaluators (7)"
-echo "  │   ├── planner-clarity-evaluator.md"
-echo "  │   ├── planner-deliverable-structure-evaluator.md"
-echo "  │   ├── planner-dependency-evaluator.md"
-echo "  │   ├── planner-goal-alignment-evaluator.md"
-echo "  │   ├── planner-granularity-evaluator.md"
-echo "  │   ├── planner-responsibility-alignment-evaluator.md"
-echo "  │   └── planner-reusability-evaluator.md"
-echo "  │"
-echo "  ├── Phase 3: Code Evaluators (7 - Self-Adapting)"
-echo "  │   ├── code-quality-evaluator-v1-self-adapting.md"
-echo "  │   ├── code-testing-evaluator-v1-self-adapting.md"
-echo "  │   ├── code-security-evaluator-v1-self-adapting.md"
-echo "  │   ├── code-documentation-evaluator-v1-self-adapting.md"
-echo "  │   ├── code-maintainability-evaluator-v1-self-adapting.md"
-echo "  │   ├── code-performance-evaluator-v1-self-adapting.md"
-echo "  │   └── code-implementation-alignment-evaluator-v1-self-adapting.md"
-echo "  │"
-echo "  └── Phase 4: Deployment Evaluators (5)"
-echo "      ├── deployment-readiness-evaluator.md"
-echo "      ├── production-security-evaluator.md"
-echo "      ├── observability-evaluator.md"
-echo "      ├── performance-benchmark-evaluator.md"
-echo "      └── rollback-plan-evaluator.md"
+echo "  └── evaluators/ (26 total)"
+echo "      ├── phase1-design/ (7 evaluators)"
+echo "      │   ├── design-consistency-evaluator.md"
+echo "      │   ├── design-extensibility-evaluator.md"
+echo "      │   ├── design-goal-alignment-evaluator.md"
+echo "      │   ├── design-maintainability-evaluator.md"
+echo "      │   ├── design-observability-evaluator.md"
+echo "      │   ├── design-reliability-evaluator.md"
+echo "      │   └── design-reusability-evaluator.md"
+echo "      │"
+echo "      ├── phase2-planner/ (7 evaluators)"
+echo "      │   ├── planner-clarity-evaluator.md"
+echo "      │   ├── planner-deliverable-structure-evaluator.md"
+echo "      │   ├── planner-dependency-evaluator.md"
+echo "      │   ├── planner-goal-alignment-evaluator.md"
+echo "      │   ├── planner-granularity-evaluator.md"
+echo "      │   ├── planner-responsibility-alignment-evaluator.md"
+echo "      │   └── planner-reusability-evaluator.md"
+echo "      │"
+echo "      ├── phase3-code/ (7 evaluators - Self-Adapting)"
+echo "      │   ├── code-quality-evaluator-v1-self-adapting.md"
+echo "      │   ├── code-testing-evaluator-v1-self-adapting.md"
+echo "      │   ├── code-security-evaluator-v1-self-adapting.md"
+echo "      │   ├── code-documentation-evaluator-v1-self-adapting.md"
+echo "      │   ├── code-maintainability-evaluator-v1-self-adapting.md"
+echo "      │   ├── code-performance-evaluator-v1-self-adapting.md"
+echo "      │   └── code-implementation-alignment-evaluator-v1-self-adapting.md"
+echo "      │"
+echo "      └── phase4-deployment/ (5 evaluators)"
+echo "          ├── deployment-readiness-evaluator.md"
+echo "          ├── production-security-evaluator.md"
+echo "          ├── observability-evaluator.md"
+echo "          ├── performance-benchmark-evaluator.md"
+echo "          └── rollback-plan-evaluator.md"
 echo ""
 echo "📁 .claude/commands/"
 echo "  └── setup.md (Interactive setup wizard / インタラクティブセットアップウィザード)"

@@ -16,8 +16,7 @@ EDAF installation will create/overwrite the following files in your project:
 - `.claude/CLAUDE.md` - Main configuration file for Claude Code
 - `.claude/settings.json` - Claude Code settings with notification hooks
 - `.claude/edaf-config.yml` - EDAF configuration
-- `.claude/agents/*` - 6 agent files
-- `.claude/evaluators/*` - 26 evaluator files
+- `.claude/agents/*` - 32 agent files (2 core + 4 workers + 26 evaluators)
 - `.claude/commands/setup.md` - Setup command
 - `.claude/scripts/notification.sh` - Notification script
 - `.claude/sounds/*` - Sound files
@@ -123,7 +122,7 @@ graph LR
 ### Phase 4: Deployment Gate
 - **5 Deployment Evaluators** - Evaluate deployment readiness, production security, observability, performance benchmarks, and rollback procedures
 
-**→ For detailed specifications, see `.claude/agents/` and `.claude/evaluators/`**
+**→ For detailed specifications, see `.claude/agents/` (including subdirectories for workers and evaluators)**
 
 ---
 
@@ -165,8 +164,9 @@ rm -rf evaluator-driven-agent-flow
 - You MUST restart Claude Code again after running `/setup` for the generated `.claude/CLAUDE.md` configuration to take effect. Claude Code only loads CLAUDE.md on startup.
 
 That's it! The installation script will:
-- ✅ Install 4 Worker Agents to `.claude/agents/`
-- ✅ Install 7 Code Evaluators to `.claude/evaluators/`
+- ✅ Install 2 Core Agents to `.claude/agents/`
+- ✅ Install 4 Worker Agents to `.claude/agents/workers/`
+- ✅ Install 26 Evaluators to `.claude/agents/evaluators/` (organized by phase)
 - ✅ Install `/setup` command to `.claude/commands/`
 - ✅ Copy configuration template (optional)
 - ✅ Copy documentation (optional)
@@ -314,19 +314,21 @@ EDAF evaluates 7 key aspects of your code: **Quality**, **Testing**, **Security*
 
 ## 📚 Documentation
 
-- **Worker Agents**: Detailed specifications in `.claude/agents/`
+- **Core Agents**: `.claude/agents/`
+  - `designer.md` (Phase 1)
+  - `planner.md` (Phase 2)
+
+- **Worker Agents**: `.claude/agents/workers/`
   - `database-worker-v1-self-adapting.md`
   - `backend-worker-v1-self-adapting.md`
   - `frontend-worker-v1-self-adapting.md`
   - `test-worker-v1-self-adapting.md`
-  - `designer.md`
-  - `planner.md`
 
-- **Evaluators**: Detailed specifications in `.claude/evaluators/`
-  - 7 Design Evaluators (Phase 1)
-  - 7 Planner Evaluators (Phase 2)
-  - 7 Code Evaluators (Phase 3)
-  - 5 Deployment Evaluators (Phase 4)
+- **Evaluators**: `.claude/agents/evaluators/`
+  - `phase1-design/` - 7 Design Evaluators
+  - `phase2-planner/` - 7 Planner Evaluators
+  - `phase3-code/` - 7 Code Evaluators
+  - `phase4-deployment/` - 5 Deployment Evaluators
 
 ---
 
