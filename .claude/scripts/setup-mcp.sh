@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # EDAF MCP Configuration Script
-# Detects environment and generates appropriate .mcp.json configuration
-# 環境を検出して適切な.mcp.json設定を生成します
+# Registers chrome-devtools MCP server using 'claude mcp add' command
+# 'claude mcp add' コマンドを使用して chrome-devtools MCP サーバーを登録します
 
 set -e
 
@@ -48,90 +48,7 @@ detect_os() {
 }
 
 # =============================================================================
-# 2. Detect Node.js Package Manager Path
-# =============================================================================
-detect_npx_path() {
-  NPX_PATH=""
-  NODE_MANAGER=""
-
-  echo ""
-  echo -e "${BLUE}🔍 Detecting Node.js environment... / Node.js環境を検出中...${NC}"
-
-  # Try to find npx using which/command -v (works on Mac/Linux)
-  if [ "$OS" != "windows" ]; then
-    NPX_PATH=$(which npx 2>/dev/null || command -v npx 2>/dev/null || true)
-  else
-    # Windows: use where command
-    NPX_PATH=$(where npx 2>/dev/null | head -n 1 || true)
-  fi
-
-  if [ -n "$NPX_PATH" ]; then
-    # Detect which Node version manager is being used
-    case "$NPX_PATH" in
-      */.nvm/*)
-        NODE_MANAGER="nvm"
-        ;;
-      */.nodenv/*)
-        NODE_MANAGER="nodenv"
-        ;;
-      */.asdf/*)
-        NODE_MANAGER="asdf"
-        ;;
-      */.volta/*)
-        NODE_MANAGER="volta"
-        ;;
-      */mise/*)
-        NODE_MANAGER="mise"
-        ;;
-      */fnm/*)
-        NODE_MANAGER="fnm"
-        ;;
-      */homebrew/opt/node@*)
-        NODE_MANAGER="homebrew-keg"
-        ;;
-      */homebrew/*)
-        NODE_MANAGER="homebrew"
-        ;;
-      */AppData/Roaming/nvm/*)
-        NODE_MANAGER="nvm-windows"
-        ;;
-      "/usr/bin/npx"|"/usr/local/bin/npx")
-        NODE_MANAGER="system"
-        ;;
-      *)
-        NODE_MANAGER="other"
-        ;;
-    esac
-
-    echo -e "${GREEN}  ✅ npx found: ${NPX_PATH}${NC}"
-    echo -e "${CYAN}     Manager: ${NODE_MANAGER}${NC}"
-
-    # Verify npx works
-    if $NPX_PATH --version > /dev/null 2>&1; then
-      NPX_VERSION=$($NPX_PATH --version 2>/dev/null)
-      echo -e "${GREEN}     Version: ${NPX_VERSION}${NC}"
-    else
-      echo -e "${YELLOW}  ⚠️  npx found but not working properly${NC}"
-      NPX_PATH=""
-    fi
-  fi
-
-  # Also check for bunx as alternative
-  BUNX_PATH=""
-  if [ "$OS" != "windows" ]; then
-    BUNX_PATH=$(which bunx 2>/dev/null || command -v bunx 2>/dev/null || true)
-  else
-    BUNX_PATH=$(where bunx 2>/dev/null | head -n 1 || true)
-  fi
-
-  if [ -n "$BUNX_PATH" ]; then
-    echo -e "${CYAN}  💡 bunx also available: ${BUNX_PATH}${NC}"
-    echo -e "${CYAN}     (bunx is faster than npx)${NC}"
-  fi
-}
-
-# =============================================================================
-# 3. WSL2 Warning
+# 2. WSL2 Warning
 # =============================================================================
 show_wsl2_warning() {
   if [ "$OS" = "wsl2" ]; then
@@ -165,141 +82,92 @@ show_wsl2_warning() {
 }
 
 # =============================================================================
-# 4. Generate .mcp.json
+# 3. Check if MCP server already exists
 # =============================================================================
-generate_mcp_json() {
-  local target_dir="${1:-.}"
-  local mcp_file="${target_dir}/.mcp.json"
+check_existing_mcp() {
+  echo ""
+  echo -e "${BLUE}🔍 Checking existing MCP servers... / 既存のMCPサーバーを確認中...${NC}"
 
-  # Ensure target directory exists
-  mkdir -p "$target_dir"
+  # Check .mcp.json file (project scope)
+  if [ -f ".mcp.json" ] && grep -q "chrome-devtools" ".mcp.json"; then
+    echo -e "${GREEN}  ✅ chrome-devtools MCP is already registered in .mcp.json${NC}"
+    echo -e "${GREEN}     chrome-devtools MCP は .mcp.json に既に登録されています${NC}"
+    ALREADY_EXISTS=true
+  # Check claude mcp list (user/local scope)
+  elif claude mcp list 2>/dev/null | grep -q "chrome-devtools"; then
+    echo -e "${GREEN}  ✅ chrome-devtools MCP is already registered${NC}"
+    echo -e "${GREEN}     chrome-devtools MCP は既に登録されています${NC}"
+    ALREADY_EXISTS=true
+  else
+    echo -e "${CYAN}  ℹ️  chrome-devtools MCP is not registered${NC}"
+    echo -e "${CYAN}     chrome-devtools MCP は登録されていません${NC}"
+    ALREADY_EXISTS=false
+  fi
+}
+
+# =============================================================================
+# 4. Register MCP server using claude mcp add
+# =============================================================================
+register_mcp_server() {
+  local scope="${1:-project}"
 
   echo ""
-  echo -e "${BLUE}📝 Generating .mcp.json... / .mcp.jsonを生成中...${NC}"
+  echo -e "${BLUE}📝 Registering MCP server... / MCPサーバーを登録中...${NC}"
 
   # Skip for WSL2
   if [ "$WSL2_MODE" = true ]; then
-    echo -e "${YELLOW}  ⏭️  Skipping .mcp.json generation for WSL2${NC}"
+    echo -e "${YELLOW}  ⏭️  Skipping MCP registration for WSL2${NC}"
     echo -e "${YELLOW}     UI verification will be disabled${NC}"
-
-    # Create minimal config noting WSL2 limitation
-    cat > "$mcp_file" << 'EOF'
-{
-  "_comment": "MCP chrome-devtools disabled - WSL2 environment detected",
-  "_wsl2_warning": "Chrome DevTools MCP does not work in WSL2. UI verification is disabled.",
-  "mcpServers": {}
-}
-EOF
-    echo -e "${GREEN}  ✅ Created minimal .mcp.json (WSL2 mode)${NC}"
-    return
+    return 0
   fi
 
-  # Check if npx or bunx is available
-  if [ -z "$NPX_PATH" ] && [ -z "$BUNX_PATH" ]; then
-    echo -e "${RED}  ❌ Error: Neither npx nor bunx found${NC}"
-    echo -e "${RED}     Please install Node.js or Bun first${NC}"
+  # Skip if already exists
+  if [ "$ALREADY_EXISTS" = true ]; then
+    echo -e "${CYAN}  ⏭️  Skipping - already registered${NC}"
     echo ""
-    echo "Install options / インストールオプション:"
-    echo "  - Node.js: https://nodejs.org/"
-    echo "  - nvm: https://github.com/nvm-sh/nvm"
-    echo "  - Bun: https://bun.sh/"
+    echo -e "${GREEN}Current MCP servers / 現在のMCPサーバー:${NC}"
+    claude mcp list
+    return 0
+  fi
+
+  # Register chrome-devtools MCP
+  echo -e "${CYAN}  Running: claude mcp add -s ${scope} chrome-devtools -- npx -y chrome-devtools-mcp@latest${NC}"
+  echo ""
+
+  if claude mcp add -s "$scope" chrome-devtools -- npx -y chrome-devtools-mcp@latest; then
+    echo ""
+    echo -e "${GREEN}  ✅ MCP server registered successfully!${NC}"
+    echo -e "${GREEN}     MCPサーバーの登録が完了しました！${NC}"
+  else
+    echo ""
+    echo -e "${RED}  ❌ Failed to register MCP server${NC}"
+    echo -e "${RED}     MCPサーバーの登録に失敗しました${NC}"
     return 1
   fi
-
-  # Prefer bunx if available (faster)
-  local cmd_path="$NPX_PATH"
-  local use_bunx=false
-
-  if [ -n "$BUNX_PATH" ]; then
-    echo ""
-    read -p "  Use bunx instead of npx? (faster) / bunxを使用しますか？（高速） [y/N]: " use_bunx_choice
-    if [[ $use_bunx_choice =~ ^[Yy]$ ]]; then
-      cmd_path="$BUNX_PATH"
-      use_bunx=true
-    fi
-  fi
-
-  # Generate appropriate config based on OS
-  if [ "$OS" = "windows" ]; then
-    # Windows: escape backslashes
-    cmd_path_escaped=$(echo "$cmd_path" | sed 's/\\/\\\\/g')
-
-    cat > "$mcp_file" << EOF
-{
-  "mcpServers": {
-    "chrome-devtools": {
-      "command": "cmd",
-      "args": ["/c", "${cmd_path_escaped}", "-y", "chrome-devtools-mcp@latest"]
-    }
-  }
-}
-EOF
-  else
-    # Mac/Linux: use absolute path directly
-    if [ "$use_bunx" = true ]; then
-      cat > "$mcp_file" << EOF
-{
-  "mcpServers": {
-    "chrome-devtools": {
-      "command": "${cmd_path}",
-      "args": ["--bun", "chrome-devtools-mcp@latest"]
-    }
-  }
-}
-EOF
-    else
-      cat > "$mcp_file" << EOF
-{
-  "mcpServers": {
-    "chrome-devtools": {
-      "command": "${cmd_path}",
-      "args": ["-y", "chrome-devtools-mcp@latest"]
-    }
-  }
-}
-EOF
-    fi
-  fi
-
-  echo -e "${GREEN}  ✅ Generated .mcp.json${NC}"
-  echo ""
-  echo -e "${CYAN}  Configuration / 設定:${NC}"
-  cat "$mcp_file"
-  echo ""
 }
 
 # =============================================================================
 # 5. Verify Configuration
 # =============================================================================
 verify_configuration() {
-  local target_dir="${1:-.}"
-  local mcp_file="${target_dir}/.mcp.json"
-
   echo ""
   echo -e "${BLUE}🔍 Verifying configuration... / 設定を確認中...${NC}"
 
-  if [ ! -f "$mcp_file" ]; then
-    echo -e "${RED}  ❌ .mcp.json not found${NC}"
-    return 1
-  fi
-
-  # Check JSON syntax
-  if command -v python3 > /dev/null 2>&1; then
-    if python3 -c "import json; json.load(open('$mcp_file'))" 2>/dev/null; then
-      echo -e "${GREEN}  ✅ JSON syntax valid${NC}"
-    else
-      echo -e "${RED}  ❌ Invalid JSON syntax${NC}"
-      return 1
-    fi
-  elif command -v node > /dev/null 2>&1; then
-    if node -e "require('$mcp_file')" 2>/dev/null; then
-      echo -e "${GREEN}  ✅ JSON syntax valid${NC}"
-    else
-      echo -e "${RED}  ❌ Invalid JSON syntax${NC}"
-      return 1
-    fi
+  # Check .mcp.json file for project scope
+  if [ -f ".mcp.json" ] && grep -q "chrome-devtools" ".mcp.json"; then
+    echo -e "${GREEN}  ✅ chrome-devtools MCP is registered in .mcp.json${NC}"
+    echo ""
+    echo -e "${GREEN}Configuration / 設定内容:${NC}"
+    cat .mcp.json
+  # Also check claude mcp list for user/local scope
+  elif claude mcp list 2>/dev/null | grep -q "chrome-devtools"; then
+    echo -e "${GREEN}  ✅ chrome-devtools MCP is registered${NC}"
+    echo ""
+    echo -e "${GREEN}Registered MCP servers / 登録済みMCPサーバー:${NC}"
+    claude mcp list
   else
-    echo -e "${YELLOW}  ⚠️  Cannot verify JSON (python3/node not available)${NC}"
+    echo -e "${RED}  ❌ chrome-devtools MCP not found${NC}"
+    return 1
   fi
 
   echo ""
@@ -311,10 +179,16 @@ verify_configuration() {
     echo -e "${YELLOW}注意: WSL2環境ではUI検証は無効になっています。${NC}"
   else
     echo ""
-    echo -e "${CYAN}Next steps / 次のステップ:${NC}"
-    echo "  1. Restart Claude Code / Claude Codeを再起動"
-    echo "  2. The chrome-devtools MCP server will be available"
-    echo "     chrome-devtools MCPサーバーが利用可能になります"
+    echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo -e "${CYAN}🔄 IMPORTANT: Restart Claude Code / 重要: Claude Codeを再起動${NC}"
+    echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo ""
+    echo "MCP servers are loaded at Claude Code startup."
+    echo "MCPサーバーはClaude Code起動時に読み込まれます。"
+    echo ""
+    echo "Please restart Claude Code to enable chrome-devtools MCP."
+    echo "chrome-devtools MCPを有効にするためにClaude Codeを再起動してください。"
+    echo ""
   fi
 }
 
@@ -322,14 +196,39 @@ verify_configuration() {
 # Main
 # =============================================================================
 main() {
-  local target_dir="${1:-.}"
+  # Parse arguments
+  local scope="project"
+  while [[ $# -gt 0 ]]; do
+    case $1 in
+      --scope|-s)
+        scope="$2"
+        shift 2
+        ;;
+      --user)
+        scope="user"
+        shift
+        ;;
+      --project)
+        scope="project"
+        shift
+        ;;
+      --local)
+        scope="local"
+        shift
+        ;;
+      *)
+        # Ignore unknown arguments (for backward compatibility with old usage)
+        shift
+        ;;
+    esac
+  done
 
   detect_os
-  detect_npx_path
   show_wsl2_warning
-  generate_mcp_json "$target_dir"
-  verify_configuration "$target_dir"
+  check_existing_mcp
+  register_mcp_server "$scope"
+  verify_configuration
 }
 
-# Run with optional target directory argument
+# Run
 main "$@"
