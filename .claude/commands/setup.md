@@ -108,10 +108,18 @@ Do not edit manually - run \`/setup\` again to change preferences.
 - **Documentation Language**: ${docLang === 'en' ? 'English' : 'Japanese'}
 - **Terminal Output Language**: ${termLang === 'en' ? 'English' : 'Japanese'}
 - **Save Dual Language Docs**: ${dualDocs ? 'Yes (EN + JA)' : 'No'}
+- **UI Verification (MCP chrome-devtools)**: ${global.edafWSL2Mode ? '⚠️ DISABLED (WSL2 environment)' : 'Enabled'}
 
 ---
 
 ## EDAF 4-Phase Gate System - IMPORTANT
+
+${global.edafWSL2Mode ? \`
+> ⚠️ **WSL2 MODE DETECTED**: UI verification via MCP chrome-devtools is DISABLED.
+> UI検証（MCP chrome-devtools）は無効です（WSL2環境が検出されました）。
+> Phase 3 will skip all MCP chrome-devtools steps.
+
+\` : ''}
 
 **When the user requests to implement a feature using "エージェントフロー" (agent flow) or "EDAF", you MUST follow this exact workflow:**
 
@@ -163,7 +171,12 @@ Do not edit manually - run \`/setup\` again to change preferences.
    - code-performance-evaluator-v1-self-adapting
    - code-implementation-alignment-evaluator-v1-self-adapting
 2. Review evaluation results
-3. **If frontend files were modified (views, components, CSS, JavaScript):**
+\${global.edafWSL2Mode ? \`3. **UI Verification: SKIPPED (WSL2 environment)**
+   - MCP chrome-devtools is not available in WSL2
+   - Manual verification recommended: open browser and check UI manually
+   - Document any issues found in review notes
+4. If evaluators find issues, fix them
+5. Repeat until all evaluators approve (≥ 7.0/10.0)\` : \`3. **If frontend files were modified (views, components, CSS, JavaScript):**
    - **MANDATORY: Always ask user for login information:**
      - Use AskUserQuestion tool: "Do the modified pages require login to view?"
      - If YES, collect:
@@ -173,46 +186,46 @@ Do not edit manually - run \`/setup\` again to change preferences.
      - Confirm development server is running
      - If NO, proceed without login
    - **MANDATORY: Create screenshot directory:**
-     - Create directory: \`docs/screenshots/{feature-name}/\`
-     - Example: \`docs/screenshots/user-authentication/\`
+     - Create directory: \\\`docs/screenshots/{feature-name}/\\\`
+     - Example: \\\`docs/screenshots/user-authentication/\\\`
      - All screenshots will be saved in this directory
    - **MANDATORY: Use MCP chrome-devtools for UI/UX verification:**
      - Prerequisites verification:
        - Confirm development server is running (from user response above)
        - Identify all URLs to verify from design document
      - **Step 1: Setup and Authentication (if needed)**
-       - \`mcp__chrome-devtools__list_pages\` - List available browser tabs
-       - \`mcp__chrome-devtools__navigate_page\` - Navigate to login page (if required)
-       - \`mcp__chrome-devtools__fill\` - Fill login credentials (if required)
-       - \`mcp__chrome-devtools__click\` - Click login button (if required)
+       - \\\`mcp__chrome-devtools__list_pages\\\` - List available browser tabs
+       - \\\`mcp__chrome-devtools__navigate_page\\\` - Navigate to login page (if required)
+       - \\\`mcp__chrome-devtools__fill\\\` - Fill login credentials (if required)
+       - \\\`mcp__chrome-devtools__click\\\` - Click login button (if required)
        - Verify successful login
      - **Step 2: Page-by-Page Verification (MANDATORY - DO NOT SKIP)**
        - For EACH modified page or component:
-         1. \`mcp__chrome-devtools__navigate_page\` - Navigate to the page
-         2. **\`mcp__chrome-devtools__take_snapshot\` - MANDATORY: Capture screenshot**
-            - Save to: \`docs/screenshots/{feature-name}/{page-name}.png\`
-            - Example: \`docs/screenshots/user-authentication/login-page.png\`
+         1. \\\`mcp__chrome-devtools__navigate_page\\\` - Navigate to the page
+         2. **\\\`mcp__chrome-devtools__take_snapshot\\\` - MANDATORY: Capture screenshot**
+            - Save to: \\\`docs/screenshots/{feature-name}/{page-name}.png\\\`
+            - Example: \\\`docs/screenshots/user-authentication/login-page.png\\\`
          3. Compare screenshot with design document specifications
          4. Check for visual inconsistencies (layout, colors, fonts, spacing)
          5. Document findings with screenshot reference (use relative path)
      - **Step 3: Interactive Element Testing**
-       - For forms: \`mcp__chrome-devtools__fill\` - Test with sample data
-       - For buttons/links: \`mcp__chrome-devtools__click\` - Test interactions
-       - **\`mcp__chrome-devtools__take_snapshot\` - MANDATORY: Capture after each interaction**
-         - Save to: \`docs/screenshots/{feature-name}/{page-name}-{action}.png\`
-         - Example: \`docs/screenshots/user-authentication/login-page-submitted.png\`
+       - For forms: \\\`mcp__chrome-devtools__fill\\\` - Test with sample data
+       - For buttons/links: \\\`mcp__chrome-devtools__click\\\` - Test interactions
+       - **\\\`mcp__chrome-devtools__take_snapshot\\\` - MANDATORY: Capture after each interaction**
+         - Save to: \\\`docs/screenshots/{feature-name}/{page-name}-{action}.png\\\`
+         - Example: \\\`docs/screenshots/user-authentication/login-page-submitted.png\\\`
        - Verify expected behaviors (validation, submission, navigation)
      - **Step 4: Console and Performance Check**
        - Check browser console for errors/warnings
        - Note any performance issues
      - **Step 5: Documentation (MANDATORY)**
        - Create review section with ALL screenshots included
-       - Use relative paths: \`![Screenshot](../screenshots/{feature-name}/{page-name}.png)\`
+       - Use relative paths: \\\`![Screenshot](../screenshots/{feature-name}/{page-name}.png)\\\`
        - List findings for each page/component
        - Compare actual vs expected behavior
        - **CRITICAL: Review MUST include at least one screenshot per modified page**
        - **Directory structure example:**
-         \`\`\`
+         \\\`\\\`\\\`
          docs/
          ├── reviews/{feature-name}-review.md
          └── screenshots/{feature-name}/
@@ -220,9 +233,9 @@ Do not edit manually - run \`/setup\` again to change preferences.
              ├── login-page-submitted.png
              ├── dashboard.png
              └── profile-page.png
-         \`\`\`
+         \\\`\\\`\\\`
 4. If evaluators find issues OR UI verification fails, fix them
-5. Repeat until all evaluators approve (≥ 7.0/10.0) AND UI verification passes
+5. Repeat until all evaluators approve (≥ 7.0/10.0) AND UI verification passes\`}
 
 ### Phase 4: Deployment Gate (Optional)
 1. Launch ALL 5 deployment evaluators in parallel via Task tool:
@@ -490,7 +503,95 @@ Then restart Claude Code and run `/setup` again.
 
 ---
 
-## Step 1.5: Configure Agent Files / ステップ1.5: エージェントファイルの設定
+## Step 1.5: MCP Configuration / ステップ1.5: MCP設定
+
+**Action / アクション**: Check and configure MCP chrome-devtools:
+
+```typescript
+console.log('\n🔧 Checking MCP configuration... / MCP設定を確認中...')
+
+const { execSync } = require('child_process')
+
+// Detect OS and WSL2
+let isWSL2 = false
+let osType = 'unknown'
+
+try {
+  const uname = execSync('uname -s', { encoding: 'utf-8' }).trim()
+  if (uname === 'Darwin') {
+    osType = 'mac'
+    console.log('  ✅ Detected: macOS')
+  } else if (uname === 'Linux') {
+    // Check for WSL2
+    try {
+      const procVersion = fs.readFileSync('/proc/version', 'utf-8')
+      if (procVersion.toLowerCase().includes('microsoft') || procVersion.toLowerCase().includes('wsl')) {
+        osType = 'wsl2'
+        isWSL2 = true
+        console.log('  ⚠️  Detected: WSL2 (Windows Subsystem for Linux)')
+      } else {
+        osType = 'linux'
+        console.log('  ✅ Detected: Linux')
+      }
+    } catch {
+      osType = 'linux'
+      console.log('  ✅ Detected: Linux')
+    }
+  }
+} catch {
+  // Windows Git Bash or other
+  osType = 'windows'
+  console.log('  ✅ Detected: Windows')
+}
+
+// Check if .mcp.json exists
+const mcpExists = fs.existsSync('.mcp.json')
+console.log('  📋 .mcp.json:', mcpExists ? 'Exists / 存在します' : 'Not found / 見つかりません')
+
+// WSL2 warning
+if (isWSL2) {
+  console.log('\n' + '━'.repeat(60))
+  console.log('⚠️  WSL2 LIMITATION / WSL2の制限')
+  console.log('━'.repeat(60))
+  console.log('')
+  console.log('MCP chrome-devtools DOES NOT work in WSL2 environment.')
+  console.log('MCP chrome-devtools は WSL2 環境では動作しません。')
+  console.log('')
+  console.log('Reason / 理由:')
+  console.log('  - WSL2 cannot access Chrome browser on Windows')
+  console.log('  - Network isolation prevents communication')
+  console.log('')
+  console.log('UI verification will be SKIPPED in Phase 3.')
+  console.log('Phase 3 で UI 検証はスキップされます。')
+  console.log('━'.repeat(60))
+}
+
+// Configure MCP if not exists
+if (!mcpExists && !isWSL2) {
+  console.log('\n📝 Generating .mcp.json configuration...')
+  console.log('📝 .mcp.json設定を生成中...')
+
+  try {
+    execSync('bash .claude/scripts/setup-mcp.sh .', { stdio: 'inherit' })
+    console.log('✅ MCP configuration complete / MCP設定が完了しました')
+  } catch (error) {
+    console.log('⚠️  Warning: Could not configure MCP / 警告: MCP設定に失敗しました')
+    console.log('   Run manually: bash .claude/scripts/setup-mcp.sh')
+    console.log('   手動で実行: bash .claude/scripts/setup-mcp.sh')
+  }
+} else if (mcpExists) {
+  console.log('\n✅ MCP already configured / MCP設定済み')
+  console.log('   To reconfigure: rm .mcp.json && bash .claude/scripts/setup-mcp.sh')
+  console.log('   再設定するには: rm .mcp.json && bash .claude/scripts/setup-mcp.sh')
+}
+
+// Store WSL2 flag for later use
+global.edafWSL2Mode = isWSL2
+```
+
+---
+
+## Step 1.6: Configure Agent Files / ステップ1.6: エージェントファイルの設定
 
 **Action / アクション**: Add YAML frontmatter to agent files for Claude Code recognition:
 
@@ -510,7 +611,7 @@ try {
 
 ---
 
-## Step 2: Auto-Detect Project Configuration / ステップ2: プロジェクト設定の自動検出
+## Step 2: Auto-Detect Project Configuration / ステップ2: プロジェクト設定の自動検出（※旧Step 2、Step番号は参考）
 
 Let me analyze your project to detect:
 プロジェクトを分析して、以下を検出します:
