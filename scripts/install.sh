@@ -139,7 +139,23 @@ if [ -f "$EDAF_DIR/.claude/settings.json.example" ]; then
   fi
 fi
 
-# 9. Create docs directories for UI verification
+# 9. Configure MCP chrome-devtools
+echo -e "${BLUE}🔧 Configuring MCP chrome-devtools... / MCP chrome-devtoolsを設定中...${NC}"
+if [ -f ".claude/scripts/setup-mcp.sh" ]; then
+  if [ ! -f ".mcp.json" ]; then
+    echo ""
+    bash .claude/scripts/setup-mcp.sh .
+    echo ""
+  else
+    echo -e "${YELLOW}  ⚠️  .mcp.json already exists (skipped) / .mcp.jsonはすでに存在します（スキップ）${NC}"
+    echo -e "${YELLOW}     To reconfigure, delete .mcp.json and run: bash .claude/scripts/setup-mcp.sh${NC}"
+    echo -e "${YELLOW}     再設定するには.mcp.jsonを削除して実行: bash .claude/scripts/setup-mcp.sh${NC}"
+  fi
+else
+  echo -e "${YELLOW}  ⚠️  setup-mcp.sh not found (skipped) / setup-mcp.shが見つかりません（スキップ）${NC}"
+fi
+
+# 10. Create docs directories for UI verification
 echo -e "${BLUE}📁 Creating docs directories... / docsディレクトリを作成中...${NC}"
 mkdir -p docs/reports
 mkdir -p docs/screenshots
@@ -201,11 +217,14 @@ echo "📁 .claude/commands/"
 echo "  └── setup.md (Interactive setup wizard / インタラクティブセットアップウィザード)"
 echo ""
 echo "📁 .claude/scripts/"
-echo "  └── notification.sh (Sound notification system / 音声通知システム)"
+echo "  ├── notification.sh (Sound notification system / 音声通知システム)"
+echo "  └── setup-mcp.sh (MCP configuration / MCP設定)"
 echo ""
 echo "📁 .claude/sounds/"
 echo "  ├── cat-meowing.mp3"
 echo "  └── bird_song_robin.mp3"
+echo ""
+echo "📁 .mcp.json (MCP chrome-devtools configuration / MCP chrome-devtools設定)"
 echo ""
 echo "📁 .claude/edaf-config.example.yml (optional / オプション)"
 echo ""

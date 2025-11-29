@@ -19,7 +19,9 @@ EDAF installation will create/overwrite the following files in your project:
 - `.claude/agents/*` - 32 agent files (2 core + 4 workers + 26 evaluators)
 - `.claude/commands/setup.md` - Setup command
 - `.claude/scripts/notification.sh` - Notification script
+- `.claude/scripts/setup-mcp.sh` - MCP configuration script
 - `.claude/sounds/*` - Sound files
+- `.mcp.json` - MCP chrome-devtools configuration (auto-generated)
 
 **Recommended workflow:**
 ```bash
@@ -133,6 +135,18 @@ graph LR
 - Claude Code CLI installed
 - Git repository initialized
 - Project with code to evaluate
+- Node.js (any version manager: nvm, nodenv, asdf, volta, mise, or Homebrew)
+
+### Environment Support
+
+| Environment | Status | UI Verification |
+|-------------|--------|-----------------|
+| **macOS** | ✅ Full | ✅ Automatic |
+| **Windows** | ✅ Full | ✅ Automatic |
+| **Linux** | ✅ Full | ✅ Automatic |
+| **WSL2** | ⚠️ Limited | ❌ Skipped |
+
+> **WSL2 Note:** MCP chrome-devtools cannot access Windows Chrome from WSL2. UI verification is automatically skipped, and manual verification is recommended.
 
 ### Installation (6 steps!)
 
@@ -168,6 +182,7 @@ That's it! The installation script will:
 - ✅ Install 4 Worker Agents to `.claude/agents/workers/`
 - ✅ Install 26 Evaluators to `.claude/agents/evaluators/` (organized by phase)
 - ✅ Install `/setup` command to `.claude/commands/`
+- ✅ Configure MCP chrome-devtools (auto-detects npx/bunx path)
 - ✅ Copy configuration template (optional)
 - ✅ Copy documentation (optional)
 

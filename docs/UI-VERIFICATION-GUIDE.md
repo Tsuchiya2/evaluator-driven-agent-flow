@@ -18,17 +18,67 @@ When frontend files are modified during Phase 3 (Code Review Gate), EDAF automat
 
 ---
 
+## ⚠️ Environment Support
+
+| Environment | Status | Notes |
+|-------------|--------|-------|
+| **macOS** | ✅ Supported | Full functionality |
+| **Windows (Native)** | ✅ Supported | Use cmd wrapper |
+| **Linux** | ✅ Supported | Full functionality |
+| **WSL2** | ❌ Not Supported | Cannot access Windows Chrome |
+| **Docker** | ⚠️ Limited | Requires special config |
+
+### WSL2 Limitation
+
+**MCP chrome-devtools does NOT work in WSL2 environment.**
+
+Reasons:
+- WSL2 runs in a virtualized network namespace
+- Cannot communicate with Chrome running on Windows host
+- `--remote-debugging-port` is not accessible from WSL2
+
+**Workarounds for WSL2 users:**
+1. UI verification is automatically SKIPPED in Phase 3
+2. Manual verification recommended (open browser and check UI)
+3. Run Claude Code on Windows directly (not in WSL2)
+
+---
+
 ## 🔧 Prerequisites
 
-### 1. Chrome Browser
-- Chrome must be running in development mode
-- Start with: `google-chrome --remote-debugging-port=9222`
+### 1. MCP Configuration (Automatic)
 
-### 2. MCP chrome-devtools Server
-- Install and configure MCP chrome-devtools server
-- See [Claude Code MCP documentation](https://docs.claude.com) for setup
+The install script automatically configures `.mcp.json` with the correct npx path for your environment:
 
-### 3. Development Server
+```bash
+# Check your configuration
+cat .mcp.json
+```
+
+**If not configured, run:**
+```bash
+bash .claude/scripts/setup-mcp.sh
+```
+
+### 2. Chrome Browser
+- Chrome must be running (MCP will start it automatically)
+- Or start manually: `google-chrome --remote-debugging-port=9222`
+
+### 3. Node.js Environment
+
+The setup script auto-detects your Node.js installation:
+
+| Manager | Path Example |
+|---------|--------------|
+| **Homebrew** | `/opt/homebrew/bin/npx` |
+| **nvm** | `~/.nvm/versions/node/v22.x.x/bin/npx` |
+| **nodenv** | `~/.nodenv/shims/npx` |
+| **asdf** | `~/.asdf/shims/npx` |
+| **volta** | `~/.volta/bin/npx` |
+| **mise** | `~/.local/share/mise/shims/npx` |
+| **Bun** | `~/.bun/bin/bunx` (faster alternative) |
+
+### 4. Development Server
 - Your application's dev server must be running
 - Example: `npm run dev`, `rails server`, `python manage.py runserver`
 
