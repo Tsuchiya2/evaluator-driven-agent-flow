@@ -544,9 +544,13 @@ try {
   console.log('  ✅ Detected: Windows')
 }
 
-// Check if .mcp.json exists
-const mcpExists = fs.existsSync('.mcp.json')
-console.log('  📋 .mcp.json:', mcpExists ? 'Exists / 存在します' : 'Not found / 見つかりません')
+// Check if chrome-devtools MCP is registered
+let mcpExists = false
+try {
+  const mcpJson = fs.existsSync('.mcp.json') ? JSON.parse(fs.readFileSync('.mcp.json', 'utf-8')) : null
+  mcpExists = mcpJson?.mcpServers?.['chrome-devtools'] !== undefined
+} catch {}
+console.log('  📋 chrome-devtools MCP:', mcpExists ? 'Registered / 登録済み' : 'Not registered / 未登録')
 
 // WSL2 warning
 if (isWSL2) {
@@ -568,21 +572,22 @@ if (isWSL2) {
 
 // Configure MCP if not exists
 if (!mcpExists && !isWSL2) {
-  console.log('\n📝 Generating .mcp.json configuration...')
-  console.log('📝 .mcp.json設定を生成中...')
+  console.log('\n📝 Registering chrome-devtools MCP server...')
+  console.log('📝 chrome-devtools MCPサーバーを登録中...')
 
   try {
-    execSync('bash .claude/scripts/setup-mcp.sh .', { stdio: 'inherit' })
+    execSync('bash .claude/scripts/setup-mcp.sh --project', { stdio: 'inherit' })
     console.log('✅ MCP configuration complete / MCP設定が完了しました')
   } catch (error) {
     console.log('⚠️  Warning: Could not configure MCP / 警告: MCP設定に失敗しました')
-    console.log('   Run manually: bash .claude/scripts/setup-mcp.sh')
-    console.log('   手動で実行: bash .claude/scripts/setup-mcp.sh')
+    console.log('   Run manually: bash .claude/scripts/setup-mcp.sh --project')
+    console.log('   Or use: claude mcp add chrome-devtools -- npx -y chrome-devtools-mcp@latest')
+    console.log('   手動で実行: bash .claude/scripts/setup-mcp.sh --project')
   }
 } else if (mcpExists) {
-  console.log('\n✅ MCP already configured / MCP設定済み')
-  console.log('   To reconfigure: rm .mcp.json && bash .claude/scripts/setup-mcp.sh')
-  console.log('   再設定するには: rm .mcp.json && bash .claude/scripts/setup-mcp.sh')
+  console.log('\n✅ chrome-devtools MCP already registered / chrome-devtools MCP登録済み')
+  console.log('   To reconfigure: claude mcp remove chrome-devtools && bash .claude/scripts/setup-mcp.sh --project')
+  console.log('   再設定するには: claude mcp remove chrome-devtools && bash .claude/scripts/setup-mcp.sh --project')
 }
 
 // Store WSL2 flag for later use
