@@ -471,8 +471,8 @@ First, let me check what's already installed in your project.
 
 ```typescript
 const checks = {
-  workers: fs.existsSync('.claude/agents/database-worker-v1-self-adapting.md'),
-  evaluators: fs.existsSync('.claude/evaluators/code-quality-evaluator-v1-self-adapting.md'),
+  workers: fs.existsSync('.claude/agents/workers/database-worker-v1-self-adapting.md'),
+  evaluators: fs.existsSync('.claude/agents/evaluators/phase3-code/code-quality-evaluator-v1-self-adapting.md'),
   setupCommand: fs.existsSync('.claude/commands/setup.md'),
   config: fs.existsSync('.claude/edaf-config.yml'),
   claudeMd: fs.existsSync('.claude/CLAUDE.md'),
@@ -971,10 +971,10 @@ Claude Codeは設定した言語設定に従って応答します。
 ls .claude/agents/
 
 # View evaluator specifications / エバリュエーターの仕様を確認
-ls .claude/evaluators/
+ls .claude/agents/evaluators/
 
 # Read a specific worker / 特定のワーカーを読む
-cat .claude/agents/database-worker-v1-self-adapting.md
+cat .claude/agents/workers/database-worker-v1-self-adapting.md
 ```
 
 ### 3. Change Language Settings / 言語設定を変更
