@@ -12,7 +12,9 @@
     "deny": [
       "Bash(git add*)",
       "Bash(git commit*)",
-      "Bash(git push*)"
+      "Bash(git push*)",
+      "Bash(rm -rf*)",
+      "Bash(git push --force*)"
     ],
     "ask": []
   },
@@ -20,6 +22,15 @@
   "enabledMcpjsonServers": [
     "chrome-devtools"
   ],
+  "sandbox": {
+    "enabled": true,
+    "autoAllowBashIfSandboxed": true,
+    "excludedCommands": ["git push", "rm -rf", "docker rm"]
+  },
+  "statusLine": {
+    "type": "command",
+    "command": "bash \"$PWD/.claude/scripts/edaf-status.sh\""
+  },
   "hooks": {
     "Notification": [
       {
@@ -27,10 +38,10 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash .claude/scripts/notification.sh 'Input needed / 入力が必要です' WarblerSong"
+            "command": "bash \"$PWD/.claude/scripts/notification.sh\" 'Input needed / 入力が必要です' WarblerSong"
           }
         ]
-      },
+      }
     ],
     "PostToolUse": [
       {
@@ -38,7 +49,38 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash .claude/scripts/notification.sh \"Task completed / タスク終了\" CatMeow"
+            "command": "bash \"$PWD/.claude/scripts/notification.sh\" 'Task completed / タスク終了' CatMeow"
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "matcher": "*evaluator*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$PWD/.claude/scripts/check-evaluator-score.sh\""
+          }
+        ]
+      },
+      {
+        "matcher": "*worker*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$PWD/.claude/scripts/notification.sh\" 'Worker completed' WarblerSong"
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "matcher": "startup",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo \"$(date '+%Y-%m-%d %H:%M:%S') EDAF session started\" >> \"$PWD/.claude/.edaf-sessions.log\""
           }
         ]
       }

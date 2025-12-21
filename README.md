@@ -8,56 +8,20 @@ A framework-agnostic system for AI-powered code generation with automatic qualit
 
 ---
 
-## ⚠️ IMPORTANT: Installation Warning
-
-**Before installing EDAF, create a separate branch!**
-
-EDAF installation will create/overwrite the following files in your project:
-- `.claude/CLAUDE.md` - Main configuration file for Claude Code
-- `.claude/settings.json` - Claude Code settings with notification hooks
-- `.claude/edaf-config.yml` - EDAF configuration
-- `.claude/agents/*` - 32 agent files (2 core + 4 workers + 26 evaluators)
-- `.claude/commands/setup.md` - Setup command
-- `.claude/scripts/notification.sh` - Notification script
-- `.claude/scripts/setup-mcp.sh` - MCP configuration script
-- `.claude/sounds/*` - Sound files
-- `.mcp.json` - MCP chrome-devtools configuration (auto-generated)
-
-**Recommended workflow:**
-```bash
-# Create a new branch for EDAF installation
-git checkout -b feature/edaf-setup
-
-# Install EDAF (see Installation section below)
-# ...
-
-# Review changes and commit
-git add .claude/
-git commit -m "Add EDAF v1.0"
-
-# Merge to main when ready
-git checkout main
-git merge feature/edaf-setup
-```
-
-**Why this matters:** If you already have custom `.claude/CLAUDE.md` or other Claude Code configurations, they will be overwritten. Using a separate branch lets you review changes before merging.
-
----
-
 ## 🎯 What is EDAF?
 
 EDAF is a complete **4-Phase Software Development Framework** that:
 
 1. **Phase 1**: Creates and evaluates design documents (1 Designer + 7 Evaluators)
 2. **Phase 2**: Plans implementation tasks (1 Planner + 7 Evaluators)
-3. **Phase 2.5**: Generates code using 4 specialized Worker Agents
+3. **Phase 2.5**: Generates code using 5 specialized Worker Agents
 4. **Phase 3**: Reviews code quality (7 Code Evaluators) + **UI/UX verification via MCP chrome-devtools**
 5. **Phase 4**: Validates deployment readiness (5 Deployment Evaluators)
 6. **Works with ANY language/framework** through self-adaptation
 7. **🌐 Supports English & Japanese** with flexible language preferences
 8. **🔍 Automatic visual verification** for frontend changes using browser automation
 
-**Total:** 6 Agents + 26 Evaluators = Complete development automation
+**Total:** 7 Agents + 26 Evaluators = 33 components for complete development automation
 
 ---
 
@@ -82,7 +46,7 @@ graph LR
 **Each phase includes:**
 - **Phase 1**: Designer Agent + 7 Design Evaluators
 - **Phase 2**: Planner Agent + 7 Planning Evaluators
-- **Phase 3**: 4 Workers + 7 Code Evaluators + UI/UX Verification
+- **Phase 3**: 5 Workers + 7 Code Evaluators + UI/UX Verification
 - **Phase 4**: 5 Deployment Evaluators
 
 ---
@@ -112,14 +76,14 @@ graph LR
 - **7 Planning Evaluators** - Evaluate clarity, deliverable structure, dependencies, goal-alignment, granularity, responsibility alignment, and reusability
 
 ### Phase 3: Implementation & Code Review
-- **4 Worker Agents** (Self-Adapting)
+- **5 Worker Agents** (Self-Adapting)
   - Database Worker - Any ORM (Sequelize, TypeORM, Prisma, Django ORM, SQLAlchemy, etc.)
   - Backend Worker - Any framework (Express, FastAPI, Spring Boot, Django, Flask, etc.)
   - Frontend Worker - Any frontend (React, Vue, Angular, Svelte, Solid, etc.)
   - Test Worker - Any testing framework (Jest, pytest, JUnit, Go test, RSpec, etc.)
+  - UI Verification Worker - Automatic visual verification via MCP chrome-devtools
 
 - **7 Code Evaluators** - Evaluate quality, testing, security, documentation, maintainability, performance, and implementation alignment
-- **UI/UX Verification** - Automatic visual verification via MCP chrome-devtools for frontend changes
 
 ### Phase 4: Deployment Gate
 - **5 Deployment Evaluators** - Evaluate deployment readiness, production security, observability, performance benchmarks, and rollback procedures
@@ -179,7 +143,7 @@ rm -rf evaluator-driven-agent-flow
 
 That's it! The installation script will:
 - ✅ Install 2 Core Agents to `.claude/agents/`
-- ✅ Install 4 Worker Agents to `.claude/agents/workers/`
+- ✅ Install 5 Worker Agents to `.claude/agents/workers/`
 - ✅ Install 26 Evaluators to `.claude/agents/evaluators/` (organized by phase)
 - ✅ Install `/setup` command to `.claude/commands/`
 - ✅ Configure MCP chrome-devtools (auto-detects npx/bunx path)
@@ -319,11 +283,88 @@ EDAF auto-detects your project settings via `/setup`. For manual configuration, 
 
 ---
 
+## 🚀 Advanced Features (Claude Code 2.0.69+)
+
+### Resumable Sessions
+
+Long-running evaluations can be paused and resumed:
+
+```typescript
+// First run - agent returns agentId
+Task({ subagent_type: "designer", prompt: "Create design for user auth" })
+// Returns: agentId: "a5abb63"
+
+// Later - resume the same session
+Task({ subagent_type: "designer", resume: "a5abb63", prompt: "Update based on feedback" })
+```
+
+### Model Selection (Opus 4.5 Support)
+
+Each agent uses an optimal model based on task criticality:
+
+| Model | Agents (Count) | Use Case |
+|-------|----------------|----------|
+| `opus` | Designer, Security Evaluators (3) | Critical decisions, security analysis |
+| `sonnet` | Planner, Workers, Most Evaluators (15) | Standard code generation and analysis |
+| `haiku` | Simple Evaluators (16) | Pattern matching, checklist verification |
+
+**Critical agents using Opus:**
+- **Designer**: Architectural decisions affect entire system
+- **code-security-evaluator**: Security vulnerabilities have severe consequences
+- **production-security-evaluator**: Production security is non-negotiable
+
+See `.claude/agent-models.yml` for full configuration.
+
+### Status Line Integration
+
+Monitor EDAF progress in Claude Code's status line:
+
+```bash
+# Update phase status
+bash .claude/scripts/update-edaf-phase.sh "Phase 3: Code Review" "5/7 evaluators"
+
+# View current status
+bash .claude/scripts/edaf-status.sh
+```
+
+### Evaluation Skills
+
+Reusable evaluation patterns in `.claude/skills/edaf-evaluation/`:
+
+- `SCORING.md` - 10-point scoring framework
+- `PATTERNS.md` - Common issues and anti-patterns
+- `REPORT-TEMPLATE.md` - Standard report format
+
+### Automated Hooks
+
+EDAF uses Claude Code hooks for automation:
+
+| Hook | Trigger | Action |
+|------|---------|--------|
+| `SubagentStop` | Evaluator/Worker completes | Play notification, log completion |
+| `SessionStart` | Session begins | Log session start |
+| `Notification` | User input needed | Play alert sound |
+
+### Sandbox Mode
+
+Evaluators run in a sandboxed environment for safety:
+
+```json
+{
+  "sandbox": {
+    "enabled": true,
+    "excludedCommands": ["git push", "rm -rf"]
+  }
+}
+```
+
+---
+
 ## 🔍 What Gets Evaluated
 
 EDAF evaluates 7 key aspects of your code: **Quality**, **Testing**, **Security**, **Documentation**, **Maintainability**, **Performance**, and **Implementation Alignment**.
 
-**→ For detailed evaluation criteria, see the evaluator specifications in `.claude/evaluators/`**
+**→ For detailed evaluation criteria, see the evaluator specifications in `.claude/agents/evaluators/`**
 
 ---
 
@@ -338,12 +379,39 @@ EDAF evaluates 7 key aspects of your code: **Quality**, **Testing**, **Security*
   - `backend-worker-v1-self-adapting.md`
   - `frontend-worker-v1-self-adapting.md`
   - `test-worker-v1-self-adapting.md`
+  - `ui-verification-worker.md`
 
 - **Evaluators**: `.claude/agents/evaluators/`
   - `phase1-design/` - 7 Design Evaluators
   - `phase2-planner/` - 7 Planner Evaluators
   - `phase3-code/` - 7 Code Evaluators
   - `phase4-deployment/` - 5 Deployment Evaluators
+
+- **Skills**: `.claude/skills/`
+  - `edaf-orchestration/` - Phase workflow patterns (7 files)
+  - `edaf-evaluation/` - Scoring framework and patterns (4 files)
+  - `ui-verification/` - Browser automation patterns (4 files)
+
+- **Commands**: `.claude/commands/`
+  - `/setup` - Interactive configuration wizard
+  - `/edaf-status` - Show current phase and progress
+  - `/edaf-evaluate` - Run evaluators for a phase
+  - `/edaf-verify-ui` - Run UI verification
+  - `/edaf-report` - Display evaluation reports
+
+- **Scripts**: `.claude/scripts/`
+  - `notification.sh` - Play notification sounds
+  - `edaf-status.sh` - Status line integration
+  - `update-edaf-phase.sh` - Update workflow phase
+  - `check-evaluator-score.sh` - Validate evaluator scores
+  - `setup-mcp.sh` - Configure MCP chrome-devtools
+  - `verify-ui.sh` - Automated UI verification
+  - `add-frontmatter.sh` - Add YAML frontmatter to docs
+
+- **Configuration**: `.claude/`
+  - `agent-models.yml` - Model recommendations
+  - `edaf-config.yml` - EDAF settings
+  - `settings.json.example` - Claude Code settings
 
 ---
 
@@ -399,4 +467,4 @@ For issues, questions, or feedback:
 
 **Status**: ✅ Production Ready
 **Maintained**: Yes
-**Last Updated**: 2025-11-10
+**Last Updated**: 2025-12-21
