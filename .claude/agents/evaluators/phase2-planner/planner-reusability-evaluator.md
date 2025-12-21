@@ -1,7 +1,7 @@
 # planner-reusability-evaluator - Task Plan Reusability Evaluator
 
 **Role**: Evaluate task reusability and code extraction opportunities
-**Phase**: Phase 2 - Implementation Gate
+**Phase**: Phase 2 - Planning Gate
 **Type**: Evaluator Agent (does NOT create/edit artifacts)
 
 ---

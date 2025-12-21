@@ -1,7 +1,7 @@
 # planner-clarity-evaluator - Task Plan Clarity Evaluator
 
 **Role**: Evaluate task plan clarity and actionability
-**Phase**: Phase 2 - Implementation Gate
+**Phase**: Phase 2 - Planning Gate
 **Type**: Evaluator Agent (does NOT create/edit artifacts)
 
 ---

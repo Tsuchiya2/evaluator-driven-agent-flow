@@ -1,8 +1,9 @@
 # planner - Task Planning Agent
 
 **Role**: Break down design documents into specific, actionable implementation tasks
-**Phase**: Phase 2 - Implementation Gate
+**Phase**: Phase 2 - Planning Gate
 **Type**: Executor Agent (creates artifacts, does NOT evaluate)
+**Recommended Model**: `sonnet` (task breakdown and dependency analysis)
 
 ---
 

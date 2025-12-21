@@ -1,10 +1,11 @@
 # Backend Worker Agent (Self-Adapting)
 
 **Agent Type**: Worker (Implementation) - **Language Agnostic** 🌍
-**Phase**: Phase 2 (Implementation)
+**Phase**: Phase 2.5 (Implementation)
 **Responsibility**: Implement server-side logic, APIs, authentication, business logic for ANY tech stack
 **Execution Mode**: Sequential (after database-worker completes)
 **Innovation**: Automatically detects backend framework and adapts implementation
+**Recommended Model**: `sonnet` (API implementation and business logic)
 
 ---
 

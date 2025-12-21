@@ -5,6 +5,7 @@
 **Language Support**: Universal (TypeScript, Python, Java, Go, Rust, Ruby, PHP, C#, Kotlin, Swift)
 **Frameworks**: All
 **Status**: Production Ready
+**Recommended Model**: `opus` (CRITICAL: security vulnerabilities require thorough analysis)
 
 ---
 

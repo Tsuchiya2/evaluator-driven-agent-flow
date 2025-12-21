@@ -1,10 +1,11 @@
 # Database Worker Agent (Self-Adapting)
 
 **Agent Type**: Worker (Implementation) - **Language Agnostic** 🌍
-**Phase**: Phase 2 (Implementation)
+**Phase**: Phase 2.5 (Implementation)
 **Responsibility**: Implement database schema, models, and migrations for ANY tech stack
 **Execution Mode**: First (no dependencies, other workers depend on this)
 **Innovation**: Automatically detects project tech stack and adapts implementation
+**Recommended Model**: `sonnet` (database schema design and migration generation)
 
 ---
 

@@ -1,0 +1,376 @@
+# EDAF Agent Model Configuration
+# Updated for Claude Code 2.0.69+ with Opus 4.5 support
+#
+# Models (in order of capability):
+#   - opus: Most capable, complex reasoning, security analysis, architectural decisions
+#   - sonnet: Balanced performance, standard code generation and analysis
+#   - haiku: Fastest, pattern matching, checklist verification, simple checks
+#
+# Selection Criteria:
+#   - Opus: Critical decisions, security, complex architecture
+#   - Sonnet: Code generation, standard analysis, moderate complexity
+#   - Haiku: Validation, existence checks, pattern matching
+
+# =============================================================================
+# CORE AGENTS
+# =============================================================================
+
+designer:
+  model: opus
+  reason: "Critical architectural decisions require highest reasoning capability"
+  tasks:
+    - System architecture design
+    - Technology stack decisions
+    - Scalability planning
+    - Security architecture
+
+planner:
+  model: sonnet
+  reason: "Task breakdown is important but doesn't require Opus-level reasoning"
+  tasks:
+    - Task decomposition
+    - Dependency analysis
+    - Resource allocation
+    - Timeline planning
+
+# =============================================================================
+# WORKER AGENTS (Phase 2.5)
+# =============================================================================
+
+workers:
+  database-worker-v1-self-adapting:
+    model: sonnet
+    reason: "Database schema design requires solid reasoning but is well-defined"
+    tasks:
+      - Schema design
+      - Migration generation
+      - Index optimization
+      - Relationship modeling
+
+  backend-worker-v1-self-adapting:
+    model: sonnet
+    reason: "API implementation follows established patterns"
+    tasks:
+      - REST/GraphQL APIs
+      - Business logic
+      - Authentication flows
+      - Data validation
+
+  frontend-worker-v1-self-adapting:
+    model: sonnet
+    reason: "UI component implementation is pattern-based"
+    tasks:
+      - Component creation
+      - State management
+      - Form handling
+      - Styling
+
+  test-worker-v1-self-adapting:
+    model: sonnet
+    reason: "Test generation requires understanding code context"
+    tasks:
+      - Unit tests
+      - Integration tests
+      - E2E tests
+      - Test fixtures
+
+# =============================================================================
+# PHASE 1: DESIGN EVALUATORS
+# =============================================================================
+
+evaluators:
+  phase1:
+    design-consistency-evaluator:
+      model: haiku
+      reason: "Pattern matching for naming conventions - fast check"
+      complexity: low
+      tasks:
+        - Naming convention validation
+        - Structure consistency
+        - Terminology alignment
+
+    design-extensibility-evaluator:
+      model: sonnet
+      reason: "Requires understanding of architectural patterns"
+      complexity: medium
+      tasks:
+        - Extension point analysis
+        - Plugin architecture review
+        - Future growth assessment
+
+    design-goal-alignment-evaluator:
+      model: sonnet
+      reason: "Comparing requirements against design requires reasoning"
+      complexity: medium
+      tasks:
+        - Requirements coverage
+        - Feature completeness
+        - Scope validation
+
+    design-maintainability-evaluator:
+      model: sonnet
+      reason: "Complexity analysis requires code understanding"
+      complexity: medium
+      tasks:
+        - Modularity assessment
+        - Coupling analysis
+        - Cohesion evaluation
+
+    design-observability-evaluator:
+      model: haiku
+      reason: "Checklist-based verification of logging/monitoring"
+      complexity: low
+      tasks:
+        - Logging presence
+        - Metrics definition
+        - Tracing hooks
+
+    design-reliability-evaluator:
+      model: sonnet
+      reason: "Error handling design requires careful analysis"
+      complexity: medium
+      tasks:
+        - Error handling strategy
+        - Failure mode analysis
+        - Recovery procedures
+
+    design-reusability-evaluator:
+      model: haiku
+      reason: "Component identification is pattern-based"
+      complexity: low
+      tasks:
+        - Shared component identification
+        - Library extraction candidates
+        - DRY principle check
+
+  # ===========================================================================
+  # PHASE 2: PLANNING EVALUATORS
+  # ===========================================================================
+
+  phase2:
+    planner-clarity-evaluator:
+      model: haiku
+      reason: "Text clarity is a straightforward check"
+      complexity: low
+      tasks:
+        - Description clarity
+        - Ambiguity detection
+        - Action verb presence
+
+    planner-deliverable-structure-evaluator:
+      model: haiku
+      reason: "Structure validation is pattern matching"
+      complexity: low
+      tasks:
+        - Output format validation
+        - Completeness check
+        - Template compliance
+
+    planner-dependency-evaluator:
+      model: sonnet
+      reason: "Dependency graph analysis requires reasoning"
+      complexity: medium
+      tasks:
+        - Circular dependency detection
+        - Critical path analysis
+        - Blocking task identification
+
+    planner-goal-alignment-evaluator:
+      model: sonnet
+      reason: "Design-to-plan comparison requires understanding both"
+      complexity: medium
+      tasks:
+        - Design coverage
+        - Feature mapping
+        - Gap analysis
+
+    planner-granularity-evaluator:
+      model: haiku
+      reason: "Task size checking is metric-based"
+      complexity: low
+      tasks:
+        - Task size validation
+        - Complexity scoring
+        - Effort estimation check
+
+    planner-responsibility-alignment-evaluator:
+      model: haiku
+      reason: "Assignment validation is rule-based"
+      complexity: low
+      tasks:
+        - Worker assignment accuracy
+        - Skill matching
+        - Workload balance
+
+    planner-reusability-evaluator:
+      model: haiku
+      reason: "Pattern identification for common tasks"
+      complexity: low
+      tasks:
+        - Common pattern detection
+        - Template opportunities
+        - Shared logic identification
+
+  # ===========================================================================
+  # PHASE 3: CODE EVALUATORS
+  # ===========================================================================
+
+  phase3:
+    code-quality-evaluator-v1-self-adapting:
+      model: sonnet
+      reason: "Code pattern analysis requires understanding context"
+      complexity: medium
+      tasks:
+        - Linting interpretation
+        - Type coverage analysis
+        - Code smell detection
+
+    code-testing-evaluator-v1-self-adapting:
+      model: sonnet
+      reason: "Test quality requires understanding test purpose"
+      complexity: medium
+      tasks:
+        - Coverage analysis
+        - Test pyramid validation
+        - Assertion quality
+
+    code-security-evaluator-v1-self-adapting:
+      model: opus
+      reason: "CRITICAL: Security vulnerabilities can have severe consequences"
+      complexity: high
+      priority: critical
+      tasks:
+        - OWASP Top 10 detection
+        - SQL injection analysis
+        - XSS vulnerability detection
+        - Authentication bypass checks
+        - Secret leak detection
+        - Dependency vulnerability scanning
+
+    code-documentation-evaluator-v1-self-adapting:
+      model: haiku
+      reason: "Documentation presence is a simple existence check"
+      complexity: low
+      tasks:
+        - JSDoc/docstring presence
+        - README completeness
+        - API documentation coverage
+
+    code-maintainability-evaluator-v1-self-adapting:
+      model: sonnet
+      reason: "Complexity metrics require code understanding"
+      complexity: medium
+      tasks:
+        - Cyclomatic complexity
+        - SOLID principle adherence
+        - Code duplication detection
+
+    code-performance-evaluator-v1-self-adapting:
+      model: sonnet
+      reason: "Performance anti-pattern detection requires analysis"
+      complexity: medium
+      tasks:
+        - N+1 query detection
+        - Memory leak patterns
+        - Algorithmic complexity
+
+    code-implementation-alignment-evaluator-v1-self-adapting:
+      model: sonnet
+      reason: "Requirements-to-code comparison needs both contexts"
+      complexity: medium
+      tasks:
+        - Feature completeness
+        - API contract compliance
+        - Behavior verification
+
+  # ===========================================================================
+  # PHASE 4: DEPLOYMENT EVALUATORS
+  # ===========================================================================
+
+  phase4:
+    deployment-readiness-evaluator:
+      model: haiku
+      reason: "CI/CD checklist verification"
+      complexity: low
+      tasks:
+        - Pipeline configuration
+        - Environment variables
+        - Build process validation
+
+    production-security-evaluator:
+      model: opus
+      reason: "CRITICAL: Production security requires thorough analysis"
+      complexity: high
+      priority: critical
+      tasks:
+        - Secrets management audit
+        - Network security review
+        - Access control validation
+        - Compliance checking
+        - Hardening verification
+
+    observability-evaluator:
+      model: haiku
+      reason: "Monitoring setup is checklist-based"
+      complexity: low
+      tasks:
+        - Logging configuration
+        - Metrics collection
+        - Alerting rules
+
+    performance-benchmark-evaluator:
+      model: sonnet
+      reason: "Benchmark analysis requires interpretation"
+      complexity: medium
+      tasks:
+        - Load test results
+        - Response time analysis
+        - Resource utilization
+
+    rollback-plan-evaluator:
+      model: haiku
+      reason: "Procedure documentation check"
+      complexity: low
+      tasks:
+        - Rollback steps presence
+        - Recovery time objectives
+        - Data backup verification
+
+# =============================================================================
+# MODEL USAGE SUMMARY
+# =============================================================================
+#
+# Opus (3 agents - for critical decisions):
+#   - designer (architecture)
+#   - code-security-evaluator (security vulnerabilities)
+#   - production-security-evaluator (production security)
+#
+# Sonnet (15 agents - for standard analysis):
+#   - planner
+#   - All 4 workers
+#   - 4 design evaluators (extensibility, goal-alignment, maintainability, reliability)
+#   - 2 planner evaluators (dependency, goal-alignment)
+#   - 5 code evaluators (quality, testing, maintainability, performance, implementation)
+#   - 1 deployment evaluator (performance-benchmark)
+#
+# Haiku (16 agents - for fast validation):
+#   - 3 design evaluators (consistency, observability, reusability)
+#   - 5 planner evaluators (clarity, deliverable, granularity, responsibility, reusability)
+#   - 1 code evaluator (documentation)
+#   - 3 deployment evaluators (readiness, observability, rollback)
+#
+# =============================================================================
+
+# Usage Example:
+#
+# Task({
+#   subagent_type: "designer",
+#   model: "opus",  // Use Opus for critical design decisions
+#   prompt: "Design authentication system architecture"
+# })
+#
+# Task({
+#   subagent_type: "code-security-evaluator-v1-self-adapting",
+#   model: "opus",  // ALWAYS use Opus for security evaluation
+#   prompt: "Evaluate security of authentication implementation"
+# })

@@ -1,7 +1,3 @@
----
-description: EDAF v1.0 Configuration and Language Preferences
----
-
 # EDAF v1.0 - Claude Code Configuration
 
 ## Language Preferences
@@ -17,267 +13,158 @@ Do not edit manually - run `/setup` again to change preferences.
 
 ---
 
-## EDAF 4-Phase Gate System - IMPORTANT
+## EDAF 4-Phase Gate System
 
-**When the user requests to implement a feature using "エージェントフロー" (agent flow) or "EDAF", you MUST follow this exact workflow:**
+**When the user requests to implement a feature using "エージェントフロー" (agent flow) or "EDAF", follow this workflow:**
+
+> **Detailed instructions for each phase are in `.claude/skills/edaf-orchestration/`**
+
+### Quick Reference
+
+| Phase | Agent | Evaluators | Pass Criteria |
+|-------|-------|------------|---------------|
+| 1. Design | designer | 7 design evaluators | All ≥ 7.0/10 |
+| 2. Planning | planner | 7 planner evaluators | All ≥ 7.0/10 |
+| 2.5 Implementation | 4 workers | - | Code complete |
+| 3. Code Review | - | 7 code evaluators + UI verification | All ≥ 7.0/10 |
+| 4. Deployment | - | 5 deployment evaluators | All ≥ 7.0/10 |
 
 ### Phase 1: Design Gate
-1. Launch `designer` agent via Task tool
-2. Designer creates design document in `docs/designs/{feature-slug}.md`
-3. Launch ALL 7 design evaluators in parallel via Task tool:
-   - design-consistency-evaluator
-   - design-extensibility-evaluator
-   - design-goal-alignment-evaluator
-   - design-maintainability-evaluator
-   - design-observability-evaluator
-   - design-reliability-evaluator
-   - design-reusability-evaluator
-4. Review evaluation results
-5. If evaluators request changes, ask designer to revise
-6. Repeat until all evaluators approve (≥ 7.0/10.0)
+→ See `.claude/skills/edaf-orchestration/PHASE1-DESIGN.md`
+
+1. Launch `designer` agent
+2. Design document → `docs/designs/{feature-slug}.md`
+3. Run 7 design evaluators in parallel
+4. Revise until all pass
 
 ### Phase 2: Planning Gate
-1. Launch `planner` agent via Task tool
-2. Planner creates task plan in `docs/plans/{feature-slug}-tasks.md`
-3. Launch ALL 7 planner evaluators in parallel via Task tool:
-   - planner-clarity-evaluator
-   - planner-deliverable-structure-evaluator
-   - planner-dependency-evaluator
-   - planner-goal-alignment-evaluator
-   - planner-granularity-evaluator
-   - planner-responsibility-alignment-evaluator
-   - planner-reusability-evaluator
-4. Review evaluation results
-5. If evaluators request changes, ask planner to revise
-6. Repeat until all evaluators approve (≥ 7.0/10.0)
+→ See `.claude/skills/edaf-orchestration/PHASE2-PLANNING.md`
+
+1. Launch `planner` agent
+2. Task plan → `docs/plans/{feature-slug}-tasks.md`
+3. Run 7 planner evaluators in parallel
+4. Revise until all pass
 
 ### Phase 2.5: Implementation
-1. Launch appropriate worker agents via Task tool based on task plan:
-   - database-worker-v1-self-adapting (for database models)
-   - backend-worker-v1-self-adapting (for backend logic)
-   - frontend-worker-v1-self-adapting (for UI components)
-   - test-worker-v1-self-adapting (for tests)
-2. Workers implement code according to task plan
-3. Play notification: `bash .claude/scripts/notification.sh "Implementation complete" WarblerSong`
+→ See `.claude/skills/edaf-orchestration/PHASE25-IMPLEMENTATION.md`
+
+Launch workers in order:
+1. `database-worker-v1-self-adapting`
+2. `backend-worker-v1-self-adapting`
+3. `frontend-worker-v1-self-adapting`
+4. `test-worker-v1-self-adapting`
 
 ### Phase 3: Code Review Gate
-1. Launch ALL 7 code evaluators in parallel via Task tool:
-   - code-quality-evaluator-v1-self-adapting
-   - code-testing-evaluator-v1-self-adapting
-   - code-security-evaluator-v1-self-adapting
-   - code-documentation-evaluator-v1-self-adapting
-   - code-maintainability-evaluator-v1-self-adapting
-   - code-performance-evaluator-v1-self-adapting
-   - code-implementation-alignment-evaluator-v1-self-adapting
-2. Review evaluation results
-3. If evaluators find issues, fix them
-4. Repeat until all evaluators approve (≥ 7.0/10.0)
-5. **UI/UX Verification (if frontend files were modified):**
-   - **CRITICAL: This is a MANDATORY step that CANNOT be skipped**
-   - **Step 1: Detect Frontend Changes**
-     - Check if any frontend files were modified:
-       - Components: `**/components/**/*`, `**/pages/**/*`, `**/views/**/*`
-       - Styles: `**/*.css`, `**/*.scss`, `**/*.sass`, `**/*.less`
-       - Scripts: `**/src/**/*.{tsx,jsx,ts,js,vue,svelte}`
-     - If NO frontend files modified, skip to step 6
-     - If YES frontend files modified, proceed to Step 2
+→ See `.claude/skills/edaf-orchestration/PHASE3-CODE.md`
 
-   - **Step 2: Create UI Verification Todo List**
-     - Use TodoWrite tool to create dynamic checklist
-     - Ask user which pages/components need verification (AskUserQuestion)
-     - Ask user if login is required (AskUserQuestion with options: Yes/No/Mixed)
-     - If login required, collect credentials securely
-     - Generate checklist based on answers (see template below)
-
-   - **Step 3: Execute UI Verification Checklist**
-     - Complete EACH todo item sequentially
-     - Mark each item as completed only after successful execution
-     - DO NOT skip any items in the checklist
-
-   - **Step 4: Generate Verification Report**
-     - Copy template from: `.claude/templates/ui-verification-report-template.md`
-     - Fill in all sections with actual verification results
-     - Save to: `docs/reports/phase3-ui-verification-{feature-name}.md`
-     - Include ALL screenshots with relative paths
-
-   - **Step 5: Run Verification Script**
-     - Execute: `bash .claude/scripts/verify-ui.sh {feature-name}`
-     - If script FAILS, fix issues and re-run
-     - If script PASSES, proceed to step 6
-
-   **UI Verification Checklist Template:**
-   ```
-   Prerequisites:
-   - [ ] Create directory: docs/screenshots/{feature-name}/
-   - [ ] Confirm development server running
-   - [ ] Collect login info (if needed)
-
-   Authentication (if required):
-   - [ ] Navigate to login page
-   - [ ] Fill credentials and login
-   - [ ] Screenshot: login-success.png
-
-   For EACH modified page:
-   - [ ] Navigate to {page-url}
-   - [ ] Screenshot: {page-slug}.png
-   - [ ] Verify layout and design compliance
-   - [ ] Test interactive elements (forms, buttons, etc.)
-   - [ ] Screenshot: {page-slug}-{action}.png (for each action)
-   - [ ] Check browser console for errors
-
-   Final Steps:
-   - [ ] Generate report: docs/reports/phase3-ui-verification-{feature-name}.md
-   - [ ] Run script: bash .claude/scripts/verify-ui.sh {feature-name}
-   - [ ] Verify script output shows ✅ PASSED
-   ```
-
-   **Only proceed to step 6 if:**
-   - ✅ All todos completed
-   - ✅ Verification report exists in docs/reports/
-   - ✅ All screenshots saved in docs/screenshots/
-   - ✅ Verification script passes
-
-6. Play notification: `bash .claude/scripts/notification.sh "Code review passed" WarblerSong`
+1. Run 7 code evaluators in parallel
+2. Fix issues until all pass
+3. **If frontend modified**: Launch `ui-verification-worker`
+   - See `.claude/skills/ui-verification/` for patterns
+   - Screenshots → `docs/screenshots/{feature-slug}/`
+   - Report → `docs/reports/phase3-ui-verification-{feature-slug}.md`
 
 ### Phase 4: Deployment Gate (Optional)
-1. Launch ALL 5 deployment evaluators in parallel via Task tool:
-   - deployment-readiness-evaluator
-   - production-security-evaluator
-   - observability-evaluator
-   - performance-benchmark-evaluator
-   - rollback-plan-evaluator
-2. Review evaluation results
-3. If evaluators find issues, fix them
-4. Repeat until all evaluators approve (≥ 7.0/10.0)
-5. Play notification: `bash .claude/scripts/notification.sh "Deployment ready" WarblerSong`
+→ See `.claude/skills/edaf-orchestration/PHASE4-DEPLOYMENT.md`
 
-**CRITICAL RULES:**
-- NEVER skip phases
-- NEVER launch evaluators directly - always use Task tool with subagent_type
-- ALWAYS launch all evaluators in each phase in parallel
-- ALWAYS wait for ALL evaluators to approve before proceeding to next phase
-- ALWAYS play notification sounds after each phase completes
+1. Run 5 deployment evaluators in parallel
+2. Fix issues until all pass
 
 ---
 
-## Instructions for Claude Code
+## Critical Rules
 
-When working with EDAF Workers and Evaluators, please follow these rules:
+1. **NEVER skip phases**
+2. **ALWAYS launch evaluators in parallel** (use Task tool)
+3. **ALWAYS wait for ALL evaluators to approve** (≥ 7.0/10)
+4. **Use `ui-verification-worker`** for frontend verification (Phase 3)
 
-### 1. Terminal Output Language
+---
 
-**Respond to the user in ENGLISH for all terminal output, messages, and explanations.**
+## Available Commands
 
-Examples:
-- "✅ Database model created"
-- "📋 Starting code quality evaluation"
-- "❌ Error: File not found"
+| Command | Description |
+|---------|-------------|
+| `/setup` | Configure language preferences and project settings |
+| `/edaf-status` | Show current phase and progress |
+| `/edaf-evaluate <phase> <feature>` | Run evaluators for a phase |
+| `/edaf-verify-ui <feature>` | Run UI verification |
+| `/edaf-report <feature>` | Display evaluation reports |
 
-### 2. Documentation Language
+---
 
-**Generate ALL documentation in ENGLISH.**
+## Skills Reference
 
-When creating markdown files, API documentation, README files, or code comments:
-- Write in English
-- Use standard English technical terms
-- Provide English examples
+| Skill | Purpose | Location |
+|-------|---------|----------|
+| edaf-orchestration | Phase workflow patterns | `.claude/skills/edaf-orchestration/` |
+| edaf-evaluation | Scoring framework | `.claude/skills/edaf-evaluation/` |
+| ui-verification | Browser automation patterns | `.claude/skills/ui-verification/` |
 
-Example:
-```markdown
-# User Model
+---
 
-## Overview
+## Workers & Evaluators
 
-This model manages user information.
+### Workers (Phase 2.5)
+- `database-worker-v1-self-adapting` - Database models, migrations
+- `backend-worker-v1-self-adapting` - APIs, business logic
+- `frontend-worker-v1-self-adapting` - UI components
+- `test-worker-v1-self-adapting` - Unit/integration tests
+- `ui-verification-worker` - UI/UX verification (Phase 3)
 
-## Fields
+### Evaluators
 
-- `email`: Email address (required)
-- `password`: Password (hashed)
-```
+**Phase 1 (Design):** design-{consistency, extensibility, goal-alignment, maintainability, observability, reliability, reusability}-evaluator
+
+**Phase 2 (Planning):** planner-{clarity, deliverable-structure, dependency, goal-alignment, granularity, responsibility-alignment, reusability}-evaluator
+
+**Phase 3 (Code):** code-{quality, testing, security, documentation, maintainability, performance, implementation-alignment}-evaluator-v1-self-adapting
+
+**Phase 4 (Deployment):** {deployment-readiness, production-security, observability, performance-benchmark, rollback-plan}-evaluator
+
+---
+
+## Model Selection
+
+| Model | Agents | Use Case |
+|-------|--------|----------|
+| `opus` | Designer, Security Evaluators | Critical decisions |
+| `sonnet` | Planner, Workers, Most Evaluators | Standard tasks |
+| `haiku` | Simple Evaluators | Pattern checks |
+
+See `.claude/agent-models.yml` for details.
 
 ---
 
 ## Notification System
 
-EDAF includes a sound notification system to alert you when tasks complete or errors occur.
+Automatic notifications via hooks in `.claude/settings.json`:
 
-### How to Use Notifications
+| Event | Sound |
+|-------|-------|
+| Evaluator completes | WarblerSong |
+| Worker completes | WarblerSong |
+| Task completes | CatMeow |
 
-After completing a task or evaluation, play a notification sound:
-
-```bash
-bash .claude/scripts/notification.sh "Task completed" WarblerSong
-```
-
-**Available Sounds:**
-- `WarblerSong` - Pleasant bird song (recommended for task completion)
-- `CatMeow` - Cat meow (recommended for errors or attention needed)
-- `Glass` - System glass sound (macOS only)
-
-**When to Use:**
-- After a Worker completes implementation: `WarblerSong`
-- After an Evaluator completes evaluation: `WarblerSong`
-- When an error occurs: `CatMeow`
-- When user attention is needed: `CatMeow`
-
-**Example:**
-```bash
-# After database-worker completes
-bash .claude/scripts/notification.sh "Database models created" WarblerSong
-
-# After evaluator finds issues
-bash .claude/scripts/notification.sh "Evaluation complete - issues found" CatMeow
-```
-
-**Configuration:**
-- Notification settings are in `.claude/edaf-config.yml`
-- Sound files are in `.claude/sounds/`
-- Notification script is at `.claude/scripts/notification.sh`
-- Plays 3 times with 1.8 second intervals for comfortable notification
+Manual: `bash .claude/scripts/notification.sh "Message" WarblerSong`
 
 ---
 
-## Worker-Specific Instructions
+## Instructions for Claude Code
 
-### Database Worker
+### Terminal Output Language
+Respond in **ENGLISH** for all output.
 
-When generating database models:
-- Follow the documentation language setting above
-- Use appropriate naming conventions for the target language
-- Generate migration files with proper comments
+### Documentation Language
+Generate documentation in **ENGLISH**.
 
-### Backend Worker
+### Worker Instructions
+All workers: Follow language settings, use project naming conventions.
 
-When generating backend code:
-- Follow the documentation language setting above
-- Generate API documentation in the specified language
-- Use proper error messages in the terminal output language
-
-### Frontend Worker
-
-When generating frontend components:
-- Follow the documentation language setting above
-- Generate component documentation in the specified language
-- Use proper UI text in the terminal output language
-
-### Test Worker
-
-When generating tests:
-- Follow the documentation language setting above
-- Write test descriptions in the specified language
-- Use proper assertion messages in the terminal output language
-
----
-
-## Evaluator-Specific Instructions
-
-All evaluators should:
-- Output evaluation results in the terminal output language
-- Generate reports in the documentation language
-- Use proper scoring explanations in the terminal output language
+### Evaluator Instructions
+All evaluators: Output in terminal language, generate reports in documentation language.
 
 ---
 
 **Last Updated**: Auto-generated by `/setup` command
-**Configuration File**: `.claude/edaf-config.yml`
+**Configuration**: `.claude/edaf-config.yml`

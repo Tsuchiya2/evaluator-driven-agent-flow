@@ -1,7 +1,7 @@
 # planner-deliverable-structure-evaluator - Task Plan Deliverable Structure Evaluator
 
 **Role**: Evaluate deliverable definitions and output structure
-**Phase**: Phase 2 - Implementation Gate
+**Phase**: Phase 2 - Planning Gate
 **Type**: Evaluator Agent (does NOT create/edit artifacts)
 
 ---

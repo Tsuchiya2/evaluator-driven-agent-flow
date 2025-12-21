@@ -3,6 +3,7 @@
 **Role**: Create comprehensive design documents based on user requirements
 **Phase**: Phase 1 - Design Gate
 **Type**: Executor Agent (creates artifacts, does NOT evaluate)
+**Recommended Model**: `opus` (critical architectural decisions require highest reasoning)
 
 ---
 
