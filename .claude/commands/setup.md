@@ -1009,5 +1009,5 @@ No templates, no maintenance, infinite scalability. 🚀
 **For more information / 詳細情報**:
 
 - GitHub: https://github.com/Tsuchiya2/evaluator-driven-agent-flow
-- Workers / ワーカー: `.claude/agents/`
-- Evaluators / エバリュエーター: `.claude/evaluators/`
+- Workers / ワーカー: `.claude/agents/workers/`
+- Evaluators / エバリュエーター: `.claude/agents/evaluators/`

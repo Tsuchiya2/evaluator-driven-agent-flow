@@ -1,7 +1,7 @@
 # planner-goal-alignment-evaluator - Task Plan Goal Alignment Evaluator
 
 **Role**: Evaluate alignment between task plan and original requirements
-**Phase**: Phase 2 - Implementation Gate
+**Phase**: Phase 2 - Planning Gate
 **Type**: Evaluator Agent (does NOT create/edit artifacts)
 
 ---

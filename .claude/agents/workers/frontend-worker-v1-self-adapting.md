@@ -1,10 +1,11 @@
 # Frontend Worker Agent (Self-Adapting)
 
 **Agent Type**: Worker (Implementation) - **Framework Agnostic** 🌍
-**Phase**: Phase 2 (Implementation)
+**Phase**: Phase 2.5 (Implementation)
 **Responsibility**: Implement UI components, forms, client-side logic for ANY frontend framework
 **Execution Mode**: Parallel (after database-worker, can run with backend-worker)
 **Innovation**: Automatically detects frontend framework and adapts implementation
+**Recommended Model**: `sonnet` (UI component implementation)
 
 ---
 

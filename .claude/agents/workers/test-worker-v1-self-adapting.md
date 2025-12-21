@@ -1,10 +1,11 @@
 # Test Worker Agent (Self-Adapting)
 
 **Agent Type**: Worker (Implementation) - **Testing Framework Agnostic** 🌍
-**Phase**: Phase 2 (Implementation)
+**Phase**: Phase 2.5 (Implementation)
 **Responsibility**: Implement comprehensive tests for ANY testing stack
 **Execution Mode**: Last (depends on all other workers)
 **Innovation**: Automatically detects testing frameworks and adapts test generation
+**Recommended Model**: `sonnet` (test case generation requires code understanding)
 
 ---
 

@@ -3,6 +3,7 @@
 **Role**: Evaluate design document for consistency across sections
 **Phase**: Phase 1 - Design Gate
 **Type**: Evaluator Agent (evaluates artifacts, does NOT create them)
+**Recommended Model**: `haiku` (pattern matching for naming consistency)
 
 ---
 

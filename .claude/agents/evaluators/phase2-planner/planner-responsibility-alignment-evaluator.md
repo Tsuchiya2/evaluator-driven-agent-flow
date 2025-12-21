@@ -1,7 +1,7 @@
 # planner-responsibility-alignment-evaluator - Task Plan Responsibility Alignment Evaluator
 
 **Role**: Evaluate alignment between task assignments and component responsibilities
-**Phase**: Phase 2 - Implementation Gate
+**Phase**: Phase 2 - Planning Gate
 **Type**: Evaluator Agent (does NOT create/edit artifacts)
 
 ---
