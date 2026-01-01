@@ -61,7 +61,7 @@ if [ -f "$AGENTS_DIR/designer.md" ]; then
   add_frontmatter \
     "$AGENTS_DIR/designer.md" \
     "designer" \
-    "Creates comprehensive design documents based on user requirements (Phase 1)" \
+    "Creates comprehensive design documents based on user requirements (Phase 2)" \
     "Read, Write, Grep, Glob"
 fi
 
@@ -69,7 +69,7 @@ if [ -f "$AGENTS_DIR/planner.md" ]; then
   add_frontmatter \
     "$AGENTS_DIR/planner.md" \
     "planner" \
-    "Breaks down design documents into specific, actionable implementation tasks (Phase 2)" \
+    "Breaks down design documents into specific, actionable implementation tasks (Phase 3)" \
     "Read, Write, Grep, Glob"
 fi
 
@@ -112,8 +112,8 @@ fi
 
 echo ""
 
-# Process Design Evaluators (Phase 1)
-echo -e "${BLUE}📊 Processing Design Evaluators (Phase 1)...${NC}"
+# Process Design Evaluators (Phase 2)
+echo -e "${BLUE}📊 Processing Design Evaluators (Phase 2)...${NC}"
 
 for evaluator in \
   "design-consistency-evaluator:Evaluates design document for consistency across sections" \
@@ -131,15 +131,15 @@ do
     add_frontmatter \
       "$file" \
       "$name" \
-      "$desc (Phase 1: Design Gate)" \
+      "$desc (Phase 2: Design Gate)" \
       "Read, Write, Grep, Glob"
   fi
 done
 
 echo ""
 
-# Process Planner Evaluators (Phase 2)
-echo -e "${BLUE}📊 Processing Planner Evaluators (Phase 2)...${NC}"
+# Process Planner Evaluators (Phase 3)
+echo -e "${BLUE}📊 Processing Planner Evaluators (Phase 3)...${NC}"
 
 for evaluator in \
   "planner-clarity-evaluator:Evaluates task plan for clarity and understandability" \
@@ -157,15 +157,15 @@ do
     add_frontmatter \
       "$file" \
       "$name" \
-      "$desc (Phase 2: Planning Gate)" \
+      "$desc (Phase 3: Planning Gate)" \
       "Read, Write, Grep, Glob"
   fi
 done
 
 echo ""
 
-# Process Code Evaluators (Phase 3)
-echo -e "${BLUE}📊 Processing Code Evaluators (Phase 3)...${NC}"
+# Process Code Evaluators (Phase 5)
+echo -e "${BLUE}📊 Processing Code Evaluators (Phase 5)...${NC}"
 
 for evaluator in \
   "code-quality-evaluator-v1-self-adapting:Auto-detects linter/type checker and evaluates code quality" \
@@ -183,15 +183,15 @@ do
     add_frontmatter \
       "$file" \
       "$name" \
-      "$desc (Phase 3: Code Review Gate)" \
+      "$desc (Phase 5: Code Review Gate)" \
       "Read, Write, Grep, Glob, Bash"
   fi
 done
 
 echo ""
 
-# Process Deployment Evaluators (Phase 4)
-echo -e "${BLUE}📊 Processing Deployment Evaluators (Phase 4)...${NC}"
+# Process Deployment Evaluators (Phase 7)
+echo -e "${BLUE}📊 Processing Deployment Evaluators (Phase 7)...${NC}"
 
 for evaluator in \
   "deployment-readiness-evaluator:Evaluates deployment readiness and preparation" \
@@ -207,7 +207,7 @@ do
     add_frontmatter \
       "$file" \
       "$name" \
-      "$desc (Phase 4: Deployment Gate)" \
+      "$desc (Phase 7: Deployment Gate)" \
       "Read, Write, Grep, Glob, Bash"
   fi
 done

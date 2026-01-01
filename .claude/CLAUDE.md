@@ -13,140 +13,89 @@ Do not edit manually - run `/setup` again to change preferences.
 
 ---
 
-## EDAF 4-Phase Gate System
+## EDAF 7-Phase Gate System
 
-**When the user requests to implement a feature using "エージェントフロー" (agent flow) or "EDAF", follow this workflow:**
+**When implementing features, fixing bugs, or making changes, automatically follow this workflow:**
 
-> **Detailed instructions for each phase are in `.claude/skills/edaf-orchestration/`**
+> Triggered by natural language requests for implementation work (no need to say "EDAF")
+> Detailed workflows: `.claude/skills/edaf-orchestration/PHASE{1-7}-*.md`
 
 ### Quick Reference
 
 | Phase | Agent | Evaluators | Pass Criteria |
 |-------|-------|------------|---------------|
-| 1. Design | designer | 7 design evaluators | All ≥ 7.0/10 |
-| 2. Planning | planner | 7 planner evaluators | All ≥ 7.0/10 |
-| 2.5 Implementation | 4 workers | - | Code complete |
-| 3. Code Review | - | 7 code evaluators + UI verification | All ≥ 7.0/10 |
-| 4. Deployment | - | 5 deployment evaluators | All ≥ 7.0/10 |
+| 1. Requirements | requirements-gatherer | 7 | All ≥ 8.0/10 |
+| 2. Design | designer | 7 | All ≥ 8.0/10 |
+| 3. Planning | planner | 7 | All ≥ 8.0/10 |
+| 4. Implementation | 4 workers | 1 quality-gate | 10.0 (lint+tests) |
+| 5. Code Review | - | 7 + UI | All ≥ 8.0/10 |
+| 6. Documentation | documentation-worker | 5 | All ≥ 8.0/10 |
+| 7. Deployment | - | 5 | All ≥ 8.0/10 |
 
-### Phase 1: Design Gate
-→ See `.claude/skills/edaf-orchestration/PHASE1-DESIGN.md`
+---
 
-1. Launch `designer` agent
-2. Design document → `docs/designs/{feature-slug}.md`
-3. Run 7 design evaluators in parallel
-4. Revise until all pass
+### EDAF Execution Pattern
 
-### Phase 2: Planning Gate
-→ See `.claude/skills/edaf-orchestration/PHASE2-PLANNING.md`
+**For each phase**:
 
-1. Launch `planner` agent
-2. Task plan → `docs/plans/{feature-slug}-tasks.md`
-3. Run 7 planner evaluators in parallel
-4. Revise until all pass
+1. **Execute** → Run agent/worker to generate artifact
+2. **Evaluate** → Run ALL evaluators in parallel (use Task tool)
+3. **Check** results:
+   - ✅ **ALL pass (≥ threshold)** → Proceed to next phase
+   - ❌ **ANY fail (< threshold)** → Feedback loop:
+     1. Read evaluator reports for specific feedback
+     2. Revise artifact based on feedback
+     3. Re-run ALL evaluators (not just failed ones)
+     4. Repeat until ALL pass (unlimited iterations)
 
-### Phase 2.5: Implementation
-→ See `.claude/skills/edaf-orchestration/PHASE25-IMPLEMENTATION.md`
+**This feedback loop is EDAF's core quality mechanism.**
 
-Launch workers in order:
-1. `database-worker-v1-self-adapting`
-2. `backend-worker-v1-self-adapting`
-3. `frontend-worker-v1-self-adapting`
-4. `test-worker-v1-self-adapting`
+**Artifacts by Phase**:
+- Phase 1: `.steering/{date}-{feature}/idea.md` (requirements)
+- Phase 2: `.steering/{date}-{feature}/design.md` (technical design)
+- Phase 3: `.steering/{date}-{feature}/tasks.md` (task plan)
+- Phase 4: Source code (implementation)
+- Phase 5: `.steering/{date}-{feature}/reports/` (evaluation reports)
+- Phase 6: `docs/` (permanent documentation updates)
+- Phase 7: Deployment configs
 
-### Phase 3: Code Review Gate
-→ See `.claude/skills/edaf-orchestration/PHASE3-CODE.md`
-
-1. Run 7 code evaluators in parallel
-2. Fix issues until all pass
-3. **If frontend modified**: Launch `ui-verification-worker`
-   - See `.claude/skills/ui-verification/` for patterns
-   - Screenshots → `docs/screenshots/{feature-slug}/`
-   - Report → `docs/reports/phase3-ui-verification-{feature-slug}.md`
-
-### Phase 4: Deployment Gate (Optional)
-→ See `.claude/skills/edaf-orchestration/PHASE4-DEPLOYMENT.md`
-
-1. Run 5 deployment evaluators in parallel
-2. Fix issues until all pass
+**Permanent Documentation** (`docs/`):
+- `product-requirements.md`, `functional-design.md`, `development-guidelines.md`
+- `repository-structure.md`, `architecture.md`, `glossary.md`
 
 ---
 
 ## Critical Rules
 
 1. **NEVER skip phases**
-2. **ALWAYS launch evaluators in parallel** (use Task tool)
-3. **ALWAYS wait for ALL evaluators to approve** (≥ 7.0/10)
-4. **Use `ui-verification-worker`** for frontend verification (Phase 3)
+2. **ALWAYS run evaluators in parallel** (use Task tool)
+3. **ALWAYS iterate until ALL evaluators pass** (no exceptions)
+4. **IF any evaluator fails**:
+   - Read evaluator report for specific feedback
+   - Revise artifact based on feedback
+   - Re-run ALL evaluators (not just failed ones)
+   - Repeat until ALL pass (unlimited iterations)
+5. **Phase 1 is mandatory** for new features (requirements gathering)
+6. **Phase 4 quality-gate is ultra-strict** (10.0 = zero lint errors/warnings + all tests pass)
+7. **UI verification required** if frontend modified (Phase 5)
 
 ---
 
-## Available Commands
+## Component Discovery
 
-| Command | Description |
-|---------|-------------|
-| `/setup` | Configure language preferences and project settings |
-| `/edaf-status` | Show current phase and progress |
-| `/edaf-evaluate <phase> <feature>` | Run evaluators for a phase |
-| `/edaf-verify-ui <feature>` | Run UI verification |
-| `/edaf-report <feature>` | Display evaluation reports |
+**All components are auto-discovered from file system. No manual listing needed.**
 
----
+**Locations**:
+- **Agents**: `.claude/agents/*.md` + `.claude/agents/workers/*.md`
+- **Evaluators**: `.claude/agents/evaluators/phase{1-7}-*/*.md`
+- **Skills**: `.claude/skills/*/SKILL.md` (coding standards, workflows)
+- **Commands**: `.claude/commands/*.md` (e.g., `/review-standards`)
+- **Config**: `.claude/edaf-config.yml`, `.claude/agent-models.yml`
 
-## Skills Reference
-
-| Skill | Purpose | Location |
-|-------|---------|----------|
-| edaf-orchestration | Phase workflow patterns | `.claude/skills/edaf-orchestration/` |
-| edaf-evaluation | Scoring framework | `.claude/skills/edaf-evaluation/` |
-| ui-verification | Browser automation patterns | `.claude/skills/ui-verification/` |
-
----
-
-## Workers & Evaluators
-
-### Workers (Phase 2.5)
-- `database-worker-v1-self-adapting` - Database models, migrations
-- `backend-worker-v1-self-adapting` - APIs, business logic
-- `frontend-worker-v1-self-adapting` - UI components
-- `test-worker-v1-self-adapting` - Unit/integration tests
-- `ui-verification-worker` - UI/UX verification (Phase 3)
-
-### Evaluators
-
-**Phase 1 (Design):** design-{consistency, extensibility, goal-alignment, maintainability, observability, reliability, reusability}-evaluator
-
-**Phase 2 (Planning):** planner-{clarity, deliverable-structure, dependency, goal-alignment, granularity, responsibility-alignment, reusability}-evaluator
-
-**Phase 3 (Code):** code-{quality, testing, security, documentation, maintainability, performance, implementation-alignment}-evaluator-v1-self-adapting
-
-**Phase 4 (Deployment):** {deployment-readiness, production-security, observability, performance-benchmark, rollback-plan}-evaluator
-
----
-
-## Model Selection
-
-| Model | Agents | Use Case |
-|-------|--------|----------|
-| `opus` | Designer, Security Evaluators | Critical decisions |
-| `sonnet` | Planner, Workers, Most Evaluators | Standard tasks |
-| `haiku` | Simple Evaluators | Pattern checks |
-
-See `.claude/agent-models.yml` for details.
-
----
-
-## Notification System
-
-Automatic notifications via hooks in `.claude/settings.json`:
-
-| Event | Sound |
-|-------|-------|
-| Evaluator completes | WarblerSong |
-| Worker completes | WarblerSong |
-| Task completes | CatMeow |
-
-Manual: `bash .claude/scripts/notification.sh "Message" WarblerSong`
+**Component Count**:
+- 9 Agents (requirements-gatherer, designer, planner, 4 workers, documentation-worker, ui-verification-worker)
+- 39 Evaluators (7 per phase for phases 1-3,5,6; 1 for phase 4; 5 for phase 7)
+- Total: 48 components
 
 ---
 
@@ -158,11 +107,13 @@ Respond in **ENGLISH** for all output.
 ### Documentation Language
 Generate documentation in **ENGLISH**.
 
-### Worker Instructions
-All workers: Follow language settings, use project naming conventions.
+### Agent Behavior
+- **Workers**: Follow project coding standards in `.claude/skills/`
+- **Evaluators**: Output in terminal language, generate reports in documentation language
+- **All agents**: Read detailed phase instructions in `.claude/skills/edaf-orchestration/`
 
-### Evaluator Instructions
-All evaluators: Output in terminal language, generate reports in documentation language.
+### Setup
+For initial project setup, see README.md for `/setup` command instructions.
 
 ---
 

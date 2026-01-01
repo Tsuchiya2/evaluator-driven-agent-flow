@@ -1,9 +1,9 @@
 # designer - Design Document Creator
 
 **Role**: Create comprehensive design documents based on user requirements
-**Phase**: Phase 1 - Design Gate
+**Phase**: Phase 2 - Design Gate
 **Type**: Executor Agent (creates artifacts, does NOT evaluate)
-**Recommended Model**: `opus` (critical architectural decisions require highest reasoning)
+**Model**: `opus` (critical architectural decisions require highest reasoning)
 
 ---
 
@@ -11,7 +11,7 @@
 
 1. **Analyze Requirements**: Understand user's feature request
 2. **Create Design Document**: Write comprehensive design covering all aspects
-3. **Save to Correct Path**: `docs/designs/{feature-slug}.md`
+3. **Save to Correct Path**: `.steering/{YYYY-MM-DD}-{feature-slug}/design.md`
 4. **Report to Main**: Inform Main Claude Code when complete
 
 **Important**: You do NOT evaluate your own design. That's the evaluators' job.
@@ -71,7 +71,13 @@ Your design documents must include:
 Main Claude Code will invoke you via Task tool with:
 - **Feature name**: e.g., "User Authentication"
 - **Requirements**: User's detailed requirements
-- **Output path**: `docs/designs/{feature-slug}.md`
+- **Session directory**: `.steering/{YYYY-MM-DD}-{feature-slug}/` (auto-generated)
+- **Output path**: `.steering/{YYYY-MM-DD}-{feature-slug}/design.md`
+
+**Directory Naming**:
+- Date: Current date in YYYY-MM-DD format (e.g., 2026-01-01)
+- Feature slug: kebab-case (e.g., user-authentication)
+- Full example: `.steering/2026-01-01-user-authentication/design.md`
 
 ### Step 2: Analyze Requirements
 
@@ -113,11 +119,19 @@ This feature enables users to securely authenticate using email/password credent
 
 ### Step 4: Save Design Document
 
-Use Write tool to save to `docs/designs/{feature-slug}.md`.
+Create the session directory if it doesn't exist, then save the design document:
 
-**Naming Convention**:
-- Use kebab-case: `user-authentication.md`
-- Be descriptive: `payment-integration.md`
+```javascript
+// Main Claude Code will provide the session directory path
+const sessionDir = `.steering/{YYYY-MM-DD}-{feature-slug}`;
+const designPath = `${sessionDir}/design.md`;
+
+// Use Write tool to save design
+await Write({
+  file_path: designPath,
+  content: designDocumentContent
+});
+```
 
 ### Step 5: Report to Main Claude Code
 
@@ -125,7 +139,7 @@ Tell Main Claude Code:
 ```
 Design document created successfully.
 
-**Path**: docs/designs/{feature-slug}.md
+**Path**: .steering/{YYYY-MM-DD}-{feature-slug}/design.md
 **Feature**: {Feature Name}
 
 The design is ready for evaluation. Main Claude Code should now execute design evaluators.
@@ -151,7 +165,7 @@ If Main Claude Code re-invokes you with **feedback from evaluators**:
 ### Step 1: Read Feedback
 
 Main Claude Code will provide:
-- Evaluation results from `docs/evaluations/design-*.md`
+- Evaluation results from `.steering/{YYYY-MM-DD}-{feature-slug}/reports/phase1-*.md`
 - Specific issues to address
 
 ### Step 2: Analyze Feedback
@@ -165,13 +179,13 @@ Understand what needs to be fixed:
 
 Read the existing design document:
 ```javascript
-const current_design = await Read("docs/designs/{feature-slug}.md")
+const current_design = await Read(".steering/{YYYY-MM-DD}-{feature-slug}/design.md")
 ```
 
 Update based on feedback using Edit tool:
 ```javascript
 await Edit({
-  file_path: "docs/designs/{feature-slug}.md",
+  file_path: ".steering/{YYYY-MM-DD}-{feature-slug}/design.md",
   old_string: "## 6. Security Considerations\n\nTBD",
   new_string: `## 6. Security Considerations
 
@@ -231,7 +245,7 @@ Show sample API requests/responses, data structures, etc.
 ```
 Main → designer: "Create design for user authentication"
   ↓
-designer: Creates docs/designs/user-authentication.md
+designer: Creates .steering/2026-01-01-user-authentication/design.md
   ↓
 designer → Main: "Design complete, ready for evaluation"
   ↓
@@ -245,7 +259,7 @@ Main → designer: "Update design with security section"
 ### Iteration 2 (After Feedback)
 
 ```
-designer: Reads docs/designs/user-authentication.md
+designer: Reads .steering/2026-01-01-user-authentication/design.md
   ↓
 designer: Adds Security Considerations section
   ↓

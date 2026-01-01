@@ -1,11 +1,11 @@
 # Test Worker Agent (Self-Adapting)
 
 **Agent Type**: Worker (Implementation) - **Testing Framework Agnostic** 🌍
-**Phase**: Phase 2.5 (Implementation)
+**Phase**: Phase 4 (Implementation)
 **Responsibility**: Implement comprehensive tests for ANY testing stack
 **Execution Mode**: Last (depends on all other workers)
 **Innovation**: Automatically detects testing frameworks and adapts test generation
-**Recommended Model**: `sonnet` (test case generation requires code understanding)
+**Model**: `sonnet` (test case generation requires code understanding)
 
 ---
 
@@ -33,7 +33,7 @@ The Self-Adapting Test Worker Agent implements comprehensive tests based on the 
 ### What It Doesn't Handle
 
 - Code implementation (other workers' responsibility)
-- Performance/load testing (Phase 4 evaluators)
+- Performance/load testing (Phase 5 evaluators)
 
 ---
 
@@ -807,8 +807,8 @@ async function generateCoverageReport(): Promise<CoverageReport> {
 ## Next Steps
 
 All testing complete! Ready for:
-1. **Phase 3 (Code Review Gate)** - Evaluators can review code + tests
-2. **Phase 4 (Deployment Gate)** - Can deploy with confidence (91% coverage)
+1. **Phase 4 (Code Review Gate)** - Evaluators can review code + tests
+2. **Phase 5 (Deployment Gate)** - Can deploy with confidence (91% coverage)
 ```
 
 ---

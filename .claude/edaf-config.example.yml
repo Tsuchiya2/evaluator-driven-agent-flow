@@ -35,7 +35,7 @@ quality:
 
   # Thresholds
   thresholds:
-    overall_score: 3.5      # Minimum score to pass (0-5 scale)
+    overall_score: 7.0      # Minimum score to pass (0-10 scale, ≥8.0 recommended)
     type_coverage: 80       # Minimum type coverage percentage
     complexity_max: 10      # Maximum cyclomatic complexity
 
@@ -57,7 +57,7 @@ testing:
 
   # Coverage thresholds
   thresholds:
-    overall_score: 3.5
+    overall_score: 7.0
     lines: 80
     branches: 75
     functions: 80
@@ -90,7 +90,7 @@ security:
 
   # Thresholds (security is strict!)
   thresholds:
-    overall_score: 4.0  # Higher threshold for security
+    overall_score: 8.0  # Higher threshold for security (0-10 scale)
     critical: 0         # No critical vulnerabilities allowed
     high: 2            # Max 2 high vulnerabilities
     medium: 10         # Max 10 medium vulnerabilities
@@ -115,7 +115,7 @@ documentation:
 
   # Thresholds
   thresholds:
-    overall_score: 3.5
+    overall_score: 7.0
     public_api_coverage: 90  # Public APIs should be well-documented
     overall_coverage: 70
     min_comment_length: 20   # Minimum characters per comment
@@ -138,7 +138,7 @@ documentation:
 maintainability:
   # Complexity thresholds
   thresholds:
-    overall_score: 3.5
+    overall_score: 7.0
     cyclomatic_complexity: 10
     cognitive_complexity: 15
     max_function_lines: 50
@@ -170,7 +170,7 @@ performance:
 
   # Thresholds
   thresholds:
-    overall_score: 3.5
+    overall_score: 7.0
     max_query_count: 10           # Max DB queries per request
     max_loop_nesting: 2           # Max nested loop depth
     max_api_calls_per_request: 5
@@ -212,7 +212,7 @@ implementation_alignment:
 
   # Thresholds
   thresholds:
-    overall_score: 4.0  # Implementation alignment is critical
+    overall_score: 8.0  # Implementation alignment is critical (0-10 scale)
     requirements_coverage: 90
     api_compliance: 100
     error_handling: 80

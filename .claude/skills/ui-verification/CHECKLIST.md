@@ -9,10 +9,11 @@
 Before starting UI verification:
 
 - [ ] Development server is running
-- [ ] Chrome is running with `--remote-debugging-port=9222`
-- [ ] MCP chrome-devtools is registered (`claude mcp list`)
-- [ ] Screenshot directory created: `docs/screenshots/{feature-name}/`
+- [ ] Chrome is installed with Claude in Chrome extension
+- [ ] Claude in Chrome extension is enabled and active
+- [ ] Screenshot directory created: `.steering/{YYYY-MM-DD}-{feature-name}/screenshots/`
 - [ ] Login credentials available (if required)
+- [ ] Subagent launched with Claude in Chrome access
 
 ---
 
@@ -90,8 +91,8 @@ After each significant action:
 
 After all pages verified:
 
-- [ ] All screenshots saved to `docs/screenshots/{feature-name}/`
-- [ ] Create report: `docs/reports/phase3-ui-verification-{feature-name}.md`
+- [ ] All screenshots saved to `.steering/{YYYY-MM-DD}-{feature-name}/screenshots/`
+- [ ] Create report: `.steering/{YYYY-MM-DD}-{feature-name}/reports/phase4-ui-verification.md`
 - [ ] Report includes Summary section
 - [ ] Report includes all screenshots with relative paths
 - [ ] Report includes Findings section
@@ -168,7 +169,7 @@ const generateChecklist = (pages: string[]): VerificationChecklist => {
 - [x] Dev server running on localhost:3000
 - [x] Chrome in debug mode
 - [x] MCP available
-- [x] Directory: `docs/screenshots/user-registration/`
+- [x] Directory: `.steering/{YYYY-MM-DD}-user-registration/screenshots/`
 
 **Page 1: Registration Form**
 - [x] Navigate to `/register`
@@ -189,7 +190,7 @@ const generateChecklist = (pages: string[]): VerificationChecklist => {
 - [x] Console: No errors
 
 **Report:**
-- [x] Created: `docs/reports/phase3-ui-verification-user-registration.md`
+- [x] Created: `.steering/{YYYY-MM-DD}-user-registration/reports/phase4-ui-verification.md`
 - [x] All 6 screenshots included
 - [x] Findings documented
 

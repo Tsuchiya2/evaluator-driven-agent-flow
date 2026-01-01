@@ -12,23 +12,23 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-# Check if feature name is provided
+# Check if session directory is provided
 if [ -z "$1" ]; then
-  echo -e "${RED}❌ Error: Feature name required${NC}"
+  echo -e "${RED}❌ Error: Session directory required${NC}"
   echo ""
-  echo "Usage: bash .claude/scripts/verify-ui.sh <feature-name>"
-  echo "Example: bash .claude/scripts/verify-ui.sh user-authentication"
+  echo "Usage: bash .claude/scripts/verify-ui.sh <session-directory>"
+  echo "Example: bash .claude/scripts/verify-ui.sh .steering/2026-01-01-user-authentication"
   exit 1
 fi
 
-FEATURE_NAME=$1
-SCREENSHOT_DIR="docs/screenshots/$FEATURE_NAME"
-REPORT_FILE="docs/reports/phase3-ui-verification-$FEATURE_NAME.md"
+SESSION_DIR=$1
+SCREENSHOT_DIR="$SESSION_DIR/screenshots"
+REPORT_FILE="$SESSION_DIR/reports/phase5-ui-verification.md"
 
 echo -e "${BLUE}🔍 EDAF UI Verification Check${NC}"
 echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo ""
-echo -e "${BLUE}Feature:${NC} $FEATURE_NAME"
+echo -e "${BLUE}Session:${NC} $SESSION_DIR"
 echo ""
 
 # Track validation status
@@ -86,22 +86,6 @@ else
   if [ "$SCREENSHOT_REFS" -lt 1 ]; then
     echo -e "${YELLOW}   ⚠️  Report should reference at least 1 screenshot${NC}"
   fi
-fi
-
-echo ""
-
-# 3. Check docs directories exist
-echo -e "${BLUE}📁 Checking docs directories...${NC}"
-if [ ! -d "docs/reports" ]; then
-  echo -e "${YELLOW}   ⚠️  docs/reports directory missing${NC}"
-  mkdir -p docs/reports
-  echo -e "${GREEN}   ✅ Created docs/reports directory${NC}"
-fi
-
-if [ ! -d "docs/screenshots" ]; then
-  echo -e "${YELLOW}   ⚠️  docs/screenshots directory missing${NC}"
-  mkdir -p docs/screenshots
-  echo -e "${GREEN}   ✅ Created docs/screenshots directory${NC}"
 fi
 
 echo ""

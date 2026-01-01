@@ -4,3 +4,7 @@ language_preferences:
   save_dual_language_docs: false
 docker:
   enabled: false
+
+linters:
+  enabled: false
+  tools: []

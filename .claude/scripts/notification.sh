@@ -64,8 +64,8 @@ if [ "$SOUND" = "CatMeow" ]; then
     fi
   done
 elif [ "$SOUND" = "WarblerSong" ]; then
-  # warbler-songを3回再生 / Play warbler song 3 times
-  for i in 1 2 3; do
+  # warbler-songを1回再生 / Play warbler song 1 times
+  for i in 1; do
     if [ -f "$SOUNDS_DIR/bird_song_robin.mp3" ]; then
       play_sound "$SOUNDS_DIR/bird_song_robin.mp3"
       sleep 1.8

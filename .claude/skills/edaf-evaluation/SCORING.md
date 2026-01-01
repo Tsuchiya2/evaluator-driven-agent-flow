@@ -6,21 +6,35 @@
 |-------|--------|-------------|
 | 9.0-10.0 | Excellent | Exceeds all requirements, exemplary quality |
 | 8.0-8.9 | Very Good | Meets all requirements with minor enhancements |
-| 7.0-7.9 | Good | Meets requirements, acceptable for production |
-| 6.0-6.9 | Acceptable | Meets most requirements, needs minor fixes |
-| 5.0-5.9 | Needs Work | Several issues requiring attention |
+| 5.0-7.9 | Needs Work | Several issues requiring attention |
 | 4.0-4.9 | Poor | Significant issues, major revisions needed |
 | 0.0-3.9 | Failing | Critical issues, requires complete rework |
 
-## Pass Threshold
+## Pass Thresholds
 
-**Minimum passing score: 7.0/10.0**
+**Standard Phases (1, 2, 3, 5, 6, 7): ≥8.0/10.0**
 
-All evaluators must score ≥7.0 before proceeding to the next phase.
+All evaluators must score ≥8.0 before proceeding to the next phase.
+
+**Phase 4 Quality Gate: 10.0/10.0**
+
+Quality gate evaluator requires perfect score (zero lint errors/warnings + all tests passing).
 
 ## Scoring Categories by Phase
 
-### Phase 1: Design Evaluation
+### Phase 1: Requirements Evaluation
+
+| Category | Weight | Criteria |
+|----------|--------|----------|
+| Clarity | 15% | Clear, unambiguous language |
+| Completeness | 15% | All necessary sections present |
+| Feasibility | 15% | Technically achievable |
+| Goal Alignment | 20% | Supports stated goals |
+| Scope | 15% | Appropriate size (3-5 features ideal) |
+| Testability | 10% | Observable, measurable criteria |
+| User Value | 10% | Clear user/business value |
+
+### Phase 2: Design Evaluation
 
 | Category | Weight | Criteria |
 |----------|--------|----------|
@@ -32,7 +46,7 @@ All evaluators must score ≥7.0 before proceeding to the next phase.
 | Reliability | 15% | Error handling design |
 | Reusability | 10% | Component reuse potential |
 
-### Phase 2: Planning Evaluation
+### Phase 3: Planning Evaluation
 
 | Category | Weight | Criteria |
 |----------|--------|----------|
@@ -44,7 +58,20 @@ All evaluators must score ≥7.0 before proceeding to the next phase.
 | Responsibility | 10% | Worker assignment accuracy |
 | Reusability | 10% | Pattern identification |
 
-### Phase 3: Code Evaluation
+### Phase 4: Quality Gate Evaluation
+
+**Binary Pass/Fail (10.0 or < 10.0)**
+
+| Check | Required |
+|-------|----------|
+| Lint Errors | 0 errors |
+| Lint Warnings | 0 warnings |
+| Test Execution | All tests passing |
+| Build Status | Successful |
+
+Score: 10.0 if all checks pass, otherwise < 10.0 (FAIL)
+
+### Phase 5: Code Evaluation
 
 | Category | Weight | Criteria |
 |----------|--------|----------|
@@ -56,7 +83,17 @@ All evaluators must score ≥7.0 before proceeding to the next phase.
 | Performance | 10% | Anti-patterns, efficiency |
 | Implementation | 15% | Requirements alignment |
 
-### Phase 4: Deployment Evaluation
+### Phase 6: Documentation Evaluation
+
+| Category | Weight | Criteria |
+|----------|--------|----------|
+| Completeness | 25% | All sections present |
+| Accuracy | 25% | Matches implementation |
+| Consistency | 20% | Terminology, formatting |
+| Clarity | 20% | Clear explanations |
+| Currency | 10% | Up-to-date information |
+
+### Phase 7: Deployment Evaluation
 
 | Category | Weight | Criteria |
 |----------|--------|----------|

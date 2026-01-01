@@ -56,3 +56,6 @@ temp/
 
 # Configuration (optional - uncomment if you want to ignore config)
 # .claude/edaf-config.yml
+
+# EDAF Development Sessions
+.steering/

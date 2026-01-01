@@ -53,10 +53,13 @@ fi
 echo -e "${BLUE}📦 Creating .claude directory structure... / .claudeディレクトリ構造を作成中...${NC}"
 mkdir -p .claude/agents
 mkdir -p .claude/agents/workers
-mkdir -p .claude/agents/evaluators/phase1-design
-mkdir -p .claude/agents/evaluators/phase2-planner
-mkdir -p .claude/agents/evaluators/phase3-code
-mkdir -p .claude/agents/evaluators/phase4-deployment
+mkdir -p .claude/agents/evaluators/phase1-requirements
+mkdir -p .claude/agents/evaluators/phase2-design
+mkdir -p .claude/agents/evaluators/phase3-planner
+mkdir -p .claude/agents/evaluators/phase4-quality-gate
+mkdir -p .claude/agents/evaluators/phase5-code
+mkdir -p .claude/agents/evaluators/phase6-documentation
+mkdir -p .claude/agents/evaluators/phase7-deployment
 mkdir -p .claude/commands
 mkdir -p .claude/scripts
 mkdir -p .claude/sounds
@@ -74,19 +77,27 @@ if [ -d "$EDAF_DIR/.claude/agents" ]; then
 
   # Copy evaluators
   if [ -d "$EDAF_DIR/.claude/agents/evaluators" ]; then
-    cp $EDAF_DIR/.claude/agents/evaluators/phase1-design/*.md .claude/agents/evaluators/phase1-design/
-    cp $EDAF_DIR/.claude/agents/evaluators/phase2-planner/*.md .claude/agents/evaluators/phase2-planner/
-    cp $EDAF_DIR/.claude/agents/evaluators/phase3-code/*.md .claude/agents/evaluators/phase3-code/
-    cp $EDAF_DIR/.claude/agents/evaluators/phase4-deployment/*.md .claude/agents/evaluators/phase4-deployment/
+    cp $EDAF_DIR/.claude/agents/evaluators/phase1-requirements/*.md .claude/agents/evaluators/phase1-requirements/ 2>/dev/null || true
+    cp $EDAF_DIR/.claude/agents/evaluators/phase2-design/*.md .claude/agents/evaluators/phase2-design/ 2>/dev/null || true
+    cp $EDAF_DIR/.claude/agents/evaluators/phase3-planner/*.md .claude/agents/evaluators/phase3-planner/ 2>/dev/null || true
+    cp $EDAF_DIR/.claude/agents/evaluators/phase4-quality-gate/*.md .claude/agents/evaluators/phase4-quality-gate/ 2>/dev/null || true
+    cp $EDAF_DIR/.claude/agents/evaluators/phase5-code/*.md .claude/agents/evaluators/phase5-code/ 2>/dev/null || true
+    cp $EDAF_DIR/.claude/agents/evaluators/phase6-documentation/*.md .claude/agents/evaluators/phase6-documentation/ 2>/dev/null || true
+    cp $EDAF_DIR/.claude/agents/evaluators/phase7-deployment/*.md .claude/agents/evaluators/phase7-deployment/ 2>/dev/null || true
   fi
 
-  echo -e "${GREEN}  ✅ Installed 32 Agents (2 + 4 Workers + 26 Evaluators) / 32個のエージェント（2 + 4ワーカー + 26エバリュエーター）をインストールしました${NC}"
-  echo -e "${GREEN}     - Core: Designer + Planner / コア: デザイナー + プランナー${NC}"
+  echo -e "${GREEN}  ✅ Installed 48 Components (9 Agents + 39 Evaluators) / 48個のコンポーネント（9エージェント + 39エバリュエーター）をインストールしました${NC}"
+  echo -e "${GREEN}     - Core Agents: 3 (Requirements Gatherer + Designer + Planner) / コアエージェント: 3個${NC}"
   echo -e "${GREEN}     - Workers: 4 (Database, Backend, Frontend, Test) / ワーカー: 4個${NC}"
-  echo -e "${GREEN}     - Phase 1: 7 Design Evaluators / フェーズ1: 7つのデザインエバリュエーター${NC}"
-  echo -e "${GREEN}     - Phase 2: 7 Planner Evaluators / フェーズ2: 7つのプランナーエバリュエーター${NC}"
-  echo -e "${GREEN}     - Phase 3: 7 Code Evaluators / フェーズ3: 7つのコードエバリュエーター${NC}"
-  echo -e "${GREEN}     - Phase 4: 5 Deployment Evaluators / フェーズ4: 5つのデプロイエバリュエーター${NC}"
+  echo -e "${GREEN}     - Documentation Worker: 1 / ドキュメントワーカー: 1個${NC}"
+  echo -e "${GREEN}     - UI Verification Worker: 1 / UI検証ワーカー: 1個${NC}"
+  echo -e "${GREEN}     - Phase 1: 7 Requirements Evaluators / フェーズ1: 7つの要件エバリュエーター${NC}"
+  echo -e "${GREEN}     - Phase 2: 7 Design Evaluators / フェーズ2: 7つのデザインエバリュエーター${NC}"
+  echo -e "${GREEN}     - Phase 3: 7 Planner Evaluators / フェーズ3: 7つのプランナーエバリュエーター${NC}"
+  echo -e "${GREEN}     - Phase 4: 1 Quality Gate Evaluator / フェーズ4: 1つの品質ゲートエバリュエーター${NC}"
+  echo -e "${GREEN}     - Phase 5: 7 Code Evaluators / フェーズ5: 7つのコードエバリュエーター${NC}"
+  echo -e "${GREEN}     - Phase 6: 5 Documentation Evaluators / フェーズ6: 5つのドキュメントエバリュエーター${NC}"
+  echo -e "${GREEN}     - Phase 7: 5 Deployment Evaluators / フェーズ7: 5つのデプロイエバリュエーター${NC}"
 else
   echo -e "${RED}  ❌ Error: Agents not found / エラー: エージェントが見つかりません${NC}"
   exit 1
@@ -139,23 +150,7 @@ if [ -f "$EDAF_DIR/.claude/settings.json.example" ]; then
   fi
 fi
 
-# 9. Configure MCP chrome-devtools
-echo -e "${BLUE}🔧 Configuring MCP chrome-devtools... / MCP chrome-devtoolsを設定中...${NC}"
-if [ -f ".claude/scripts/setup-mcp.sh" ]; then
-  if [ ! -f ".mcp.json" ]; then
-    echo ""
-    bash .claude/scripts/setup-mcp.sh .
-    echo ""
-  else
-    echo -e "${YELLOW}  ⚠️  .mcp.json already exists (skipped) / .mcp.jsonはすでに存在します（スキップ）${NC}"
-    echo -e "${YELLOW}     To reconfigure, delete .mcp.json and run: bash .claude/scripts/setup-mcp.sh${NC}"
-    echo -e "${YELLOW}     再設定するには.mcp.jsonを削除して実行: bash .claude/scripts/setup-mcp.sh${NC}"
-  fi
-else
-  echo -e "${YELLOW}  ⚠️  setup-mcp.sh not found (skipped) / setup-mcp.shが見つかりません（スキップ）${NC}"
-fi
-
-# 10. Create docs directories for UI verification
+# 9. Create docs directories for UI verification
 echo -e "${BLUE}📁 Creating docs directories... / docsディレクトリを作成中...${NC}"
 mkdir -p docs/reports
 mkdir -p docs/screenshots
@@ -168,9 +163,12 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 echo -e "${GREEN}🎉 What was installed / インストールされたもの${NC}"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
-echo "📁 .claude/agents/ (32 total)"
-echo "  ├── designer.md (Phase 1)"
-echo "  ├── planner.md (Phase 2)"
+echo "📁 .claude/agents/ (48 components total)"
+echo "  ├── requirements-gatherer.md (Phase 1)"
+echo "  ├── designer.md (Phase 2)"
+echo "  ├── planner.md (Phase 3)"
+echo "  ├── documentation-worker.md (Phase 6)"
+echo "  ├── ui-verification-worker.md (Phase 5)"
 echo "  │"
 echo "  ├── workers/ (4 total - Self-Adapting)"
 echo "  │   ├── database-worker-v1-self-adapting.md"
@@ -178,8 +176,17 @@ echo "  │   ├── backend-worker-v1-self-adapting.md"
 echo "  │   ├── frontend-worker-v1-self-adapting.md"
 echo "  │   └── test-worker-v1-self-adapting.md"
 echo "  │"
-echo "  └── evaluators/ (26 total)"
-echo "      ├── phase1-design/ (7 evaluators)"
+echo "  └── evaluators/ (39 total)"
+echo "      ├── phase1-requirements/ (7 evaluators)"
+echo "      │   ├── requirements-clarity-evaluator.md"
+echo "      │   ├── requirements-completeness-evaluator.md"
+echo "      │   ├── requirements-feasibility-evaluator.md"
+echo "      │   ├── requirements-goal-alignment-evaluator.md"
+echo "      │   ├── requirements-scope-evaluator.md"
+echo "      │   ├── requirements-testability-evaluator.md"
+echo "      │   └── requirements-user-value-evaluator.md"
+echo "      │"
+echo "      ├── phase2-design/ (7 evaluators)"
 echo "      │   ├── design-consistency-evaluator.md"
 echo "      │   ├── design-extensibility-evaluator.md"
 echo "      │   ├── design-goal-alignment-evaluator.md"
@@ -188,7 +195,7 @@ echo "      │   ├── design-observability-evaluator.md"
 echo "      │   ├── design-reliability-evaluator.md"
 echo "      │   └── design-reusability-evaluator.md"
 echo "      │"
-echo "      ├── phase2-planner/ (7 evaluators)"
+echo "      ├── phase3-planner/ (7 evaluators)"
 echo "      │   ├── planner-clarity-evaluator.md"
 echo "      │   ├── planner-deliverable-structure-evaluator.md"
 echo "      │   ├── planner-dependency-evaluator.md"
@@ -197,7 +204,10 @@ echo "      │   ├── planner-granularity-evaluator.md"
 echo "      │   ├── planner-responsibility-alignment-evaluator.md"
 echo "      │   └── planner-reusability-evaluator.md"
 echo "      │"
-echo "      ├── phase3-code/ (7 evaluators - Self-Adapting)"
+echo "      ├── phase4-quality-gate/ (1 evaluator)"
+echo "      │   └── quality-gate-evaluator.md"
+echo "      │"
+echo "      ├── phase5-code/ (7 evaluators - Self-Adapting)"
 echo "      │   ├── code-quality-evaluator-v1-self-adapting.md"
 echo "      │   ├── code-testing-evaluator-v1-self-adapting.md"
 echo "      │   ├── code-security-evaluator-v1-self-adapting.md"
@@ -206,7 +216,14 @@ echo "      │   ├── code-maintainability-evaluator-v1-self-adapting.md"
 echo "      │   ├── code-performance-evaluator-v1-self-adapting.md"
 echo "      │   └── code-implementation-alignment-evaluator-v1-self-adapting.md"
 echo "      │"
-echo "      └── phase4-deployment/ (5 evaluators)"
+echo "      ├── phase6-documentation/ (5 evaluators)"
+echo "      │   ├── documentation-completeness-evaluator.md"
+echo "      │   ├── documentation-accuracy-evaluator.md"
+echo "      │   ├── documentation-consistency-evaluator.md"
+echo "      │   ├── documentation-clarity-evaluator.md"
+echo "      │   └── documentation-currency-evaluator.md"
+echo "      │"
+echo "      └── phase7-deployment/ (5 evaluators)"
 echo "          ├── deployment-readiness-evaluator.md"
 echo "          ├── production-security-evaluator.md"
 echo "          ├── observability-evaluator.md"
@@ -217,14 +234,11 @@ echo "📁 .claude/commands/"
 echo "  └── setup.md (Interactive setup wizard / インタラクティブセットアップウィザード)"
 echo ""
 echo "📁 .claude/scripts/"
-echo "  ├── notification.sh (Sound notification system / 音声通知システム)"
-echo "  └── setup-mcp.sh (MCP configuration / MCP設定)"
+echo "  └── notification.sh (Sound notification system / 音声通知システム)"
 echo ""
 echo "📁 .claude/sounds/"
 echo "  ├── cat-meowing.mp3"
 echo "  └── bird_song_robin.mp3"
-echo ""
-echo "📁 .mcp.json (MCP chrome-devtools configuration / MCP chrome-devtools設定)"
 echo ""
 echo "📁 .claude/edaf-config.example.yml (optional / オプション)"
 echo ""

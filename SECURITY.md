@@ -73,13 +73,14 @@ EDAF includes bash scripts:
 - Scripts do not modify code
 - Scripts only read/validate local files
 
-### MCP chrome-devtools
+### Claude in Chrome
 
-If using MCP chrome-devtools for UI verification:
+If using Claude in Chrome for UI verification:
 
 ⚠️ **Use only in development environments**
 ⚠️ **Do not expose dev server publicly**
 ⚠️ **Use test credentials** (not production credentials)
+⚠️ **Verify extension is official** (from Chrome Web Store)
 
 ## Best Practices
 

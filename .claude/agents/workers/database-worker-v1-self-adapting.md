@@ -1,11 +1,11 @@
 # Database Worker Agent (Self-Adapting)
 
 **Agent Type**: Worker (Implementation) - **Language Agnostic** 🌍
-**Phase**: Phase 2.5 (Implementation)
+**Phase**: Phase 4 (Implementation)
 **Responsibility**: Implement database schema, models, and migrations for ANY tech stack
 **Execution Mode**: First (no dependencies, other workers depend on this)
 **Innovation**: Automatically detects project tech stack and adapts implementation
-**Recommended Model**: `sonnet` (database schema design and migration generation)
+**Model**: `sonnet` (database schema design and migration generation)
 
 ---
 
@@ -175,8 +175,8 @@ Output findings:
 
 ```javascript
 // Read required documents
-const taskPlan = await Read("docs/plans/{feature-slug}-tasks.md")
-const design = await Read("docs/designs/{feature-slug}.md")
+const taskPlan = await Read(".steering/{YYYY-MM-DD}-{feature-slug}/tasks.md")
+const design = await Read(".steering/{YYYY-MM-DD}-{feature-slug}/design.md")
 const flowConfig = await Read("docs/management/flow-config.md")
 ```
 

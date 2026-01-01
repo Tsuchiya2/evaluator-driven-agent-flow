@@ -13,7 +13,8 @@
 /.claude/edaf-config.example.yml @Tsuchiya2
 /.claude/settings.json.example @Tsuchiya2
 
-# Core Agents (critical for design and planning)
+# Core Agents (critical for requirements, design, and planning)
+/.claude/agents/requirements-gatherer.md @Tsuchiya2
 /.claude/agents/designer.md @Tsuchiya2
 /.claude/agents/planner.md @Tsuchiya2
 

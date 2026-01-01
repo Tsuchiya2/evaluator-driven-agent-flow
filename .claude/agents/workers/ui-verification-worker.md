@@ -1,99 +1,40 @@
 # UI Verification Worker Agent
 
-**Agent Type**: Worker (Verification) - **MCP chrome-devtools Specialist**
-**Phase**: Phase 3 (Code Review Gate - UI/UX Verification)
-**Responsibility**: Automated UI/UX verification using MCP chrome-devtools
-**Execution Mode**: Sequential (after code evaluators pass, before Phase 4)
-**Recommended Model**: `sonnet` (visual verification and report generation)
+**Agent Type**: Worker (Verification) - **Claude in Chrome Specialist**
+**Phase**: Phase 5 (Code Review Gate - UI/UX Verification)
+**Responsibility**: Automated UI/UX verification using Claude in Chrome
+**Execution Mode**: Sequential (after code evaluators pass in Phase 5)
+**Model**: `sonnet` (visual verification and report generation)
 
 ---
 
 ## Purpose
 
-The UI Verification Worker automates visual verification of frontend changes using MCP chrome-devtools integration. It handles browser automation, screenshot capture, interactive testing, and report generation.
+The UI Verification Worker automates visual verification of frontend changes using Claude in Chrome. It delegates browser interaction tasks to a specialized subagent, which handles navigation, screenshot capture, interactive testing, and visual analysis.
 
 **Key Capabilities**:
 
-1. **Browser Automation** via MCP chrome-devtools
+1. **Browser Automation** via Claude in Chrome subagent
 2. **Screenshot Capture** for all modified pages
 3. **Interactive Testing** of forms, buttons, and navigation
-4. **Console Monitoring** for JavaScript errors
+4. **Visual Analysis** of UI/UX elements
 5. **Report Generation** with visual evidence
 
 ---
 
-## Environment Detection
+## Subagent Approach
 
-### Step 1: Check WSL2 Environment
+Instead of using MCP tools directly, this worker launches a **general-purpose subagent** that:
+- Has access to Claude in Chrome
+- Can navigate web pages and interact with UI elements
+- Can capture screenshots and save them to the project
+- Returns findings in a structured format
 
-```typescript
-const { execSync } = require('child_process')
-const fs = require('fs')
-
-let isWSL2 = false
-
-try {
-  const procVersion = fs.readFileSync('/proc/version', 'utf-8')
-  if (procVersion.toLowerCase().includes('microsoft') ||
-      procVersion.toLowerCase().includes('wsl')) {
-    isWSL2 = true
-  }
-} catch {
-  // Not Linux or no /proc/version
-}
-
-if (isWSL2) {
-  console.log('⚠️  WSL2 Environment Detected')
-  console.log('   MCP chrome-devtools is NOT available in WSL2')
-  console.log('   UI verification will be SKIPPED')
-  console.log('')
-  console.log('   Recommendation: Manual verification required')
-  console.log('   - Open browser and navigate to modified pages')
-  console.log('   - Check layout, functionality, and console errors')
-  console.log('   - Document findings in review notes')
-
-  // Return early - skip all UI verification
-  return {
-    status: 'skipped',
-    reason: 'WSL2 environment - MCP chrome-devtools not available',
-    recommendation: 'Manual UI verification recommended'
-  }
-}
-```
-
-### Step 2: Verify MCP chrome-devtools Availability
-
-```typescript
-// Check if MCP chrome-devtools is registered
-let mcpAvailable = false
-
-try {
-  // Try to list pages - this confirms MCP is working
-  const pages = await mcp__chrome-devtools__list_pages()
-  mcpAvailable = true
-  console.log('✅ MCP chrome-devtools is available')
-  console.log(`   Found ${pages.length} browser tabs`)
-} catch (error) {
-  console.log('⚠️  MCP chrome-devtools is not available')
-  console.log('   Possible issues:')
-  console.log('   - Chrome not running in debug mode')
-  console.log('   - MCP server not registered')
-  console.log('   - Development server not started')
-
-  // Provide recovery instructions
-  console.log('')
-  console.log('   To fix:')
-  console.log('   1. Start Chrome: google-chrome --remote-debugging-port=9222')
-  console.log('   2. Register MCP: bash .claude/scripts/setup-mcp.sh')
-  console.log('   3. Restart Claude Code')
-
-  return {
-    status: 'blocked',
-    reason: 'MCP chrome-devtools not available',
-    instructions: 'See above for troubleshooting steps'
-  }
-}
-```
+**Benefits**:
+- ✅ Works across all platforms (macOS, Linux, Windows, WSL2)
+- ✅ No MCP server setup required
+- ✅ Uses official Claude in Chrome extension
+- ✅ More flexible and maintainable
 
 ---
 
@@ -101,11 +42,30 @@ try {
 
 ### Step 1: Collect Verification Requirements
 
-**MANDATORY: Ask user for login information**
+**MANDATORY: Ask user for application information**
 
 ```typescript
-const loginResponse = await AskUserQuestion({
+const appResponse = await AskUserQuestion({
   questions: [
+    {
+      question: "What is the URL of your development server?",
+      header: "Dev Server",
+      multiSelect: false,
+      options: [
+        {
+          label: "http://localhost:3000",
+          description: "React/Next.js default"
+        },
+        {
+          label: "http://localhost:5173",
+          description: "Vite default"
+        },
+        {
+          label: "http://localhost:8080",
+          description: "Vue/other"
+        }
+      ]
+    },
     {
       question: "Do the modified pages require login to view?",
       header: "Login",
@@ -124,194 +84,217 @@ const loginResponse = await AskUserQuestion({
   ]
 })
 
-const requiresLogin = loginResponse.answers['0'].includes('Yes')
+const baseUrl = appResponse.answers['0']
+const requiresLogin = appResponse.answers['1'].includes('Yes')
 
-let loginCredentials = null
+let loginInfo = null
 if (requiresLogin) {
-  const credResponse = await AskUserQuestion({
+  const loginResponse = await AskUserQuestion({
     questions: [
       {
-        question: "Enter login URL (e.g., http://localhost:3000/login)",
-        header: "Login URL",
+        question: "What is the login page path? (e.g., /login, /auth/signin)",
+        header: "Login Path",
         multiSelect: false,
         options: [
-          { label: "http://localhost:3000/login", description: "Default login URL" },
-          { label: "http://localhost:5173/login", description: "Vite default" },
-          { label: "http://localhost:8080/login", description: "Alternative port" }
+          { label: "/login", description: "Standard login path" },
+          { label: "/auth/signin", description: "Auth subdirectory" },
+          { label: "/signin", description: "Simple signin path" }
         ]
       }
     ]
   })
 
-  // Collect credentials (user provides via "Other" option or specific input)
-  loginCredentials = {
-    url: credResponse.answers['0'],
-    // Note: Credentials should be collected securely
+  loginInfo = {
+    url: baseUrl + loginResponse.answers['0'],
+    // Note: Credentials will be provided by user during subagent execution
   }
 }
 ```
 
-### Step 2: Create Screenshot Directory
+### Step 2: Identify Modified Pages
 
 ```typescript
+// Read design document to understand which pages were modified
 const featureName = '{feature-name}'  // Provided by orchestrator
-const screenshotDir = `docs/screenshots/${featureName}`
+const sessionDate = '{YYYY-MM-DD}'    // Provided by orchestrator
+const designDoc = fs.readFileSync(
+  `.steering/${sessionDate}-${featureName}/design.md`,
+  'utf-8'
+)
+
+// Extract page URLs from design document
+// Look for sections like "UI Changes", "Pages Modified", "Frontend Components"
+const modifiedPages = extractModifiedPages(designDoc, baseUrl)
+
+console.log(`📋 Found ${modifiedPages.length} page(s) to verify:`)
+modifiedPages.forEach(page => console.log(`   - ${page.name}: ${page.url}`))
+```
+
+### Step 3: Create Screenshot Directory
+
+```typescript
+const screenshotDir = `.steering/${sessionDate}-${featureName}/screenshots`
 
 // Create directory
-const fs = require('fs')
 fs.mkdirSync(screenshotDir, { recursive: true })
 console.log(`📁 Created screenshot directory: ${screenshotDir}`)
 ```
 
-### Step 3: Authentication (if required)
+### Step 4: Launch UI Verification Subagent
+
+**CRITICAL: Use subagent for all browser interactions**
 
 ```typescript
-if (requiresLogin) {
-  console.log('🔐 Starting authentication flow...')
+console.log('🚀 Launching UI Verification Subagent...')
+console.log('   Using Claude in Chrome for browser automation')
 
-  // Navigate to login page
-  await mcp__chrome-devtools__navigate_page({
-    url: loginCredentials.url
-  })
+const verificationResult = await Task({
+  subagent_type: 'general-purpose',
+  model: 'sonnet',
+  description: 'UI/UX verification via Claude in Chrome',
+  prompt: `You are a UI verification specialist using Claude in Chrome to test frontend changes.
 
-  // Wait for page load
-  await new Promise(resolve => setTimeout(resolve, 2000))
+**Feature**: ${featureName}
+**Base URL**: ${baseUrl}
+${requiresLogin ? `**Login URL**: ${loginInfo.url}` : '**Authentication**: Not required'}
 
-  // Capture login page screenshot
-  const loginScreenshot = await mcp__chrome-devtools__take_snapshot()
-  // Save screenshot to docs/screenshots/{feature}/login-page.png
+**Modified Pages to Verify**:
+${modifiedPages.map(p => `- ${p.name}: ${p.url}`).join('\n')}
 
-  // Fill login form
-  await mcp__chrome-devtools__fill({
-    selector: 'input[type="email"], input[name="email"], #email',
-    value: loginCredentials.email
-  })
+**Screenshot Directory**: ${screenshotDir}
 
-  await mcp__chrome-devtools__fill({
-    selector: 'input[type="password"], input[name="password"], #password',
-    value: loginCredentials.password
-  })
+**Your Tasks**:
 
-  // Capture filled form
-  const filledScreenshot = await mcp__chrome-devtools__take_snapshot()
-  // Save to docs/screenshots/{feature}/login-page-filled.png
+1. **Open Browser with Claude in Chrome**:
+   - Open Google Chrome with the Claude in Chrome extension enabled
+   - You will interact with web pages directly through the browser
 
-  // Click login button
-  await mcp__chrome-devtools__click({
-    selector: 'button[type="submit"], input[type="submit"], .login-button'
-  })
+${requiresLogin ? `2. **Authenticate** (REQUIRED):
+   - Navigate to ${loginInfo.url}
+   - Ask the user for login credentials (do NOT assume or hardcode)
+   - Fill in the login form and submit
+   - Capture screenshots:
+     - ${screenshotDir}/login-page.png (initial login page)
+     - ${screenshotDir}/login-filled.png (form filled, before submit)
+     - ${screenshotDir}/login-success.png (after successful login)
+   - Verify successful authentication
+` : ''}
 
-  // Wait for redirect
-  await new Promise(resolve => setTimeout(resolve, 3000))
+3. **Verify Each Modified Page**:
+   For each page in the list above:
 
-  // Capture success state
-  const successScreenshot = await mcp__chrome-devtools__take_snapshot()
-  // Save to docs/screenshots/{feature}/login-success.png
+   a. **Navigate** to the page URL
 
-  console.log('✅ Authentication successful')
-}
+   b. **Capture Initial Screenshot**:
+      - Save as: ${screenshotDir}/{page-name}.png
+      - Ensure full page is visible
+
+   c. **Visual Inspection Checklist**:
+      - [ ] Page loads successfully without errors
+      - [ ] Layout matches design specifications
+      - [ ] Text is readable and properly formatted
+      - [ ] Images/icons display correctly
+      - [ ] Colors match design system
+      - [ ] Spacing and alignment are correct
+      - [ ] Responsive behavior (if applicable)
+
+   d. **Test Interactive Elements**:
+      - Identify all buttons, forms, links
+      - Click buttons and capture state changes
+      - Fill forms with test data
+      - Verify navigation works
+      - Save additional screenshots as: ${screenshotDir}/{page-name}-{action}.png
+
+   e. **Check Browser Console**:
+      - Open DevTools console
+      - Look for JavaScript errors or warnings
+      - Record any console errors found
+
+4. **Generate Structured Report**:
+   Create a JSON report with this structure:
+
+   \`\`\`json
+   {
+     "feature": "${featureName}",
+     "baseUrl": "${baseUrl}",
+     "authenticationRequired": ${requiresLogin},
+     "pages": [
+       {
+         "name": "page-name",
+         "url": "full-url",
+         "screenshots": ["relative/path/to/screenshot.png"],
+         "findings": ["observation 1", "observation 2"],
+         "consoleErrors": ["error message 1"],
+         "interactiveElements": ["button tested", "form filled"],
+         "status": "pass" | "warning" | "fail"
+       }
+     ],
+     "totalScreenshots": 10,
+     "totalIssues": 2,
+     "overallStatus": "pass" | "warning" | "fail"
+   }
+   \`\`\`
+
+5. **Save All Screenshots**:
+   - Use your Write tool to save each screenshot to ${screenshotDir}/
+   - Ensure filenames follow the convention: {page-name}.png, {page-name}-{action}.png
+   - Screenshots should be clear and show the full UI state
+
+**IMPORTANT**:
+- Actually open the browser and interact with the pages using Claude in Chrome
+- DO NOT mock or simulate - perform real verification
+- Capture REAL screenshots using browser screenshot functionality
+- Ask the user for any information you need (like login credentials)
+- If you encounter errors, document them in the report
+- Focus on visual accuracy and user experience
+
+**Output**:
+Return the JSON report structure above with all findings.
+`
+})
+
+console.log('✅ UI Verification Subagent completed')
 ```
 
-### Step 4: Page-by-Page Verification
-
-**For EACH modified page:**
+### Step 5: Parse Subagent Results
 
 ```typescript
-interface PageVerification {
-  url: string
-  pageName: string
-  screenshots: string[]
-  findings: string[]
-  consoleErrors: string[]
-  status: 'pass' | 'warning' | 'fail'
+// Extract JSON report from subagent output
+const reportMatch = verificationResult.match(/```json\n([\s\S]*?)\n```/)
+if (!reportMatch) {
+  throw new Error('Subagent did not return valid JSON report')
 }
 
-const verifyPage = async (url: string, pageName: string): Promise<PageVerification> => {
-  const result: PageVerification = {
-    url,
-    pageName,
-    screenshots: [],
-    findings: [],
-    consoleErrors: [],
-    status: 'pass'
-  }
+const verificationData = JSON.parse(reportMatch[1])
 
-  console.log(`📄 Verifying: ${pageName} (${url})`)
-
-  // 1. Navigate to page
-  await mcp__chrome-devtools__navigate_page({ url })
-  await new Promise(resolve => setTimeout(resolve, 2000))
-
-  // 2. Capture initial screenshot (MANDATORY)
-  const initialScreenshot = await mcp__chrome-devtools__take_snapshot()
-  const screenshotPath = `docs/screenshots/${featureName}/${pageName}.png`
-  result.screenshots.push(screenshotPath)
-  // Save screenshot to file
-
-  // 3. Visual verification checklist
-  const checks = [
-    'Page loads successfully',
-    'Layout matches design specifications',
-    'Text is readable and properly formatted',
-    'Images/icons display correctly',
-    'Color scheme matches design',
-    'Spacing and alignment correct'
-  ]
-
-  // 4. Test interactive elements
-  // Forms
-  const formInputs = await findElements('input, textarea, select')
-  for (const input of formInputs) {
-    await mcp__chrome-devtools__fill({
-      selector: input.selector,
-      value: getTestData(input.type)
-    })
-  }
-
-  // Buttons
-  const buttons = await findElements('button, [type="submit"]')
-  for (const button of buttons) {
-    await mcp__chrome-devtools__click({
-      selector: button.selector
-    })
-    await new Promise(resolve => setTimeout(resolve, 1000))
-
-    // Capture post-click screenshot
-    const actionScreenshot = await mcp__chrome-devtools__take_snapshot()
-    const actionPath = `docs/screenshots/${featureName}/${pageName}-${button.name}.png`
-    result.screenshots.push(actionPath)
-  }
-
-  // 5. Check browser console for errors
-  // Note: Console errors are captured via Chrome DevTools
-
-  console.log(`   ✅ ${pageName} verified (${result.screenshots.length} screenshots)`)
-
-  return result
-}
+console.log(`\n📊 Verification Results:`)
+console.log(`   Total Pages: ${verificationData.pages.length}`)
+console.log(`   Total Screenshots: ${verificationData.totalScreenshots}`)
+console.log(`   Total Issues: ${verificationData.totalIssues}`)
+console.log(`   Overall Status: ${verificationData.overallStatus}`)
 ```
 
-### Step 5: Generate Verification Report
-
-**MANDATORY: Create comprehensive report**
+### Step 6: Generate Markdown Report
 
 ```typescript
-const generateReport = (verifications: PageVerification[], featureName: string): string => {
+const generateReport = (data: any, featureName: string): string => {
   const date = new Date().toISOString().split('T')[0]
 
-  let report = `# Phase 3: UI/UX Verification Report
+  let report = `# Phase 4: UI/UX Verification Report
 
 **Feature**: \`${featureName}\`
 **Date**: \`${date}\`
-**Status**: ${verifications.every(v => v.status === 'pass') ? '✅ PASSED' : '⚠️ ISSUES FOUND'}
+**Status**: ${data.overallStatus === 'pass' ? '✅ PASSED' : data.overallStatus === 'warning' ? '⚠️ WARNINGS' : '❌ FAILED'}
 
 ---
 
 ## Summary
 
-- **Total Pages Verified**: ${verifications.length}
-- **Screenshots Captured**: ${verifications.reduce((sum, v) => sum + v.screenshots.length, 0)}
-- **Console Errors Found**: ${verifications.reduce((sum, v) => sum + v.consoleErrors.length, 0)}
+- **Base URL**: ${data.baseUrl}
+- **Authentication**: ${data.authenticationRequired ? 'Required' : 'Not Required'}
+- **Total Pages Verified**: ${data.pages.length}
+- **Screenshots Captured**: ${data.totalScreenshots}
+- **Issues Found**: ${data.totalIssues}
 
 ---
 
@@ -319,21 +302,25 @@ const generateReport = (verifications: PageVerification[], featureName: string):
 
 `
 
-  for (const verification of verifications) {
-    report += `### ${verification.pageName}
+  for (const page of data.pages) {
+    const statusIcon = page.status === 'pass' ? '✅' : page.status === 'warning' ? '⚠️' : '❌'
 
-**URL**: \`${verification.url}\`
-**Status**: ${verification.status === 'pass' ? '✅ Pass' : '⚠️ Issues'}
+    report += `### ${statusIcon} ${page.name}
+
+**URL**: \`${page.url}\`
+**Status**: ${page.status.toUpperCase()}
 
 #### Screenshots
 
-${verification.screenshots.map(s => `![${verification.pageName}](../${s.replace('docs/', '')})`).join('\n')}
+${page.screenshots.map(s => `![${page.name}](../screenshots/${path.basename(s)})`).join('\n')}
 
 #### Findings
 
-${verification.findings.length > 0 ? verification.findings.map(f => `- ${f}`).join('\n') : '- No issues found'}
+${page.findings.length > 0 ? page.findings.map(f => `- ${f}`).join('\n') : '- No issues found'}
 
-${verification.consoleErrors.length > 0 ? `#### Console Errors\n${verification.consoleErrors.map(e => `- ❌ ${e}`).join('\n')}` : ''}
+${page.consoleErrors && page.consoleErrors.length > 0 ? `#### Console Errors\n${page.consoleErrors.map(e => `- ❌ ${e}`).join('\n')}` : ''}
+
+${page.interactiveElements && page.interactiveElements.length > 0 ? `#### Interactive Elements Tested\n${page.interactiveElements.map(e => `- ${e}`).join('\n')}` : ''}
 
 ---
 
@@ -351,94 +338,72 @@ ${verification.consoleErrors.length > 0 ? `#### Console Errors\n${verification.c
 
 ---
 
-**Generated By**: EDAF v1.0 - UI Verification Worker
+## Next Steps
+
+${data.overallStatus === 'pass'
+  ? '✅ All verifications passed - proceed to Phase 5 (Deployment Gate)'
+  : '⚠️ Issues found - review findings and address before proceeding'}
+
+---
+
+**Generated By**: EDAF v1.0 - UI Verification Worker (Claude in Chrome)
+**Verification Method**: Automated via Claude in Chrome subagent
 `
 
   return report
 }
 
 // Save report
-const reportPath = `docs/reports/phase3-ui-verification-${featureName}.md`
-fs.writeFileSync(reportPath, generateReport(verifications, featureName))
+const reportPath = `.steering/${sessionDate}-${featureName}/reports/phase4-ui-verification.md`
+fs.writeFileSync(reportPath, generateReport(verificationData, featureName))
 console.log(`📄 Report saved: ${reportPath}`)
 ```
 
-### Step 6: Run Verification Script
+### Step 7: Verify Artifacts
 
-```bash
-bash .claude/scripts/verify-ui.sh {feature-name}
+```typescript
+// Verify all expected screenshots exist
+const missingScreenshots = []
+for (const page of verificationData.pages) {
+  for (const screenshot of page.screenshots) {
+    if (!fs.existsSync(screenshot)) {
+      missingScreenshots.push(screenshot)
+    }
+  }
+}
+
+if (missingScreenshots.length > 0) {
+  console.warn(`⚠️  Missing screenshots:`)
+  missingScreenshots.forEach(s => console.warn(`   - ${s}`))
+}
+
+// Verify report exists and has content
+const reportStats = fs.statSync(reportPath)
+if (reportStats.size < 500) {
+  console.warn('⚠️  Report seems too short - may be incomplete')
+}
+
+console.log(`\n✅ UI Verification Complete`)
+console.log(`   Report: ${reportPath}`)
+console.log(`   Screenshots: ${screenshotDir}`)
 ```
-
-**Checks performed:**
-- Screenshot directory exists
-- At least 1 screenshot per page
-- Verification report exists
-- Report contains meaningful content (10+ lines)
-
----
-
-## Available MCP Tools
-
-| Tool | Purpose | Usage |
-|------|---------|-------|
-| `mcp__chrome-devtools__list_pages` | List browser tabs | Initial check |
-| `mcp__chrome-devtools__navigate_page` | Navigate to URL | Page access |
-| `mcp__chrome-devtools__take_snapshot` | Capture screenshot | Visual evidence |
-| `mcp__chrome-devtools__fill` | Fill form inputs | Form testing |
-| `mcp__chrome-devtools__click` | Click elements | Interaction testing |
 
 ---
 
 ## Completion Report
 
-```markdown
-# UI Verification Worker Report
-
-**Feature**: {feature-name}
-**Status**: ✅ COMPLETE / ⚠️ ISSUES / ❌ FAILED
-
----
-
-## Verification Summary
-
-- **Environment**: macOS / Linux / Windows
-- **MCP Status**: Available / Not Available
-- **Authentication**: Required / Not Required
-
----
-
-## Pages Verified
-
-| Page | URL | Screenshots | Status |
-|------|-----|-------------|--------|
-| Login | /login | 3 | ✅ Pass |
-| Dashboard | /dashboard | 2 | ✅ Pass |
-
----
-
-## Screenshots Index
-
-All screenshots saved to: `docs/screenshots/{feature-name}/`
-
-1. login-page.png
-2. login-page-filled.png
-3. login-success.png
-4. dashboard.png
-5. dashboard-profile.png
-
----
-
-## Report Location
-
-`docs/reports/phase3-ui-verification-{feature-name}.md`
-
----
-
-## Next Steps
-
-1. Review screenshots for visual accuracy
-2. Address any console errors found
-3. Proceed to Phase 4 (Deployment Gate) if passed
+```typescript
+return {
+  status: verificationData.overallStatus,
+  pagesVerified: verificationData.pages.length,
+  screenshots: verificationData.totalScreenshots,
+  issues: verificationData.totalIssues,
+  reportPath: reportPath,
+  screenshotDir: screenshotDir,
+  summary: `Verified ${verificationData.pages.length} page(s) using Claude in Chrome. ` +
+           `Captured ${verificationData.totalScreenshots} screenshot(s). ` +
+           `Found ${verificationData.totalIssues} issue(s).`
+}
 ```
 
 ---
@@ -449,11 +414,23 @@ All screenshots saved to: `docs/screenshots/{feature-name}/`
 
 | Issue | Detection | Solution |
 |-------|-----------|----------|
-| Chrome not in debug mode | `list_pages` fails | Start Chrome with `--remote-debugging-port=9222` |
-| Dev server not running | Navigation fails | Start dev server first |
-| Screenshots not saving | Permission denied | Ensure `docs/screenshots/` exists |
-| Login fails | Redirect to login | Verify credentials and selectors |
-| Element not found | Click/fill fails | Update CSS selectors |
+| Chrome extension not installed | Subagent cannot interact | Install Claude in Chrome extension |
+| Dev server not running | Navigation fails | Start dev server before verification |
+| Screenshots not saving | Missing files | Check write permissions in .steering/ |
+| Login fails | Authentication errors | Verify credentials and login flow |
+| Element not found | Interaction fails | Update selectors or UI implementation |
+
+---
+
+## Advantages Over MCP Approach
+
+**Claude in Chrome Benefits**:
+- ✅ **No Setup Required** - Uses official extension (no MCP server)
+- ✅ **Cross-Platform** - Works on macOS, Linux, Windows, WSL2
+- ✅ **More Reliable** - Official Anthropic support
+- ✅ **Better UX** - Direct browser interaction
+- ✅ **Flexible** - Subagent can handle complex scenarios
+- ✅ **Maintainable** - Less infrastructure to manage
 
 ---
 
@@ -467,6 +444,6 @@ This worker respects language settings from `.claude/edaf-config.yml`:
 
 ---
 
-**Status**: ✅ Design Complete
-**Integration**: MCP chrome-devtools required
-**Fallback**: Manual verification guide provided for WSL2
+**Status**: ✅ Updated for Claude in Chrome
+**Integration**: Claude in Chrome extension required
+**Method**: Subagent-based automation

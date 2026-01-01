@@ -1,14 +1,15 @@
 # UI Verification Skill
 
 **Skill Type**: Verification Pattern Library
-**Used By**: ui-verification-worker, Main Agent (Phase 3)
-**Trigger**: When frontend files are modified in Phase 3
+**Used By**: ui-verification-worker, Main Agent (Phase 5)
+**Trigger**: When frontend files are modified in Phase 4
+**Method**: MCP chrome-devtools
 
 ---
 
 ## Overview
 
-This skill provides reusable patterns for UI/UX verification using MCP chrome-devtools. It includes browser automation patterns, screenshot conventions, and report templates.
+This skill provides reusable patterns for UI/UX verification using **Claude in Chrome**. It uses a subagent-based approach where browser interactions are delegated to a general-purpose agent with access to Claude in Chrome extension.
 
 ---
 
@@ -23,9 +24,9 @@ This skill provides reusable patterns for UI/UX verification using MCP chrome-de
    - `**/*.css`, `**/*.scss`, `**/*.sass`, `**/*.less`
    - `**/src/**/*.{tsx,jsx,ts,js,vue,svelte}`
 
-2. Phase 3 Code Review Gate active
+2. Phase 5 Code Review Gate active
 
-3. MCP chrome-devtools available (not WSL2)
+3. User has MCP chrome-devtools server configured
 
 ---
 
@@ -34,48 +35,48 @@ This skill provides reusable patterns for UI/UX verification using MCP chrome-de
 | File | Purpose |
 |------|---------|
 | `SKILL.md` | This overview file |
-| `BROWSER-AUTOMATION.md` | MCP chrome-devtools usage patterns |
+| `BROWSER-AUTOMATION.md` | Claude in Chrome subagent patterns |
 | `SCREENSHOT-GUIDE.md` | Screenshot naming and storage conventions |
 | `CHECKLIST.md` | Verification checklist template |
+| `REPORT-TEMPLATE.md` | Markdown report template |
+| `USER-GUIDE.md` | User guide for manual verification |
 
 ---
 
 ## Quick Reference
 
-### Environment Check
+### Subagent Approach
 
 ```typescript
-// WSL2 Detection
-const isWSL2 = fs.existsSync('/proc/version') &&
-  fs.readFileSync('/proc/version', 'utf-8').toLowerCase().includes('microsoft')
+// Launch subagent with Claude in Chrome access
+const verificationResult = await Task({
+  subagent_type: 'general-purpose',
+  model: 'sonnet',
+  description: 'UI verification via Claude in Chrome',
+  prompt: `You are a UI verification specialist using Claude in Chrome...
 
-if (isWSL2) {
-  return { skip: true, reason: 'WSL2 environment' }
-}
-```
-
-### MCP Tools Available
-
-```typescript
-mcp__chrome-devtools__list_pages     // List browser tabs
-mcp__chrome-devtools__navigate_page  // Navigate to URL
-mcp__chrome-devtools__take_snapshot  // Capture screenshot
-mcp__chrome-devtools__fill           // Fill form inputs
-mcp__chrome-devtools__click          // Click elements
+  **Tasks**:
+  1. Open browser with Claude in Chrome extension
+  2. Navigate to pages and capture screenshots
+  3. Test interactive elements
+  4. Check console for errors
+  5. Return structured JSON report
+  `
+})
 ```
 
 ### Directory Structure
 
 ```
-docs/
-├── screenshots/{feature-name}/
+.steering/{YYYY-MM-DD}-{feature-name}/
+├── screenshots/
 │   ├── login-page.png
-│   ├── login-page-filled.png
+│   ├── login-filled.png
 │   ├── login-success.png
 │   ├── {page-name}.png
 │   └── {page-name}-{action}.png
 └── reports/
-    └── phase3-ui-verification-{feature-name}.md
+    └── phase5-ui-verification.md
 ```
 
 ---
@@ -84,14 +85,62 @@ docs/
 
 This skill is automatically loaded when:
 1. `ui-verification-worker` is launched
-2. Phase 3 detects frontend changes
-3. User runs `/edaf-verify-ui` command
+2. Phase 5 detects frontend changes
+3. User asks Claude Code to run UI verification
+
+**Key Difference from MCP Approach**:
+- ❌ No MCP server setup required
+- ❌ No WSL2 environment restrictions
+- ✅ Uses official Claude in Chrome extension
+- ✅ Subagent handles all browser interactions
+- ✅ Works across all platforms
+
+---
+
+## Subagent Workflow
+
+```
+Main Worker
+    ↓
+    ├─→ Collect requirements (dev server URL, login info)
+    ├─→ Identify modified pages from design doc
+    ├─→ Create screenshot directory
+    ↓
+Launch Subagent (general-purpose)
+    ↓
+    ├─→ Open browser with Claude in Chrome
+    ├─→ Authenticate (if required)
+    ├─→ For each page:
+    │     ├─→ Navigate to page
+    │     ├─→ Capture screenshot
+    │     ├─→ Test interactive elements
+    │     └─→ Check console errors
+    ↓
+Return JSON report to main worker
+    ↓
+Main Worker
+    ├─→ Parse JSON results
+    ├─→ Generate markdown report
+    └─→ Verify all screenshots saved
+```
+
+---
+
+## Advantages
+
+**Claude in Chrome Benefits**:
+- ✅ **Official Support**: Anthropic's official extension
+- ✅ **No Setup**: No MCP server configuration needed
+- ✅ **Cross-Platform**: Works on macOS, Linux, Windows, WSL2
+- ✅ **Flexible**: Subagent can handle complex scenarios
+- ✅ **Maintainable**: Less infrastructure to manage
+- ✅ **Reliable**: Direct browser integration
 
 ---
 
 ## Related Resources
 
 - **Worker**: `.claude/agents/workers/ui-verification-worker.md`
-- **Template**: `.claude/templates/ui-verification-report-template.md`
-- **Script**: `.claude/scripts/verify-ui.sh`
-- **Guide**: `docs/UI-VERIFICATION-GUIDE.md`
+- **Report Template**: `REPORT-TEMPLATE.md` (same directory)
+- **User Guide**: `USER-GUIDE.md` (same directory)
+- **Checklist**: `CHECKLIST.md` (same directory)

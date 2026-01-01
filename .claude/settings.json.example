@@ -1,11 +1,6 @@
 {
   "permissions": {
     "allow": [
-      "mcp__chrome-devtools__list_pages",
-      "mcp__chrome-devtools__navigate_page",
-      "mcp__chrome-devtools__take_snapshot",
-      "mcp__chrome-devtools__fill",
-      "mcp__chrome-devtools__click",
       "Bash(docker compose exec:*)",
       "Bash(docker-compose exec:*)"
     ],
@@ -18,10 +13,6 @@
     ],
     "ask": []
   },
-  "enableAllProjectMcpServers": true,
-  "enabledMcpjsonServers": [
-    "chrome-devtools"
-  ],
   "sandbox": {
     "enabled": true,
     "autoAllowBashIfSandboxed": true,
@@ -32,24 +23,22 @@
     "command": "bash \"$PWD/.claude/scripts/edaf-status.sh\""
   },
   "hooks": {
-    "Notification": [
+    "PermissionRequest": [
       {
-        "matcher": "permission_prompt | idle_prompt | elicitation_dialog",
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"$PWD/.claude/scripts/notification.sh\" 'Input needed / 入力が必要です' WarblerSong"
+            "command": "$PWD/.claude/scripts/notification.sh 'Input needed' WarblerSong"
           }
         ]
       }
     ],
-    "PostToolUse": [
+    "Stop": [
       {
-        "matcher": "*",
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"$PWD/.claude/scripts/notification.sh\" 'Task completed / タスク終了' CatMeow"
+            "command": "$PWD/.claude/scripts/notification.sh 'Task completed' CatMeow"
           }
         ]
       }
