@@ -194,23 +194,6 @@ The interactive setup wizard will guide you through:
 
 ## 🚀 How to Use EDAF
 
-### Session Start
-
-When you start a Claude Code session, you'll see:
-
-```
-🚀 EDAF v1.0 Ready / 準備完了
-   Start EDAF workflow: "Use EDAF workflow" / EDAFワークフローを開始: 「エージェントフローを使って」
-   (Switch anytime / いつでも切り替え可能)
-```
-
-You can choose:
-- **Start EDAF workflow**: Say "Use EDAF workflow" or "エージェントフローを使って"
-- **Quick questions**: Just ask directly
-- **Switch anytime**: Start EDAF even during a conversation
-
----
-
 After running `/setup`, you can use EDAF in two ways:
 
 ### Method 1: Full 7-Phase Gate System (Recommended)
@@ -371,7 +354,6 @@ EDAF uses Claude Code hooks for automation:
 
 | Hook | Trigger | Action |
 |------|---------|--------|
-| `SessionStart` | Session begins | Display bilingual EDAF workflow prompt |
 | `SubagentStop` | Worker completes | Play notification sound |
 | `PermissionRequest` | User input needed | Play alert sound |
 | `Stop` | Task completed | Play completion sound |
