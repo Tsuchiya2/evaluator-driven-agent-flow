@@ -851,8 +851,8 @@ Setup complete! Here's what you can do next:
 
 ### 1. Test Language Settings / 言語設定をテスト
 
-Try asking Claude Code in your preferred language:
-希望の言語でClaude Codeに試してみてください:
+Try Claude Code in Japanese or English:
+日本語または英語でClaude Codeに試してみてください:
 
 **Example / 例**:
 
@@ -1474,11 +1474,8 @@ ${selectedStandards.map(std => `const ${std.name.replace('-', '_')} = await Read
 
 **Your EDAF v1.0 setup is complete! / EDAF v1.0のセットアップが完了しました！**
 
-Start generating code with self-adapting workers, and let the evaluators automatically ensure quality.
-自己適応型ワーカーでコード生成を開始し、エバリュエーターに品質を自動的に保証させましょう。
-
-No templates, no maintenance, infinite scalability. 🚀
-テンプレート不要、メンテナンス不要、無限のスケーラビリティ。🚀
+Start implementing features using the 7-phase gate system for quality assurance.
+7フェーズゲートシステムを使用して、品質保証された機能実装を始めましょう。
 
 ---
 
