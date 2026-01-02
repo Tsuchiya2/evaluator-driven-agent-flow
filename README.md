@@ -176,14 +176,42 @@ That's it! The installation script will:
 
 **IMPORTANT**: The `/setup` command configures EDAF in `.claude/CLAUDE.md`. Without this, Claude Code will NOT use the agent flow properly!
 
-The interactive setup wizard will guide you through:
+#### Optimized Parallel Pattern (v2)
 
-1. **Interrupted Setup Recovery** - Automatically detects and resumes interrupted setups
-2. **Language Preferences 🌐** - Choose documentation and output language (EN/JA)
-3. **Installation Verification** - Verifies workers and evaluators are installed
-4. **Docker Detection 🐳** - Automatically detects and configures Docker environments
-5. **Standards Learning 📚** - Optionally learn coding standards from existing code
-6. **Background Generation** - Generates docs and skills using Fire & Forget pattern
+The `/setup` command uses an **Optimized Parallel Pattern** with real-time progress visibility:
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  OPTIMIZED PARALLEL PATTERN                                     │
+│  ══════════════════════════                                     │
+│                                                                 │
+│  Phase 1: Configuration (~5 seconds)                            │
+│    └── Language + Docker + CLAUDE.md + edaf-config.yml          │
+│                                                                 │
+│  Phase 2: Agent Launch (Fire & Forget, parallel)                │
+│    ├── 6 documentation-worker agents                            │
+│    └── N standards agents (based on detected language)          │
+│                                                                 │
+│  Phase 3: Progress Monitoring (max 300s)                        │
+│    ├── Poll every 10 seconds                                    │
+│    ├── Display completed files IMMEDIATELY as they finish       │
+│    │   [10s] ✅ glossary.md (5,234 bytes)                       │
+│    │   [25s] ✅ functional-design.md (12,456 bytes)             │
+│    │   [40s] ✅ test-standards/SKILL.md (8,901 bytes)           │
+│    ├── Early exit when ALL complete                             │
+│    └── Smart fallback for timed-out files (project-specific)    │
+│                                                                 │
+│  Result: Complete in ~5 minutes with full visibility            │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+| Feature | v1 | v2 (Current) |
+|---------|-----|--------------|
+| **Timeout** | 600s (10 min) | 300s (5 min) |
+| **Poll Interval** | 30s | 10s |
+| **Progress** | File count only | Each file immediately |
+| **Fallback** | Generic template | Smart (project-specific) |
+| **Agent Analysis** | ✅ Deep code analysis | ✅ Deep code analysis |
 
 **Supported languages/frameworks:** TypeScript, JavaScript, Python, Java, Go, Rust, Ruby, PHP, and their popular frameworks.
 
