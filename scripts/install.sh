@@ -127,6 +127,21 @@ if [ -d "$EDAF_DIR/.claude/sounds" ]; then
   echo -e "${GREEN}  ✅ Sound files installed / 音声ファイルをインストールしました${NC}"
 fi
 
+# 7.5. Copy EDAF workflow skills
+echo -e "${BLUE}📋 Installing EDAF workflow skills... / EDAFワークフロースキルをインストール中...${NC}"
+if [ -d "$EDAF_DIR/.claude/skills" ]; then
+  mkdir -p .claude/skills
+  cp -r $EDAF_DIR/.claude/skills/edaf-evaluation .claude/skills/ 2>/dev/null || true
+  cp -r $EDAF_DIR/.claude/skills/edaf-orchestration .claude/skills/ 2>/dev/null || true
+  cp -r $EDAF_DIR/.claude/skills/ui-verification .claude/skills/ 2>/dev/null || true
+  echo -e "${GREEN}  ✅ EDAF workflow skills installed / EDAFワークフロースキルをインストールしました${NC}"
+  echo -e "${GREEN}     - edaf-orchestration/ (7-phase workflow documentation / 7フェーズワークフロー手順書)${NC}"
+  echo -e "${GREEN}     - edaf-evaluation/ (evaluator patterns and templates / エバリュエーターのパターンとテンプレート)${NC}"
+  echo -e "${GREEN}     - ui-verification/ (UI testing guide and checklist / UI検証ガイドとチェックリスト)${NC}"
+else
+  echo -e "${YELLOW}  ⚠️  Warning: EDAF skills not found (skipped) / 警告: EDAFスキルが見つかりません（スキップ）${NC}"
+fi
+
 # 8. Copy configuration example (optional)
 echo -e "${BLUE}📋 Installing configuration template... / 設定テンプレートをインストール中...${NC}"
 if [ -f "$EDAF_DIR/.claude/edaf-config.example.yml" ]; then
@@ -148,6 +163,21 @@ if [ -f "$EDAF_DIR/.claude/settings.json.example" ]; then
   else
     echo -e "${YELLOW}  ⚠️  .claude/settings.json already exists (skipped) / .claude/settings.jsonはすでに存在します（スキップ）${NC}"
   fi
+fi
+
+# 8.6. Copy additional configuration files
+echo -e "${BLUE}📋 Installing additional configuration files... / 追加設定ファイルをインストール中...${NC}"
+
+# Copy agent-models.yml
+if [ -f "$EDAF_DIR/.claude/agent-models.yml" ]; then
+  cp $EDAF_DIR/.claude/agent-models.yml .claude/agent-models.yml
+  echo -e "${GREEN}  ✅ agent-models.yml installed (model assignments for agents) / agent-models.ymlをインストールしました（エージェントのモデル割り当て）${NC}"
+fi
+
+# Copy review-standards command
+if [ -f "$EDAF_DIR/.claude/commands/review-standards.md" ]; then
+  cp $EDAF_DIR/.claude/commands/review-standards.md .claude/commands/review-standards.md
+  echo -e "${GREEN}  ✅ /review-standards command installed / /review-standardsコマンドをインストールしました${NC}"
 fi
 
 # 9. Create docs directories for UI verification

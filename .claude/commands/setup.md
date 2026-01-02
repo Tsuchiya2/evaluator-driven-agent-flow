@@ -1130,48 +1130,66 @@ if (standardsToCreate.length > 0) {
     const learningResult = await Task({
       subagent_type: 'general-purpose',
       model: 'sonnet',
-      description: `Learn ${standard.name}`,
-      prompt: `You are a coding standards expert. Analyze existing code and create a comprehensive coding standard skill.
+      description: `Generate ${standard.name}`,
+      prompt: `You are a coding standards expert with deep knowledge of all programming languages and frameworks.
 
-**Task**: Learn ${standard.label} from existing codebase
+**Task**: Generate comprehensive coding standards for ${standard.label}
 
 **Standard Name**: ${standard.name}
 **Output Path**: .claude/skills/${standard.name}/SKILL.md
+**Detected Files**: ${standard.description}
 
-**Instructions**:
+---
 
-1. **Analyze Existing Code** (use Glob and Read tools):
-   ${standard.name === 'typescript-standards' ? '- Read 5-10 representative TypeScript files\n   - Identify naming conventions (PascalCase for classes, camelCase for functions)\n   - Detect error handling patterns\n   - Find common import/export styles\n   - Identify type definition patterns' : ''}
-   ${standard.name === 'react-standards' ? '- Read 5-10 React component files\n   - Identify component structure (functional vs class)\n   - Find state management patterns\n   - Detect prop validation approaches\n   - Identify styling approaches' : ''}
-   ${standard.name === 'python-standards' ? '- Read 5-10 Python files\n   - Identify naming conventions (snake_case)\n   - Find docstring styles (Google, NumPy, Sphinx)\n   - Detect error handling patterns\n   - Find import organization' : ''}
-   ${standard.name === 'fastapi-standards' ? '- Read FastAPI route files\n   - Identify endpoint patterns\n   - Find dependency injection patterns\n   - Detect response model patterns\n   - Find error handling' : ''}
-   ${standard.name === 'test-standards' ? '- Read test files\n   - Identify test naming conventions\n   - Find assertion styles\n   - Detect test organization (describe/it vs test_)\n   - Find mocking patterns' : ''}
-   ${standard.name === 'security-standards' ? '- Scan for security patterns\n   - Input validation approaches\n   - Authentication/authorization patterns\n   - Secret management\n   - SQL injection prevention' : ''}
+## Your Approach
 
-2. **Interactive Dialogue with User**:
-   - Use AskUserQuestion to confirm detected patterns
-   - Ask about ambiguous conventions
-   - Clarify team preferences
-   - Validate assumptions
+### Step 1: Detect Existing Code (if any)
 
-3. **Create SKILL.md** (use Write tool):
-   - Create directory: .claude/skills/${standard.name}/
-   - Write comprehensive skill documentation
-   - Include concrete examples from codebase
-   - Add enforcement rules for Phase 4-6
+Use Glob tool to find relevant files for this standard:
+- For language standards (typescript, python, ruby, go, rust, etc.): Find source files (*.ts, *.py, *.rb, *.go, *.rs, etc.)
+- For framework standards (rails, react, vue, django, fastapi, etc.): Find framework-specific files
+- For test standards: Find test files (*.test.*, *.spec.*, *_test.*, test_*.*)
+- For security standards: Scan authentication, validation, database interaction code
+
+### Step 2: Analyze Code (if code exists)
+
+If code exists:
+1. Read 5-10 representative files using Read tool
+2. Identify actual patterns:
+   - Naming conventions (PascalCase? camelCase? snake_case?)
+   - File organization (directory structure, file naming)
+   - Import/export styles
+   - Error handling patterns
+   - Testing patterns (if applicable)
+   - Framework-specific patterns (if applicable)
+3. Extract real examples from the code
+4. Use AskUserQuestion to confirm ambiguous patterns
+
+### Step 3: Apply Best Practices (if no code OR to supplement)
+
+If no code exists, OR to supplement detected patterns:
+1. Use your LLM knowledge of ${standard.label} best practices
+2. Include industry-standard conventions (PEP 8 for Python, RuboCop for Ruby, ESLint for JavaScript, etc.)
+3. Provide concrete, actionable examples
+4. Include common anti-patterns to avoid
+
+### Step 4: Generate SKILL.md
+
+Create .claude/skills/${standard.name}/SKILL.md with this structure:
 
 **SKILL.md Template**:
 
 \`\`\`markdown
 ---
-description: ${standard.label} learned from existing codebase
+description: ${standard.label} for this project
 ---
 
 # ${standard.label}
 
 **Purpose**: Enforce ${standard.label} during Phase 4 (Implementation), Phase 5 (Code Review), and Phase 6 (Documentation)
 
-**Auto-learned from**: Existing codebase (${new Date().toISOString().split('T')[0]})
+**Generated**: ${new Date().toISOString().split('T')[0]}
+**Source**: [Analyzed from existing code | General best practices]
 
 ---
 
@@ -1189,83 +1207,178 @@ This skill is **automatically invoked** during:
 
 ### 1. Naming Conventions
 
-[Detected patterns from existing code]
+**Detected Patterns** (if code exists):
+- [Classes/Types: PascalCase (95% usage)]
+- [Functions/Methods: camelCase (98% usage)]
+- [Constants: SCREAMING_SNAKE_CASE (100% usage)]
 
-**Examples from codebase**:
-\`\`\`
-[Copy actual examples]
+**Examples from Codebase** (use actual code if available):
+\`\`\`[language]
+// ✅ Good (from: path/to/file.ext)
+[Real code example]
+
+// ❌ Bad (anti-pattern)
+[Counter-example]
 \`\`\`
 
 **Rules**:
-- ✅ DO: [Specific rule]
-- ❌ DON'T: [Anti-pattern]
+- ✅ DO: [Specific, actionable rule based on detected patterns]
+- ❌ DON'T: [Specific anti-pattern to avoid]
 
 ### 2. File Structure
 
-[Detected patterns]
+**Detected Directory Structure** (if code exists):
+\`\`\`
+[Show actual project structure]
+\`\`\`
+
+**Conventions**:
+- [File naming: snake_case.rb or PascalCase.tsx]
+- [Directory organization: feature-based or layer-based]
 
 ### 3. Error Handling
 
-[Detected patterns]
+**Detected Patterns**:
+- [Try/catch usage, error types, logging patterns]
 
-### 4. Testing Patterns
+**Examples**:
+\`\`\`[language]
+[Real error handling code from project]
+\`\`\`
 
-[Detected patterns]
+### 4. Code Style
 
-### 5. Documentation Style
+**Detected Patterns**:
+- [Indentation: 2 spaces or 4 spaces]
+- [Quotes: single or double]
+- [Semicolons: yes or no (for JS/TS)]
+- [Line length: max 80 or 100 or 120 characters]
 
-[Detected patterns]
+### 5. Framework-Specific Patterns (if applicable)
+
+**For ${standard.label}**:
+[Rails: MVC patterns, Active Record usage]
+[React: Component patterns, hooks usage]
+[FastAPI: Route patterns, dependency injection]
+[etc.]
+
+### 6. Testing Patterns (if test standard)
+
+**Detected Patterns**:
+- [Test framework: Jest, RSpec, pytest, etc.]
+- [Test structure: describe/it, test functions]
+- [Assertion style: expect, assert]
+- [Mocking patterns]
+
+### 7. Security Considerations (if security standard)
+
+**Critical Rules**:
+- Input validation
+- Authentication/Authorization
+- SQL injection prevention
+- XSS prevention
+- Secrets management
 
 ---
 
 ## Enforcement Checklist
 
 **Phase 4 Workers**:
-- [ ] Follow naming conventions
-- [ ] Match file structure
+- [ ] Follow detected naming conventions
+- [ ] Match file structure patterns
 - [ ] Use standard error handling
-- [ ] Follow import organization
+- [ ] Follow code style (indentation, quotes, etc.)
+- [ ] Apply framework-specific patterns (if applicable)
+- [ ] Follow testing patterns (if test code)
+- [ ] Apply security rules (always)
 
 **Phase 5 Evaluators**:
-- [ ] Verify naming compliance
-- [ ] Check pattern consistency
-- [ ] Validate error handling
-- [ ] Confirm test patterns
+- [ ] Verify naming convention compliance (check actual usage percentages)
+- [ ] Validate file structure matches project patterns
+- [ ] Check error handling consistency
+- [ ] Verify code style compliance
+- [ ] Confirm framework pattern usage
+- [ ] Validate test quality (if tests)
+- [ ] Check security vulnerabilities
 
 **Phase 6 Documentation**:
-- [ ] Use standard doc format
-- [ ] Include required sections
-- [ ] Follow example style
+- [ ] Use consistent terminology
+- [ ] Follow documentation style from existing docs
+- [ ] Include code examples matching project style
+- [ ] Document testing approach
+- [ ] Include security considerations
 
 ---
 
-## Examples
+## Common Patterns (from codebase analysis)
 
-### ✅ Good Example
+### Pattern 1: [Name]
+\`\`\`[language]
+[Real code pattern found in codebase]
+\`\`\`
+**Usage**: Found in [X] files
+**When to use**: [Explanation]
 
-\`\`\`typescript
-[Real example from codebase]
+### Pattern 2: [Name]
+\`\`\`[language]
+[Another real pattern]
 \`\`\`
 
-### ❌ Bad Example
+---
 
-\`\`\`typescript
-[Counter-example]
+## Anti-Patterns to Avoid
+
+### ❌ Anti-Pattern 1: [Name]
+\`\`\`[language]
+[Bad code example]
 \`\`\`
+**Why bad**: [Explanation]
+**Better approach**: [Good example]
+
+---
+
+## Configuration Files (if detected)
+
+- [\`.eslintrc.js\`: ESLint configuration detected]
+- [\`.rubocop.yml\`: RuboCop configuration detected]
+- [\`pyproject.toml\`: Ruff/Black configuration detected]
+- [etc.]
+
+**Note**: Generated code MUST comply with these tool configurations.
 
 ---
 
 **Last Updated**: ${new Date().toISOString()}
-**Source**: Learned from ${standard.description}
+**Analyzed Files**: ${standard.description}
+**Customization**: This file was auto-generated. Edit to add project-specific rules.
 \`\`\`
 
-**Current Working Directory**: ${process.cwd()}
+---
 
-**IMPORTANT**:
-- Be thorough but concise
-- Use REAL examples from the codebase
-- Ask user to confirm ambiguous patterns
-- Create actionable, enforceable rules
+## Critical Instructions
+
+**If existing code found**:
+1. Prioritize ACTUAL patterns over theoretical best practices
+2. Use REAL code examples (copy exact code with file paths)
+3. Calculate pattern usage percentages (e.g., "95% of classes use PascalCase")
+4. Ask user to confirm if multiple conflicting patterns found
+5. Include project-specific quirks and exceptions
+
+**If NO existing code found**:
+1. Use your LLM knowledge of ${standard.label} best practices
+2. Include industry-standard conventions
+3. Provide comprehensive, actionable examples
+4. Cover common scenarios and edge cases
+5. Include links to official style guides (if applicable)
+
+**Always**:
+- Be thorough but concise (aim for 150-300 lines)
+- Make rules actionable and verifiable
+- Include concrete examples with correct syntax
+- Organize by importance (most critical rules first)
+- Use checklist format for enforcement
+
+**Current Working Directory**: ${process.cwd()}
 `
     })
 
