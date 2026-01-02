@@ -2,106 +2,110 @@
 description: Interactive setup for EDAF v1.0 Self-Adapting System / EDAF v1.0 自己適応型システムのインタラクティブセットアップ
 ---
 
-# EDAF v1.0 - Interactive Setup (Optimized)
+# EDAF v1.0 - Interactive Setup (Optimized v2)
 
 Welcome to EDAF (Evaluator-Driven Agent Flow) v1.0!
 
-This setup wizard uses an optimized **Fire & Forget** pattern to prevent context exhaustion.
+This setup uses an **Optimized Parallel Pattern** with improved progress visibility and reliability.
 
 ---
 
 ## Architecture Overview
 
 ```
-Phase 1: Interactive Setup (Main Agent)
-    ├── Language selection
-    ├── Project auto-detection
-    ├── Docker configuration
-    ├── CLAUDE.md generation
-    └── edaf-config.yml generation (with setup_progress)
-
-Phase 2: Fire & Forget (Background Agents) - SCALABLE 1:1 PATTERN
-    ├── documentation-worker × 6 (one per doc file)
-    │   ├── product-requirements.md
-    │   ├── functional-design.md
-    │   ├── development-guidelines.md
-    │   ├── repository-structure.md
-    │   ├── architecture.md
-    │   └── glossary.md
-    └── *-standards agents × N (one per skill)
-    # NO TaskOutput - results not retrieved
-    # Each agent generates exactly ONE file (scalable pattern)
-
-Phase 3: Polling (Main Agent)
-    └── Check file existence every 30s (max 600s)
-
-Phase 4: Fallback (Main Agent) - NEW
-    └── Generate minimal templates for missing files
-
-Phase 5: Completion (Main Agent)
-    ├── Display generated files (success/fallback/missing)
-    └── Remove setup_progress from edaf-config.yml
+┌─────────────────────────────────────────────────────────────────┐
+│  OPTIMIZED PARALLEL PATTERN                                     │
+│  ══════════════════════════                                     │
+│                                                                 │
+│  Phase 1: Configuration (~5 seconds)                            │
+│    ├── Language selection                                       │
+│    ├── Docker configuration                                     │
+│    ├── CLAUDE.md generation                                     │
+│    └── edaf-config.yml generation                               │
+│                                                                 │
+│  Phase 2: Agent Launch (Fire & Forget)                          │
+│    ├── 6 documentation-worker agents (parallel)                 │
+│    └── N standards agents (parallel)                            │
+│                                                                 │
+│  Phase 3: Progress Monitoring (max 300s)                        │
+│    ├── Poll every 10 seconds (not 30)                           │
+│    ├── Display completed files IMMEDIATELY                      │
+│    ├── Early exit when ALL complete                             │
+│    └── Smart fallback for timed-out files                       │
+│                                                                 │
+│  Result: Complete in ~5 minutes with full visibility            │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
-### Scalability Principles
+### Improvements Over v1
 
-1. **1 Agent = 1 File**: Each agent generates exactly one output file
-2. **Parallel Execution**: All agents run simultaneously in background
-3. **Independent Failure**: One agent failing doesn't affect others
-4. **Fallback Templates**: Missing files get minimal templates on timeout
+| Aspect | v1 (Broken) | v2 (Fixed) |
+|--------|-------------|------------|
+| Timeout | 600s (10 min) | 300s (5 min) |
+| Poll Interval | 30s | 10s |
+| Progress Display | File count only | Each file as completed |
+| Fallback | Generic template | Smart (project-specific) |
+| User Experience | Blind waiting | Real-time progress |
 
 ---
 
-## Step 0: Check for Interrupted Setup
+## Step 0: Check for Interrupted/Existing Setup
 
-**Action**: Check if previous setup was interrupted:
+**Action**: Check if previous setup exists:
 
 ```typescript
 const fs = require('fs')
 const path = require('path')
 const yaml = require('js-yaml')
 
-// Check for interrupted setup
 if (fs.existsSync('.claude/edaf-config.yml')) {
   try {
-    const existingConfig = yaml.load(fs.readFileSync('.claude/edaf-config.yml', 'utf-8'))
+    const config = yaml.load(fs.readFileSync('.claude/edaf-config.yml', 'utf-8'))
 
-    if (existingConfig && existingConfig.setup_progress && existingConfig.setup_progress.status === 'in_progress') {
-      console.log('\n⚠️  Previous setup was interrupted / 前回のセットアップが中断されています\n')
+    if (config.setup_progress && config.setup_progress.status === 'in_progress') {
+      console.log('\n⚠️  Previous setup was interrupted / 前回のセットアップが中断されています')
 
       const resumeResponse = await AskUserQuestion({
-        questions: [
-          {
-            question: "Resume from where it left off? / 中断した箇所から再開しますか？",
-            header: "Resume",
-            multiSelect: false,
-            options: [
-              {
-                label: "Resume - Check file generation status",
-                description: "Continue polling for file generation. Recommended if agents are still running."
-              },
-              {
-                label: "Restart - Start fresh setup",
-                description: "Delete progress and start from the beginning."
-              }
-            ]
-          }
-        ]
+        questions: [{
+          question: "Resume or restart? / 再開しますか？",
+          header: "Resume",
+          multiSelect: false,
+          options: [
+            { label: "Resume", description: "Continue from where it left off" },
+            { label: "Restart", description: "Start fresh" }
+          ]
+        }]
       })
 
       if (resumeResponse.answers['0'].includes('Resume')) {
-        // Jump to Phase 3 (Polling)
-        console.log('\n🔄 Resuming setup... / セットアップを再開中...\n')
-        // The polling logic will be executed in Step 6
+        // Jump to Phase 3 (monitoring)
+        console.log('\n🔄 Resuming setup...')
+        // Continue to Step 6 (Progress Monitoring)
       } else {
-        // Clear setup_progress and restart
-        delete existingConfig.setup_progress
-        fs.writeFileSync('.claude/edaf-config.yml', yaml.dump(existingConfig))
-        console.log('\n🔄 Restarting setup... / セットアップを最初から開始...\n')
+        delete config.setup_progress
+        fs.writeFileSync('.claude/edaf-config.yml', yaml.dump(config))
+      }
+    } else if (!config.setup_progress) {
+      // Already configured
+      const reconfigResponse = await AskUserQuestion({
+        questions: [{
+          question: "EDAF is already configured. What would you like to do?",
+          header: "Config",
+          multiSelect: false,
+          options: [
+            { label: "Reconfigure", description: "Start fresh with new settings" },
+            { label: "Keep current", description: "Exit without changes" }
+          ]
+        }]
+      })
+
+      if (reconfigResponse.answers['0'].includes('Keep')) {
+        console.log('\n✅ Keeping current configuration.')
+        return
       }
     }
   } catch (e) {
-    // Config file exists but is invalid, continue with fresh setup
+    // Invalid config, continue with fresh setup
   }
 }
 ```
@@ -114,55 +118,30 @@ if (fs.existsSync('.claude/edaf-config.yml')) {
 
 ```typescript
 const langResponse = await AskUserQuestion({
-  questions: [
-    {
-      question: "Select your language preference for EDAF / EDAFの言語設定を選択してください",
-      header: "Language",
-      multiSelect: false,
-      options: [
-        {
-          label: "Option 1: EN docs + EN output",
-          description: "Documentation in English, Terminal output in English. Best for English-speaking teams."
-        },
-        {
-          label: "Option 2: JA docs + JA output",
-          description: "Documentation in Japanese, Terminal output in Japanese. Best for Japanese teams."
-        },
-        {
-          label: "Option 3: EN docs + JA output",
-          description: "Documentation in English, Terminal output in Japanese."
-        }
-      ]
-    }
-  ]
+  questions: [{
+    question: "Select your language preference for EDAF / EDAFの言語設定を選択してください",
+    header: "Language",
+    multiSelect: false,
+    options: [
+      { label: "EN docs + EN output", description: "Documentation and terminal output in English" },
+      { label: "JA docs + JA output", description: "ドキュメントとターミナル出力を日本語で" },
+      { label: "EN docs + JA output", description: "Documentation in English, terminal in Japanese" }
+    ]
+  }]
 })
 
-// Parse the selected option
 const selected = langResponse.answers['0']
-let docLang = 'en'
-let termLang = 'en'
+const docLang = selected.includes('JA docs') ? 'ja' : 'en'
+const termLang = selected.includes('JA output') ? 'ja' : 'en'
 
-if (selected.includes('Option 1')) {
-  docLang = 'en'
-  termLang = 'en'
-} else if (selected.includes('Option 2')) {
-  docLang = 'ja'
-  termLang = 'ja'
-} else if (selected.includes('Option 3')) {
-  docLang = 'en'
-  termLang = 'ja'
-}
-
-console.log('\n✅ Language preference set:')
-console.log('   Documentation:', docLang === 'en' ? 'English' : 'Japanese')
-console.log('   Terminal Output:', termLang === 'en' ? 'English' : 'Japanese')
+console.log(`\n✅ Language: ${docLang === 'en' ? 'English' : 'Japanese'} docs, ${termLang === 'en' ? 'English' : 'Japanese'} output`)
 ```
 
 ---
 
 ## Step 2: Verify Installation
 
-**Action**: Check for installed components:
+**Action**: Check for installed EDAF components:
 
 ```typescript
 const checks = {
@@ -172,133 +151,170 @@ const checks = {
 }
 
 console.log('\n📋 Installation Status:')
-console.log('   Workers:', checks.workers ? '✅ Installed' : '❌ Not found')
-console.log('   Evaluators:', checks.evaluators ? '✅ Installed' : '❌ Not found')
-console.log('   /setup command:', checks.setupCommand ? '✅ Installed' : '❌ Not found')
+console.log(`   Workers: ${checks.workers ? '✅' : '❌'}`)
+console.log(`   Evaluators: ${checks.evaluators ? '✅' : '❌'}`)
+console.log(`   /setup: ${checks.setupCommand ? '✅' : '❌'}`)
 
 if (!checks.workers || !checks.evaluators) {
-  console.log('\n⚠️  Some components are missing. Please run install.sh first.')
-  console.log('   bash evaluator-driven-agent-flow/scripts/install.sh')
+  console.log('\n⚠️  Missing components. Run: bash evaluator-driven-agent-flow/scripts/install.sh')
 }
 ```
 
 ---
 
-## Step 3: Project Auto-Detection & Docker Configuration
+## Step 3: Project Analysis & Docker Configuration
 
-**Action**: Detect project type and Docker environment:
+**Action**: Analyze project and configure Docker:
 
 ```typescript
-// Detect project type
-let projectType = 'unknown'
-let detectedFrameworks = []
+// ═══════════════════════════════════════════════════════════════
+// PROJECT ANALYSIS - Extract information for smart fallbacks
+// ═══════════════════════════════════════════════════════════════
 
+const projectInfo = {
+  type: 'unknown',
+  name: 'project',
+  language: '',
+  frameworks: [],
+  testFramework: '',
+  linter: '',
+  packageManager: '',
+  directories: []
+}
+
+// Analyze package.json
 if (fs.existsSync('package.json')) {
-  const packageJson = JSON.parse(fs.readFileSync('package.json', 'utf-8'))
-  const deps = { ...packageJson.dependencies, ...packageJson.devDependencies }
+  const pkg = JSON.parse(fs.readFileSync('package.json', 'utf-8'))
+  const deps = { ...pkg.dependencies, ...pkg.devDependencies }
 
-  projectType = 'node'
-  console.log('\n📦 Detected: JavaScript/TypeScript Project\n')
+  projectInfo.type = 'node'
+  projectInfo.name = pkg.name || 'node-project'
+  projectInfo.language = deps.typescript ? 'TypeScript' : 'JavaScript'
 
-  if (deps.react) detectedFrameworks.push('React')
-  if (deps.next) detectedFrameworks.push('Next.js')
-  if (deps.vue) detectedFrameworks.push('Vue')
-  if (deps.express) detectedFrameworks.push('Express')
-  if (deps['@nestjs/core']) detectedFrameworks.push('NestJS')
-  if (deps.typescript) detectedFrameworks.push('TypeScript')
-  if (deps.jest) detectedFrameworks.push('Jest')
-  if (deps.vitest) detectedFrameworks.push('Vitest')
-  if (deps.eslint) detectedFrameworks.push('ESLint')
+  if (deps.react) projectInfo.frameworks.push('React')
+  if (deps.next) projectInfo.frameworks.push('Next.js')
+  if (deps.vue) projectInfo.frameworks.push('Vue')
+  if (deps.express) projectInfo.frameworks.push('Express')
+  if (deps['@nestjs/core']) projectInfo.frameworks.push('NestJS')
 
-  console.log('   Frameworks:', detectedFrameworks.join(', ') || 'None detected')
+  if (deps.vitest) projectInfo.testFramework = 'Vitest'
+  else if (deps.jest) projectInfo.testFramework = 'Jest'
+
+  if (deps.eslint) projectInfo.linter = 'ESLint'
+  if (deps.biome || deps['@biomejs/biome']) projectInfo.linter = 'Biome'
+
+  if (fs.existsSync('pnpm-lock.yaml')) projectInfo.packageManager = 'pnpm'
+  else if (fs.existsSync('yarn.lock')) projectInfo.packageManager = 'yarn'
+  else projectInfo.packageManager = 'npm'
+
+  console.log(`\n📦 Detected: ${projectInfo.language} Project`)
+  console.log(`   Name: ${projectInfo.name}`)
+  if (projectInfo.frameworks.length) console.log(`   Frameworks: ${projectInfo.frameworks.join(', ')}`)
 }
 
-if (fs.existsSync('requirements.txt') || fs.existsSync('pyproject.toml')) {
-  projectType = 'python'
-  console.log('\n🐍 Detected: Python Project')
-}
-
+// Analyze go.mod
 if (fs.existsSync('go.mod')) {
-  projectType = 'go'
-  console.log('\n🔵 Detected: Go Project')
+  const goMod = fs.readFileSync('go.mod', 'utf-8')
+  const moduleMatch = goMod.match(/module\s+(.+)/)
+
+  projectInfo.type = 'go'
+  projectInfo.language = 'Go'
+  projectInfo.name = moduleMatch ? moduleMatch[1].split('/').pop() : 'go-project'
+  projectInfo.testFramework = 'go test'
+  projectInfo.linter = 'golangci-lint'
+
+  if (goMod.includes('gin-gonic/gin')) projectInfo.frameworks.push('Gin')
+  if (goMod.includes('labstack/echo')) projectInfo.frameworks.push('Echo')
+  if (goMod.includes('jackc/pgx')) projectInfo.frameworks.push('pgx')
+
+  console.log(`\n🔵 Detected: Go Project`)
+  console.log(`   Module: ${projectInfo.name}`)
+  if (projectInfo.frameworks.length) console.log(`   Libraries: ${projectInfo.frameworks.join(', ')}`)
 }
 
-// Docker detection
-let dockerConfig = { enabled: false }
+// Analyze Python
+if (fs.existsSync('pyproject.toml') || fs.existsSync('requirements.txt')) {
+  projectInfo.type = 'python'
+  projectInfo.language = 'Python'
+  projectInfo.name = 'python-project'
+  projectInfo.testFramework = 'pytest'
+
+  console.log(`\n🐍 Detected: Python Project`)
+}
+
+// Get directory structure
+try {
+  const { execSync } = require('child_process')
+  const dirs = execSync('ls -d */ 2>/dev/null | head -10', { encoding: 'utf-8' })
+    .trim().split('\n').filter(d => d && !d.startsWith('.') && !d.includes('node_modules'))
+  projectInfo.directories = dirs.map(d => d.replace('/', ''))
+} catch (e) {}
+
+// ═══════════════════════════════════════════════════════════════
+// DOCKER CONFIGURATION
+// ═══════════════════════════════════════════════════════════════
+
 const composeFiles = ['compose.yml', 'compose.yaml', 'docker-compose.yml', 'docker-compose.yaml']
-let composeFile = composeFiles.find(f => fs.existsSync(f))
+const composeFile = composeFiles.find(f => fs.existsSync(f))
+let dockerConfig = { enabled: false }
 
 if (composeFile) {
-  console.log('\n🐳 Docker Compose detected:', composeFile)
+  console.log(`\n🐳 Docker Compose: ${composeFile}`)
 
   const compose = fs.readFileSync(composeFile, 'utf-8')
   const serviceMatches = compose.match(/^  (\w+):/gm)
   const services = serviceMatches ? serviceMatches.map(s => s.trim().replace(':', '')) : []
 
   const dockerResponse = await AskUserQuestion({
-    questions: [
-      {
-        question: "How should commands be executed?",
-        header: "Docker",
-        multiSelect: false,
-        options: [
-          {
-            label: "Docker container",
-            description: "Execute via docker compose exec (recommended for Docker development)"
-          },
-          {
-            label: "Local machine",
-            description: "Execute on host machine directly"
-          }
-        ]
-      }
-    ]
+    questions: [{
+      question: termLang === 'ja' ? "コマンド実行方法を選択" : "How should commands be executed?",
+      header: "Docker",
+      multiSelect: false,
+      options: [
+        { label: "Docker container (Recommended)", description: "Execute via docker compose exec" },
+        { label: "Local machine", description: "Execute on host directly" }
+      ]
+    }]
   })
 
   if (dockerResponse.answers['0'].includes('Docker')) {
-    // Select service
+    let selectedService = services[0]
+
     if (services.length > 1) {
       const serviceResponse = await AskUserQuestion({
-        questions: [
-          {
-            question: "Select main service for command execution",
-            header: "Service",
-            multiSelect: false,
-            options: services.slice(0, 4).map(s => ({
-              label: s,
-              description: `Execute commands in '${s}' container`
-            }))
-          }
-        ]
+        questions: [{
+          question: termLang === 'ja' ? "実行サービスを選択" : "Select service",
+          header: "Service",
+          multiSelect: false,
+          options: services.slice(0, 4).map(s => ({ label: s, description: `Execute in '${s}'` }))
+        }]
       })
-      dockerConfig = {
-        enabled: true,
-        compose_file: composeFile,
-        main_service: serviceResponse.answers['0'],
-        exec_prefix: `docker compose exec ${serviceResponse.answers['0']}`
-      }
-    } else if (services.length === 1) {
-      dockerConfig = {
-        enabled: true,
-        compose_file: composeFile,
-        main_service: services[0],
-        exec_prefix: `docker compose exec ${services[0]}`
-      }
+      selectedService = serviceResponse.answers['0']
     }
-    console.log('   Docker execution enabled:', dockerConfig.exec_prefix)
+
+    dockerConfig = {
+      enabled: true,
+      compose_file: composeFile,
+      main_service: selectedService,
+      exec_prefix: `docker compose exec ${selectedService}`
+    }
+    console.log(`   Execution: ${dockerConfig.exec_prefix}`)
   }
 }
 ```
 
 ---
 
-## Step 4: Generate CLAUDE.md and Configuration
+## Step 4: Generate Configuration Files
 
-**Action**: Generate CLAUDE.md:
+**Action**: Generate CLAUDE.md and edaf-config.yml:
 
 ```typescript
-// Generate CLAUDE.md content
-let claudeMd = `# EDAF v1.0 - Claude Code Configuration
+// ═══════════════════════════════════════════════════════════════
+// GENERATE CLAUDE.md
+// ═══════════════════════════════════════════════════════════════
+
+const claudeMd = `# EDAF v1.0 - Claude Code Configuration
 
 ## Language Preferences
 
@@ -421,44 +437,11 @@ For initial project setup, see README.md for \`/setup\` command instructions.
 **Configuration**: \`.claude/edaf-config.yml\`
 `
 
-// Save CLAUDE.md
+fs.mkdirSync('.claude', { recursive: true })
 fs.writeFileSync('.claude/CLAUDE.md', claudeMd)
 console.log('\n✅ CLAUDE.md generated')
-```
 
----
-
-## Step 5: Standards Learning Selection & Fire & Forget Launch
-
-**Action**: Ask about standards learning and launch agents:
-
-```typescript
-// Detect code for standards learning
-const codePatterns = {
-  typescript: [],
-  react: [],
-  python: [],
-  test: []
-}
-
-// Use Glob to detect files (simplified check)
-try {
-  const { execSync } = require('child_process')
-  const tsFiles = execSync('find . -name "*.ts" -not -path "*/node_modules/*" -not -path "*/dist/*" 2>/dev/null | head -5', { encoding: 'utf-8' }).trim()
-  if (tsFiles) codePatterns.typescript = tsFiles.split('\n').filter(f => f)
-
-  const tsxFiles = execSync('find . -name "*.tsx" -not -path "*/node_modules/*" -not -path "*/dist/*" 2>/dev/null | head -5', { encoding: 'utf-8' }).trim()
-  if (tsxFiles) codePatterns.react = tsxFiles.split('\n').filter(f => f)
-
-  const testFiles = execSync('find . -name "*.test.*" -o -name "*.spec.*" 2>/dev/null | head -5', { encoding: 'utf-8' }).trim()
-  if (testFiles) codePatterns.test = testFiles.split('\n').filter(f => f)
-} catch (e) {
-  // Ignore errors
-}
-
-const hasCode = codePatterns.typescript.length > 0 || codePatterns.react.length > 0 || codePatterns.python.length > 0
-
-// Define expected files (FIXED - docs are always the same 6 files)
+// Define expected files
 const expectedDocs = [
   'docs/product-requirements.md',
   'docs/functional-design.md',
@@ -468,57 +451,26 @@ const expectedDocs = [
   'docs/glossary.md'
 ]
 
+// Determine which standards to create
 let expectedSkills = []
-let selectedStandards = []
-
-if (hasCode) {
-  console.log('\n📚 Existing code detected for standards learning')
-
-  const standardsResponse = await AskUserQuestion({
-    questions: [
-      {
-        question: "Learn coding standards from existing code?",
-        header: "Standards",
-        multiSelect: false,
-        options: [
-          {
-            label: "Yes, learn all standards (Recommended)",
-            description: "Analyze code and create enforceable standards for Phase 4-6"
-          },
-          {
-            label: "Skip for now",
-            description: "You can run /setup again later to create standards"
-          }
-        ]
-      }
-    ]
-  })
-
-  if (standardsResponse.answers['0'].includes('Yes')) {
-    // Determine which standards to create based on detected code
-    if (codePatterns.typescript.length > 0) {
-      selectedStandards.push('typescript-standards')
-      expectedSkills.push('.claude/skills/typescript-standards/SKILL.md')
-    }
-    if (codePatterns.react.length > 0) {
-      selectedStandards.push('react-standards')
-      expectedSkills.push('.claude/skills/react-standards/SKILL.md')
-    }
-    if (codePatterns.test.length > 0) {
-      selectedStandards.push('test-standards')
-      expectedSkills.push('.claude/skills/test-standards/SKILL.md')
-    }
-    // Always add security if any code exists
-    selectedStandards.push('security-standards')
-    expectedSkills.push('.claude/skills/security-standards/SKILL.md')
-
-    console.log('   Standards to learn:', selectedStandards.join(', '))
+if (projectInfo.type === 'node') {
+  expectedSkills.push('.claude/skills/typescript-standards/SKILL.md')
+  if (projectInfo.frameworks.some(f => ['React', 'Next.js', 'Vue'].includes(f))) {
+    expectedSkills.push('.claude/skills/react-standards/SKILL.md')
   }
-} else {
-  console.log('\n📚 No existing code detected, skipping standards learning')
 }
+if (projectInfo.type === 'go') {
+  expectedSkills.push('.claude/skills/go-standards/SKILL.md')
+}
+if (projectInfo.type === 'python') {
+  expectedSkills.push('.claude/skills/python-standards/SKILL.md')
+}
+if (projectInfo.testFramework) {
+  expectedSkills.push('.claude/skills/test-standards/SKILL.md')
+}
+expectedSkills.push('.claude/skills/security-standards/SKILL.md')
 
-// Save configuration WITH setup_progress (temporary section)
+// Save config with progress tracking
 const config = {
   language_preferences: {
     documentation_language: docLang,
@@ -526,7 +478,12 @@ const config = {
     save_dual_language_docs: false
   },
   docker: dockerConfig,
-  // Temporary section - will be removed on completion
+  project: {
+    type: projectInfo.type,
+    name: projectInfo.name,
+    language: projectInfo.language,
+    frameworks: projectInfo.frameworks
+  },
   setup_progress: {
     status: 'in_progress',
     started_at: new Date().toISOString(),
@@ -536,311 +493,318 @@ const config = {
 }
 
 fs.writeFileSync('.claude/edaf-config.yml', yaml.dump(config))
-console.log('\n✅ Configuration saved to .claude/edaf-config.yml')
+console.log('✅ edaf-config.yml generated')
+```
 
+---
+
+## Step 5: Launch Agents (Fire & Forget)
+
+**Action**: Launch all agents in parallel:
+
+```typescript
 // Create directories
-if (!fs.existsSync('docs')) fs.mkdirSync('docs', { recursive: true })
-if (!fs.existsSync('.claude/skills')) fs.mkdirSync('.claude/skills', { recursive: true })
+fs.mkdirSync('docs', { recursive: true })
+fs.mkdirSync('.claude/skills', { recursive: true })
 
-// === FIRE & FORGET: Launch agents in background ===
-console.log('\n🚀 Launching background agents (Fire & Forget)...\n')
+console.log('\n🚀 Launching agents (Fire & Forget)...\n')
 
-// Define documentation files with their specific focus areas
+// ═══════════════════════════════════════════════════════════════
+// LAUNCH DOCUMENTATION AGENTS (1 agent = 1 file)
+// ═══════════════════════════════════════════════════════════════
+
 const docDefinitions = [
-  {
-    file: 'product-requirements.md',
-    focus: 'Product vision, user personas, user stories, and acceptance criteria',
-    description: 'product requirements documentation'
-  },
-  {
-    file: 'functional-design.md',
-    focus: 'Functional specifications, feature descriptions, and system behavior',
-    description: 'functional design documentation'
-  },
-  {
-    file: 'development-guidelines.md',
-    focus: 'Coding conventions, development workflow, and best practices',
-    description: 'development guidelines'
-  },
-  {
-    file: 'repository-structure.md',
-    focus: 'Directory structure, file organization, and module responsibilities',
-    description: 'repository structure documentation'
-  },
-  {
-    file: 'architecture.md',
-    focus: 'System architecture, component diagrams, and technical decisions',
-    description: 'architecture documentation'
-  },
-  {
-    file: 'glossary.md',
-    focus: 'Domain terms, technical terminology, and acronym definitions',
-    description: 'glossary of terms'
-  }
+  { file: 'product-requirements.md', focus: 'Product vision, user personas, user stories, acceptance criteria' },
+  { file: 'functional-design.md', focus: 'Feature specifications, API design, data models, business logic' },
+  { file: 'development-guidelines.md', focus: 'Coding conventions, workflow, best practices, git workflow' },
+  { file: 'repository-structure.md', focus: 'Directory organization, file purposes, module responsibilities' },
+  { file: 'architecture.md', focus: 'System architecture, components, technical decisions, diagrams' },
+  { file: 'glossary.md', focus: 'Domain terms, technical terminology, acronyms, entity definitions' }
 ]
 
-// Launch 6 documentation-worker agents in parallel (1 agent = 1 file)
-console.log('   📄 Launching documentation agents (6 agents × 1 file each):')
-
+console.log('   📄 Documentation agents:')
 for (const doc of docDefinitions) {
   await Task({
     subagent_type: 'documentation-worker',
     model: 'sonnet',
     run_in_background: true,
     description: `Generate ${doc.file}`,
-    prompt: `Generate ONLY the file: docs/${doc.file}
+    prompt: `Generate ONLY: docs/${doc.file}
 
-**IMPORTANT**: Generate ONLY this ONE file. Do NOT generate any other files.
-
-**Focus Area**: ${doc.focus}
+**Focus**: ${doc.focus}
 
 **Instructions**:
-1. Use Read and Glob tools to analyze the codebase
-2. Detect language, framework, and architecture patterns
-3. Generate comprehensive but concise ${doc.description}
-4. Write the file to: docs/${doc.file}
+1. Use Glob to find relevant source files
+2. Use Read to analyze actual code patterns
+3. Extract real information from the codebase
+4. Generate comprehensive documentation
+5. Write to: docs/${doc.file}
 
-**Documentation Language**: ${docLang === 'en' ? 'English' : 'Japanese'}
+**Language**: ${docLang === 'en' ? 'English' : 'Japanese'}
 
-**Current Working Directory**: ${process.cwd()}
-
-**Output**: Write ONLY docs/${doc.file} - nothing else.`
+**CRITICAL**: Do DEEP CODE ANALYSIS. Read actual source files, not just config files.
+**OUTPUT**: Write ONLY docs/${doc.file}`
   })
-
   console.log(`      - ${doc.file}`)
 }
 
-// Launch standards agents if selected
-for (const standard of selectedStandards) {
-  // Create directory
-  fs.mkdirSync(`.claude/skills/${standard}`, { recursive: true })
+// ═══════════════════════════════════════════════════════════════
+// LAUNCH STANDARDS AGENTS (1 agent = 1 skill)
+// ═══════════════════════════════════════════════════════════════
+
+console.log('   📖 Standards agents:')
+for (const skillPath of expectedSkills) {
+  const skillName = skillPath.split('/')[2]
+  fs.mkdirSync(`.claude/skills/${skillName}`, { recursive: true })
 
   await Task({
     subagent_type: 'general-purpose',
     model: 'sonnet',
     run_in_background: true,
-    description: `Generate ${standard} (background)`,
-    prompt: `Generate coding standards: ${standard}
-
-**Output**: .claude/skills/${standard}/SKILL.md
+    description: `Generate ${skillName}`,
+    prompt: `Generate coding standards: ${skillPath}
 
 **Instructions**:
-1. Analyze existing code using Glob and Read tools
-2. Extract naming conventions, file structure, patterns
-3. Create SKILL.md with actionable rules and examples
-4. Include enforcement checklist for Phase 4-6
+1. Use Glob and Read to analyze existing code
+2. Extract ACTUAL patterns (naming, structure, error handling)
+3. Create SKILL.md with rules based on real code
+4. Include concrete examples from the codebase
+5. Add enforcement checklist
 
-**Current Working Directory**: ${process.cwd()}`
+**OUTPUT**: Write ${skillPath}`
   })
-
-  console.log(`   📖 ${standard} agent launched (background)`)
+  console.log(`      - ${skillName}/SKILL.md`)
 }
 
-console.log('\n✅ All agents launched. NO TaskOutput called (Fire & Forget).')
-console.log('   Agents are working in the background...\n')
+console.log('\n   ✅ All agents launched')
 ```
 
 ---
 
-## Step 6: Polling for File Generation
+## Step 6: Progress Monitoring (Optimized)
 
-**Action**: Poll for file existence (30s interval, max 600s):
+**Action**: Monitor progress with improved visibility:
 
 ```typescript
-console.log('\n⏳ Polling for file generation (30s interval, max 600s)...\n')
+// ═══════════════════════════════════════════════════════════════
+// PROGRESS MONITORING - 10s interval, 300s max, immediate display
+// ═══════════════════════════════════════════════════════════════
 
-const pollInterval = 30000  // 30 seconds
-const maxPolls = 20         // 20 * 30s = 600s (10 minutes)
-let pollCount = 0
+console.log('\n⏳ Monitoring progress (10s interval, max 300s)...\n')
 
-// Read expected files from config
-let expectedDocsToCheck = expectedDocs
-let expectedSkillsToCheck = expectedSkills
+const POLL_INTERVAL = 10000  // 10 seconds (improved from 30)
+const MAX_TIMEOUT = 300000   // 300 seconds (improved from 600)
+const startTime = Date.now()
 
-// If resuming, read from config
-if (fs.existsSync('.claude/edaf-config.yml')) {
-  try {
-    const configData = yaml.load(fs.readFileSync('.claude/edaf-config.yml', 'utf-8'))
-    if (configData.setup_progress) {
-      expectedDocsToCheck = configData.setup_progress.expected_docs || expectedDocs
-      expectedSkillsToCheck = configData.setup_progress.expected_skills || []
-    }
-  } catch (e) {}
-}
+// Track which files we've already reported
+const reportedFiles = new Set()
 
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms))
 
-// Track completion status
-const fileStatus = {
-  docs: {},
-  skills: {}
-}
+// Helper to check file and report if new
+function checkAndReport(filePath, type) {
+  if (reportedFiles.has(filePath)) return false
 
-// Initialize status
-for (const doc of expectedDocsToCheck) {
-  fileStatus.docs[doc] = { generated: false, fallback: false }
-}
-for (const skill of expectedSkillsToCheck) {
-  fileStatus.skills[skill] = { generated: false, fallback: false }
-}
-
-while (pollCount < maxPolls) {
-  // Check which files exist
-  const completedDocs = expectedDocsToCheck.filter(doc => fs.existsSync(doc))
-  const completedSkills = expectedSkillsToCheck.filter(skill => fs.existsSync(skill))
-
-  // Update status
-  for (const doc of completedDocs) {
-    if (!fileStatus.docs[doc].generated) {
-      fileStatus.docs[doc].generated = true
-      console.log(`   ✅ ${path.basename(doc)} generated`)
+  if (fs.existsSync(filePath)) {
+    const stats = fs.statSync(filePath)
+    if (stats.size > 100) {
+      reportedFiles.add(filePath)
+      const elapsed = Math.floor((Date.now() - startTime) / 1000)
+      const name = type === 'doc' ? path.basename(filePath) : filePath.split('/')[2] + '/SKILL.md'
+      console.log(`   [${elapsed}s] ✅ ${name} (${stats.size} bytes)`)
+      return true
     }
   }
-  for (const skill of completedSkills) {
-    if (!fileStatus.skills[skill].generated) {
-      fileStatus.skills[skill].generated = true
-      const skillName = skill.split('/')[2]
-      console.log(`   ✅ ${skillName}/SKILL.md generated`)
-    }
+  return false
+}
+
+// Main polling loop
+while (Date.now() - startTime < MAX_TIMEOUT) {
+  // Check all expected files
+  for (const doc of expectedDocs) {
+    checkAndReport(doc, 'doc')
+  }
+  for (const skill of expectedSkills) {
+    checkAndReport(skill, 'skill')
   }
 
-  // Check if all files are generated
-  const allDocsComplete = completedDocs.length === expectedDocsToCheck.length
-  const allSkillsComplete = completedSkills.length === expectedSkillsToCheck.length
+  // Check if all complete
+  const allDocs = expectedDocs.every(d => reportedFiles.has(d))
+  const allSkills = expectedSkills.every(s => reportedFiles.has(s))
 
-  if (allDocsComplete && allSkillsComplete) {
-    console.log('\n✅ All files generated successfully!')
+  if (allDocs && allSkills) {
+    console.log('\n   🎉 All files generated successfully!')
     break
   }
 
-  pollCount++
+  await sleep(POLL_INTERVAL)
+}
 
-  // Progress indicator
-  const totalExpected = expectedDocsToCheck.length + expectedSkillsToCheck.length
-  const totalCompleted = completedDocs.length + completedSkills.length
-  console.log(`   [${pollCount * 30}s] Progress: ${totalCompleted}/${totalExpected} files`)
+// Show timeout message if not all complete
+const remainingDocs = expectedDocs.filter(d => !reportedFiles.has(d))
+const remainingSkills = expectedSkills.filter(s => !reportedFiles.has(s))
 
-  if (pollCount >= maxPolls) {
-    console.log('\n⚠️  Timeout reached (600s). Generating fallback templates for missing files...')
-    break
-  }
-
-  await sleep(pollInterval)
+if (remainingDocs.length > 0 || remainingSkills.length > 0) {
+  console.log('\n   ⏱️  Timeout reached. Generating smart fallbacks for remaining files...')
 }
 ```
 
 ---
 
-## Step 7: Fallback Template Generation
+## Step 7: Smart Fallback Generation
 
-**Action**: Generate minimal templates for files that weren't created by agents:
+**Action**: Generate project-specific fallbacks for incomplete files:
 
 ```typescript
-// Fallback templates for missing documentation files
-const fallbackTemplates = {
-  'product-requirements.md': `# Product Requirements
+// ═══════════════════════════════════════════════════════════════
+// SMART FALLBACK - Uses projectInfo for project-specific content
+// ═══════════════════════════════════════════════════════════════
 
-> ⚠️ This is a fallback template. Please update with actual project requirements.
+// Fallback for documentation files
+for (const docPath of remainingDocs) {
+  const fileName = path.basename(docPath)
+  let content = ''
 
-## Overview
+  switch(fileName) {
+    case 'product-requirements.md':
+      content = `# Product Requirements
 
-<!-- Describe the product vision and goals -->
+## Product Overview
 
-## User Personas
+**Project**: ${projectInfo.name}
+**Tech Stack**: ${projectInfo.language}${projectInfo.frameworks.length ? ` with ${projectInfo.frameworks.join(', ')}` : ''}
 
-<!-- Define target users -->
+## Vision
+
+<!-- Define the product vision -->
+
+## Target Users
+
+<!-- Define user personas -->
 
 ## User Stories
 
-<!-- List user stories in "As a... I want... So that..." format -->
+<!-- Add user stories -->
 
-## Acceptance Criteria
+## Non-Functional Requirements
 
-<!-- Define success criteria -->
+### Performance
+- Response time: < 200ms
 
----
-*Generated by EDAF Setup (fallback template)*
-`,
-  'functional-design.md': `# Functional Design
-
-> ⚠️ This is a fallback template. Please update with actual functional specifications.
-
-## Features
-
-<!-- List and describe main features -->
-
-## System Behavior
-
-<!-- Describe system behavior and workflows -->
-
-## API Specifications
-
-<!-- Document API endpoints if applicable -->
+### Security
+- Authentication required
 
 ---
-*Generated by EDAF Setup (fallback template)*
-`,
-  'development-guidelines.md': `# Development Guidelines
+*Smart fallback - Run /review-standards to enhance with code analysis*
+`
+      break
 
-> ⚠️ This is a fallback template. Please update with project-specific guidelines.
+    case 'functional-design.md':
+      content = `# Functional Design
+
+## System Overview
+
+**Project**: ${projectInfo.name}
+**Architecture**: ${projectInfo.language} Application
+${projectInfo.frameworks.length ? `**Frameworks**: ${projectInfo.frameworks.join(', ')}` : ''}
+
+## Feature Specifications
+
+<!-- Add feature specs -->
+
+## API Design
+
+<!-- Add API endpoints -->
+
+## Data Models
+
+<!-- Add data models -->
+
+---
+*Smart fallback - Run /review-standards to enhance with code analysis*
+`
+      break
+
+    case 'development-guidelines.md':
+      content = `# Development Guidelines
+
+## Tech Stack
+
+| Category | Technology |
+|----------|------------|
+| Language | ${projectInfo.language} |
+${projectInfo.frameworks.length ? `| Frameworks | ${projectInfo.frameworks.join(', ')} |` : ''}
+| Testing | ${projectInfo.testFramework || 'Not detected'} |
+| Linting | ${projectInfo.linter || 'Not detected'} |
+${projectInfo.packageManager ? `| Package Manager | ${projectInfo.packageManager} |` : ''}
 
 ## Code Style
 
-<!-- Define coding conventions -->
+<!-- Add code style guidelines -->
 
-## Development Workflow
+## Git Workflow
 
-<!-- Describe git workflow, PR process, etc. -->
+- Branch: \`feat/\`, \`fix/\`, \`refactor/\`
+- Commits: Conventional commits
 
-## Best Practices
+${dockerConfig.enabled ? `
+## Docker
 
-<!-- List development best practices -->
+\`\`\`bash
+${dockerConfig.exec_prefix} [command]
+\`\`\`
+` : ''}
 
 ---
-*Generated by EDAF Setup (fallback template)*
-`,
-  'repository-structure.md': `# Repository Structure
+*Smart fallback - Run /review-standards to enhance with code analysis*
+`
+      break
 
-> ⚠️ This is a fallback template. Please update with actual structure.
+    case 'repository-structure.md':
+      content = `# Repository Structure
 
 ## Directory Layout
 
 \`\`\`
-├── src/           # Source code
-├── tests/         # Test files
-├── docs/          # Documentation
-└── .claude/       # EDAF configuration
+${projectInfo.name}/
+${projectInfo.directories.map(d => `├── ${d}/`).join('\n')}
+├── docs/
+└── .claude/
 \`\`\`
 
-## Module Responsibilities
+## Key Files
 
-<!-- Describe each module's purpose -->
+<!-- Add file descriptions -->
 
 ---
-*Generated by EDAF Setup (fallback template)*
-`,
-  'architecture.md': `# Architecture
+*Smart fallback - Run /review-standards to enhance with code analysis*
+`
+      break
 
-> ⚠️ This is a fallback template. Please update with actual architecture.
+    case 'architecture.md':
+      content = `# Architecture
 
 ## System Overview
 
-<!-- High-level architecture description -->
+**Project**: ${projectInfo.name}
+**Language**: ${projectInfo.language}
+${projectInfo.frameworks.length ? `**Frameworks**: ${projectInfo.frameworks.join(', ')}` : ''}
 
 ## Components
 
-<!-- List main components and their responsibilities -->
+<!-- Add component descriptions -->
 
 ## Technical Decisions
 
-<!-- Document key technical decisions and rationale -->
+<!-- Add architectural decisions -->
 
 ---
-*Generated by EDAF Setup (fallback template)*
-`,
-  'glossary.md': `# Glossary
+*Smart fallback - Run /review-standards to enhance with code analysis*
+`
+      break
 
-> ⚠️ This is a fallback template. Please update with project-specific terms.
+    case 'glossary.md':
+      content = `# Glossary
 
 ## Domain Terms
 
@@ -852,61 +816,50 @@ const fallbackTemplates = {
 
 | Term | Definition |
 |------|------------|
-| <!-- term --> | <!-- definition --> |
+${projectInfo.language ? `| ${projectInfo.language} | Programming language used |` : ''}
+${projectInfo.frameworks.map(f => `| ${f} | Framework |`).join('\n')}
+| EDAF | Evaluator-Driven Agent Flow |
 
 ---
-*Generated by EDAF Setup (fallback template)*
+*Smart fallback - Run /review-standards to enhance with code analysis*
 `
-}
-
-// Generate fallback templates for missing docs
-const missingDocs = expectedDocsToCheck.filter(doc => !fs.existsSync(doc))
-if (missingDocs.length > 0) {
-  console.log('\n📝 Generating fallback templates for missing docs:')
-  for (const doc of missingDocs) {
-    const fileName = path.basename(doc)
-    if (fallbackTemplates[fileName]) {
-      fs.writeFileSync(doc, fallbackTemplates[fileName])
-      fileStatus.docs[doc].fallback = true
-      console.log(`   📄 ${fileName} (fallback template)`)
-    }
+      break
   }
+
+  fs.writeFileSync(docPath, content)
+  console.log(`   📄 ${fileName} (smart fallback)`)
 }
 
-// Generate fallback templates for missing skills
-const missingSkills = expectedSkillsToCheck.filter(skill => !fs.existsSync(skill))
-if (missingSkills.length > 0) {
-  console.log('\n📝 Generating fallback templates for missing skills:')
-  for (const skill of missingSkills) {
-    const skillName = skill.split('/')[2]
-    const fallbackSkillContent = `# ${skillName.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())}
-
-> ⚠️ This is a fallback template. Run \`/review-standards\` to generate actual standards.
+// Fallback for skills
+for (const skillPath of remainingSkills) {
+  const skillName = skillPath.split('/')[2]
+  let content = `# ${skillName.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}
 
 ## Overview
 
-This skill defines coding standards for the project.
+Standards for ${projectInfo.name} (${projectInfo.language}).
 
-## Rules
+## Naming Conventions
 
-<!-- Define specific rules -->
+<!-- Add naming conventions -->
 
-## Examples
+## Best Practices
 
-<!-- Provide code examples -->
+<!-- Add best practices -->
+
+## Enforcement Checklist
+
+- [ ] Follow naming conventions
+- [ ] Apply best practices
+- [ ] Pass linting
 
 ---
-*Generated by EDAF Setup (fallback template)*
+*Smart fallback - Run /review-standards to regenerate from code analysis*
 `
-    // Ensure directory exists
-    const skillDir = path.dirname(skill)
-    if (!fs.existsSync(skillDir)) {
-      fs.mkdirSync(skillDir, { recursive: true })
-    }
-    fs.writeFileSync(skill, fallbackSkillContent)
-    fileStatus.skills[skill].fallback = true
-    console.log(`   📖 ${skillName}/SKILL.md (fallback template)`)
-  }
+
+  fs.mkdirSync(path.dirname(skillPath), { recursive: true })
+  fs.writeFileSync(skillPath, content)
+  console.log(`   📖 ${skillName}/SKILL.md (smart fallback)`)
 }
 ```
 
@@ -914,16 +867,23 @@ This skill defines coding standards for the project.
 
 ## Step 8: Cleanup and Completion
 
-**Action**: Remove setup_progress and display final summary:
+**Action**: Remove progress tracking and show summary:
 
 ```typescript
+// ═══════════════════════════════════════════════════════════════
+// CLEANUP AND COMPLETION
+// ═══════════════════════════════════════════════════════════════
+
 // Remove setup_progress from config
-if (fs.existsSync('.claude/edaf-config.yml')) {
-  const finalConfig = yaml.load(fs.readFileSync('.claude/edaf-config.yml', 'utf-8'))
-  delete finalConfig.setup_progress
-  fs.writeFileSync('.claude/edaf-config.yml', yaml.dump(finalConfig))
-  console.log('\n✅ Cleaned up setup_progress from edaf-config.yml')
-}
+const finalConfig = yaml.load(fs.readFileSync('.claude/edaf-config.yml', 'utf-8'))
+delete finalConfig.setup_progress
+fs.writeFileSync('.claude/edaf-config.yml', yaml.dump(finalConfig))
+
+// Calculate stats
+const agentGenerated = reportedFiles.size
+const fallbackGenerated = remainingDocs.length + remainingSkills.length
+const totalFiles = expectedDocs.length + expectedSkills.length
+const elapsedSeconds = Math.floor((Date.now() - startTime) / 1000)
 
 // Final summary
 console.log('\n' + '═'.repeat(60))
@@ -931,65 +891,41 @@ console.log('  EDAF v1.0 Setup Complete!')
 console.log('═'.repeat(60))
 
 console.log('\n📁 Generated Files:')
-
-// List docs with status indicators
-console.log('\n   docs/:')
-for (const doc of expectedDocsToCheck) {
-  const fileName = path.basename(doc)
-  const status = fileStatus.docs[doc]
-  if (status.generated && !status.fallback) {
-    console.log(`     ✅ ${fileName} (agent-generated)`)
-  } else if (status.fallback) {
-    console.log(`     📄 ${fileName} (fallback template - please review)`)
-  } else {
-    console.log(`     ❌ ${fileName} (not generated)`)
-  }
+console.log('   docs/')
+for (const doc of expectedDocs) {
+  const name = path.basename(doc)
+  const isAgent = reportedFiles.has(doc)
+  console.log(`     ${isAgent ? '✅' : '📄'} ${name} ${isAgent ? '(agent)' : '(fallback)'}`)
 }
 
-// List skills with status indicators
-if (expectedSkillsToCheck.length > 0) {
-  console.log('\n   .claude/skills/:')
-  for (const skill of expectedSkillsToCheck) {
-    const skillName = skill.split('/')[2]
-    const status = fileStatus.skills[skill]
-    if (status.generated && !status.fallback) {
-      console.log(`     ✅ ${skillName}/SKILL.md (agent-generated)`)
-    } else if (status.fallback) {
-      console.log(`     📖 ${skillName}/SKILL.md (fallback - run /review-standards)`)
-    } else {
-      console.log(`     ❌ ${skillName}/SKILL.md (not generated)`)
-    }
-  }
+console.log('   .claude/skills/')
+for (const skill of expectedSkills) {
+  const name = skill.split('/')[2]
+  const isAgent = reportedFiles.has(skill)
+  console.log(`     ${isAgent ? '✅' : '📖'} ${name}/SKILL.md ${isAgent ? '(agent)' : '(fallback)'}`)
 }
+
+console.log('   .claude/')
+console.log('     ✅ CLAUDE.md')
+console.log('     ✅ edaf-config.yml')
+
+console.log('\n📊 Statistics:')
+console.log(`   Agent-generated: ${agentGenerated}/${totalFiles}`)
+console.log(`   Fallback: ${fallbackGenerated}/${totalFiles}`)
+console.log(`   Time: ${elapsedSeconds}s`)
 
 console.log('\n📋 Configuration:')
 console.log(`   Language: ${docLang === 'en' ? 'English' : 'Japanese'} docs, ${termLang === 'en' ? 'English' : 'Japanese'} output`)
 console.log(`   Docker: ${dockerConfig.enabled ? 'Enabled (' + dockerConfig.main_service + ')' : 'Disabled'}`)
 
-// Count fallbacks
-const fallbackDocsCount = Object.values(fileStatus.docs).filter(s => s.fallback).length
-const fallbackSkillsCount = Object.values(fileStatus.skills).filter(s => s.fallback).length
-const totalFallbacks = fallbackDocsCount + fallbackSkillsCount
-
-if (totalFallbacks > 0) {
-  console.log('\n⚠️  Note:')
-  console.log(`   ${totalFallbacks} file(s) used fallback templates.`)
-  console.log('   Please review and update these files with actual content.')
-  if (fallbackSkillsCount > 0) {
-    console.log('   Run /review-standards to regenerate skill files from your code.')
-  }
+if (fallbackGenerated > 0) {
+  console.log('\n💡 To enhance fallback files:')
+  console.log('   Run /review-standards to regenerate with deep code analysis')
 }
 
 console.log('\n🚀 Next Steps:')
-console.log('   1. Review generated docs in docs/')
-if (totalFallbacks > 0) {
-  console.log('   2. Update fallback templates with actual content')
-  console.log('   3. Run /review-standards if skill templates need updating')
-  console.log('   4. Start implementing features with EDAF 7-phase workflow')
-} else {
-  console.log('   2. Start implementing features with EDAF 7-phase workflow')
-  console.log('   3. Run /review-standards to update coding standards anytime')
-}
+console.log('   1. Start implementing features with EDAF 7-phase workflow')
+console.log('   2. Run /review-standards anytime to update coding standards')
 
 console.log('\n' + '═'.repeat(60))
 ```
@@ -998,61 +934,54 @@ console.log('\n' + '═'.repeat(60))
 
 ## Summary
 
-This optimized `/setup` command uses a **scalable 1:1 pattern**:
+This optimized `/setup` v2 includes:
 
-### Core Principles
+### Key Improvements
 
-1. **1 Agent = 1 File**: Each agent generates exactly one output file
-   - Documentation: 6 `documentation-worker` instances (one per doc file)
-   - Skills: N `general-purpose` instances (one per skill)
-
-2. **Parallel Execution**: All agents run simultaneously in background
-   - Maximizes throughput
-   - Independent failure handling
-
-3. **Fire & Forget + Fallback**: No TaskOutput calls, but fallback on timeout
-   - Prevents context exhaustion
-   - Ensures all files exist after setup
+| Aspect | v1 | v2 |
+|--------|-----|-----|
+| Timeout | 600s | **300s** |
+| Poll Interval | 30s | **10s** |
+| Progress | Count only | **Each file immediately** |
+| Fallback | Generic | **Project-specific (smart)** |
 
 ### Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                    SCALABLE 1:1 PATTERN                     │
-├─────────────────────────────────────────────────────────────┤
-│                                                             │
-│  Documentation (6 agents × 1 file)                          │
-│  ┌────────┐ ┌────────┐ ┌────────┐ ┌────────┐ ┌────────┐ ┌────────┐ │
-│  │doc-wkr │ │doc-wkr │ │doc-wkr │ │doc-wkr │ │doc-wkr │ │doc-wkr │ │
-│  │prod-req│ │func-dsg│ │dev-gide│ │repo-str│ │arch    │ │glossary│ │
-│  └────────┘ └────────┘ └────────┘ └────────┘ └────────┘ └────────┘ │
-│                                                             │
-│  Skills (N agents × 1 file)                                 │
-│  ┌────────┐ ┌────────┐ ┌────────┐ ┌────────┐                │
-│  │general │ │general │ │general │ │general │ ...            │
-│  │ts-std  │ │react-st│ │test-std│ │sec-std │                │
-│  └────────┘ └────────┘ └────────┘ └────────┘                │
-│                                                             │
-│  Monitoring: File existence polling (30s interval)          │
-│  Fallback: Template generation on 600s timeout              │
-└─────────────────────────────────────────────────────────────┘
+┌────────────────────────────────────────────────────────────────┐
+│  Configuration (5s)                                            │
+│  └── CLAUDE.md + edaf-config.yml                               │
+├────────────────────────────────────────────────────────────────┤
+│  Agent Launch (Fire & Forget)                                  │
+│  ├── 6 documentation-worker agents                             │
+│  └── N standards agents                                        │
+├────────────────────────────────────────────────────────────────┤
+│  Progress Monitoring (max 300s)                                │
+│  ├── Poll every 10s                                            │
+│  ├── Display completed files IMMEDIATELY                       │
+│  ├── [10s] ✅ glossary.md (agent)                              │
+│  ├── [20s] ✅ functional-design.md (agent)                     │
+│  ├── [30s] ✅ test-standards/SKILL.md (agent)                  │
+│  └── ... (each file as it completes)                           │
+├────────────────────────────────────────────────────────────────┤
+│  Smart Fallback (if timeout)                                   │
+│  └── Project-specific content using projectInfo                │
+├────────────────────────────────────────────────────────────────┤
+│  Completion                                                    │
+│  └── Summary with agent vs fallback breakdown                  │
+└────────────────────────────────────────────────────────────────┘
 ```
 
-### Key Features
+### Preserved Features
 
-| Feature | Description |
-|---------|-------------|
-| Context Safety | Fire & Forget - no TaskOutput calls |
-| Scalability | 1:1 pattern - add files by adding to array |
-| Resilience | Fallback templates ensure setup always completes |
-| Progress Tracking | Real-time file existence monitoring |
-| Recovery | `setup_progress` in config enables resume |
+- **Agent-based deep code analysis** (generality maintained)
+- **Parallel execution** (efficiency)
+- **Fire & Forget pattern** (no context exhaustion)
+- **1 Agent = 1 File** (scalability)
 
-### Benefits Over Previous Design
+### User Experience Improvements
 
-| Aspect | Before | After |
-|--------|--------|-------|
-| Doc agents | 1 agent × 6 files | 6 agents × 1 file |
-| Failure impact | All 6 docs fail | Only 1 doc fails |
-| Timeout handling | Nothing generated | Fallback templates |
-| Scalability | Hard to add files | Just add to array |
+- **Real-time progress** - See files as they complete
+- **Faster completion** - 5 min max vs 10 min
+- **Better feedback** - Know exactly what happened
+- **Smart fallbacks** - Project-specific, not generic
