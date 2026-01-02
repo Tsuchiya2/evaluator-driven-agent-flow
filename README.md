@@ -67,11 +67,10 @@ graph LR
 
 #### 1. Flexible Language Support 🌐
 
-**4 Language Options:**
+**3 Language Options:**
 - 🇬🇧 English docs + English output
 - 🇯🇵 Japanese docs + Japanese output
 - 🌐 English docs + Japanese output (learning mode)
-- 📚 Dual language (EN + JA documentation saved separately)
 
 **How it works:** Claude Code reads `.claude/CLAUDE.md` and automatically responds in your preferred language. No code changes needed!
 
@@ -179,12 +178,12 @@ That's it! The installation script will:
 
 The interactive setup wizard will guide you through:
 
-1. **Language Preferences 🌐** - Choose documentation and output language (EN/JA)
-2. **Docker Detection 🐳** - Automatically detects and configures Docker environments
-3. **Sound Notifications 🔔** - Configure task completion alerts
-4. **Claude in Chrome 🌐** - Install extension for UI/UX verification ([Guide](.claude/skills/ui-verification/USER-GUIDE.md))
-5. **Auto-Detection** - Detects your language, framework, ORM, and tools
-6. **Component Testing** - Verifies workers and evaluators are ready
+1. **Interrupted Setup Recovery** - Automatically detects and resumes interrupted setups
+2. **Language Preferences 🌐** - Choose documentation and output language (EN/JA)
+3. **Installation Verification** - Verifies workers and evaluators are installed
+4. **Docker Detection 🐳** - Automatically detects and configures Docker environments
+5. **Standards Learning 📚** - Optionally learn coding standards from existing code
+6. **Background Generation** - Generates docs and skills using Fire & Forget pattern
 
 **Supported languages/frameworks:** TypeScript, JavaScript, Python, Java, Go, Rust, Ruby, PHP, and their popular frameworks.
 
@@ -481,4 +480,4 @@ For issues, questions, or feedback:
 
 **Status**: ✅ Production Ready
 **Maintained**: Yes
-**Last Updated**: 2026-01-02
+**Last Updated**: 2026-01-03
