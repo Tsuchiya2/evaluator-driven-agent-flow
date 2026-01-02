@@ -19,6 +19,16 @@
     "excludedCommands": ["git push", "rm -rf", "docker rm"]
   },
   "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo '\n🚀 EDAF v1.0 Ready / 準備完了\n   Start EDAF workflow: \"Use EDAF workflow\" / EDAFワークフローを開始: 「エージェントフローを使って」\n   (Switch anytime / いつでも切り替え可能)\n'"
+          }
+        ]
+      }
+    ],
     "PermissionRequest": [
       {
         "hooks": [
