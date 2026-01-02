@@ -589,13 +589,13 @@ console.log('   Agents are working in the background...\n')
 
 ## Step 6: Polling for File Generation
 
-**Action**: Poll for file existence (10s interval, max 600s):
+**Action**: Poll for file existence (30s interval, max 600s):
 
 ```typescript
-console.log('⏳ Polling for file generation (10s interval, max 600s)...\n')
+console.log('⏳ Waiting for background agents to complete (max 10 minutes)...')
 
-const pollInterval = 10000  // 10 seconds
-const maxPolls = 60         // 60 * 10s = 600s (10 minutes)
+const pollInterval = 30000  // 30 seconds
+const maxPolls = 20         // 20 * 30s = 600s (10 minutes)
 let pollCount = 0
 
 // Read expected files from config
@@ -620,35 +620,11 @@ while (pollCount < maxPolls) {
   const missingDocs = expectedDocsToCheck.filter(doc => !fs.existsSync(doc))
   const missingSkills = expectedSkillsToCheck.filter(skill => !fs.existsSync(skill))
 
-  // Display progress
-  const elapsed = pollCount * 10
-  console.log(`\n⏳ Checking file generation... (${elapsed}s elapsed)`)
-
-  console.log('\n   docs/:')
-  for (const doc of expectedDocsToCheck) {
-    const exists = fs.existsSync(doc)
-    const basename = path.basename(doc)
-    console.log(`     ${exists ? '✅' : '⏳'} ${basename}`)
-  }
-
-  if (expectedSkillsToCheck.length > 0) {
-    console.log('\n   skills/:')
-    for (const skill of expectedSkillsToCheck) {
-      const exists = fs.existsSync(skill)
-      const skillName = skill.split('/')[2]  // .claude/skills/NAME/SKILL.md
-      console.log(`     ${exists ? '✅' : '⏳'} ${skillName}`)
-    }
-  }
-
   // Check if all files are generated
   if (missingDocs.length === 0 && missingSkills.length === 0) {
-    console.log('\n✅ All files generated successfully!')
+    console.log('✅ All files generated successfully!')
     break
   }
-
-  // Show remaining
-  const totalMissing = missingDocs.length + missingSkills.length
-  console.log(`\n   ⏳ Waiting for ${totalMissing} file(s)...`)
 
   pollCount++
 
