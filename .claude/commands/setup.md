@@ -20,18 +20,35 @@ Phase 1: Interactive Setup (Main Agent)
     ├── CLAUDE.md generation
     └── edaf-config.yml generation (with setup_progress)
 
-Phase 2: Fire & Forget (Background Agents)
-    ├── documentation-worker (background)
-    └── *-standards agents (background)
+Phase 2: Fire & Forget (Background Agents) - SCALABLE 1:1 PATTERN
+    ├── documentation-worker × 6 (one per doc file)
+    │   ├── product-requirements.md
+    │   ├── functional-design.md
+    │   ├── development-guidelines.md
+    │   ├── repository-structure.md
+    │   ├── architecture.md
+    │   └── glossary.md
+    └── *-standards agents × N (one per skill)
     # NO TaskOutput - results not retrieved
+    # Each agent generates exactly ONE file (scalable pattern)
 
 Phase 3: Polling (Main Agent)
-    └── Check file existence every 10s (max 600s)
+    └── Check file existence every 30s (max 600s)
 
-Phase 4: Completion (Main Agent)
-    ├── Display generated files
+Phase 4: Fallback (Main Agent) - NEW
+    └── Generate minimal templates for missing files
+
+Phase 5: Completion (Main Agent)
+    ├── Display generated files (success/fallback/missing)
     └── Remove setup_progress from edaf-config.yml
 ```
+
+### Scalability Principles
+
+1. **1 Agent = 1 File**: Each agent generates exactly one output file
+2. **Parallel Execution**: All agents run simultaneously in background
+3. **Independent Failure**: One agent failing doesn't affect others
+4. **Fallback Templates**: Missing files get minimal templates on timeout
 
 ---
 
@@ -528,32 +545,70 @@ if (!fs.existsSync('.claude/skills')) fs.mkdirSync('.claude/skills', { recursive
 // === FIRE & FORGET: Launch agents in background ===
 console.log('\n🚀 Launching background agents (Fire & Forget)...\n')
 
-// Launch documentation-worker (background, no TaskOutput)
-await Task({
-  subagent_type: 'documentation-worker',
-  model: 'sonnet',
-  run_in_background: true,
-  description: 'Generate docs (background)',
-  prompt: `Generate permanent documentation for this project.
+// Define documentation files with their specific focus areas
+const docDefinitions = [
+  {
+    file: 'product-requirements.md',
+    focus: 'Product vision, user personas, user stories, and acceptance criteria',
+    description: 'product requirements documentation'
+  },
+  {
+    file: 'functional-design.md',
+    focus: 'Functional specifications, feature descriptions, and system behavior',
+    description: 'functional design documentation'
+  },
+  {
+    file: 'development-guidelines.md',
+    focus: 'Coding conventions, development workflow, and best practices',
+    description: 'development guidelines'
+  },
+  {
+    file: 'repository-structure.md',
+    focus: 'Directory structure, file organization, and module responsibilities',
+    description: 'repository structure documentation'
+  },
+  {
+    file: 'architecture.md',
+    focus: 'System architecture, component diagrams, and technical decisions',
+    description: 'architecture documentation'
+  },
+  {
+    file: 'glossary.md',
+    focus: 'Domain terms, technical terminology, and acronym definitions',
+    description: 'glossary of terms'
+  }
+]
 
-**Task**: Create 6 docs in docs/:
-1. product-requirements.md
-2. functional-design.md
-3. development-guidelines.md
-4. repository-structure.md
-5. architecture.md
-6. glossary.md
+// Launch 6 documentation-worker agents in parallel (1 agent = 1 file)
+console.log('   📄 Launching documentation agents (6 agents × 1 file each):')
+
+for (const doc of docDefinitions) {
+  await Task({
+    subagent_type: 'documentation-worker',
+    model: 'sonnet',
+    run_in_background: true,
+    description: `Generate ${doc.file}`,
+    prompt: `Generate ONLY the file: docs/${doc.file}
+
+**IMPORTANT**: Generate ONLY this ONE file. Do NOT generate any other files.
+
+**Focus Area**: ${doc.focus}
 
 **Instructions**:
-- Use Read and Glob tools to analyze the codebase
-- Detect language, framework, architecture patterns
-- Generate comprehensive but concise documentation
-- Documentation language: ${docLang === 'en' ? 'English' : 'Japanese'}
+1. Use Read and Glob tools to analyze the codebase
+2. Detect language, framework, and architecture patterns
+3. Generate comprehensive but concise ${doc.description}
+4. Write the file to: docs/${doc.file}
 
-**Current Working Directory**: ${process.cwd()}`
-})
+**Documentation Language**: ${docLang === 'en' ? 'English' : 'Japanese'}
 
-console.log('   📄 documentation-worker launched (background)')
+**Current Working Directory**: ${process.cwd()}
+
+**Output**: Write ONLY docs/${doc.file} - nothing else.`
+  })
+
+  console.log(`      - ${doc.file}`)
+}
 
 // Launch standards agents if selected
 for (const standard of selectedStandards) {
@@ -592,7 +647,7 @@ console.log('   Agents are working in the background...\n')
 **Action**: Poll for file existence (30s interval, max 600s):
 
 ```typescript
-console.log('⏳ Waiting for background agents to complete (max 10 minutes)...')
+console.log('\n⏳ Polling for file generation (30s interval, max 600s)...\n')
 
 const pollInterval = 30000  // 30 seconds
 const maxPolls = 20         // 20 * 30s = 600s (10 minutes)
@@ -615,22 +670,58 @@ if (fs.existsSync('.claude/edaf-config.yml')) {
 
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms))
 
+// Track completion status
+const fileStatus = {
+  docs: {},
+  skills: {}
+}
+
+// Initialize status
+for (const doc of expectedDocsToCheck) {
+  fileStatus.docs[doc] = { generated: false, fallback: false }
+}
+for (const skill of expectedSkillsToCheck) {
+  fileStatus.skills[skill] = { generated: false, fallback: false }
+}
+
 while (pollCount < maxPolls) {
   // Check which files exist
-  const missingDocs = expectedDocsToCheck.filter(doc => !fs.existsSync(doc))
-  const missingSkills = expectedSkillsToCheck.filter(skill => !fs.existsSync(skill))
+  const completedDocs = expectedDocsToCheck.filter(doc => fs.existsSync(doc))
+  const completedSkills = expectedSkillsToCheck.filter(skill => fs.existsSync(skill))
+
+  // Update status
+  for (const doc of completedDocs) {
+    if (!fileStatus.docs[doc].generated) {
+      fileStatus.docs[doc].generated = true
+      console.log(`   ✅ ${path.basename(doc)} generated`)
+    }
+  }
+  for (const skill of completedSkills) {
+    if (!fileStatus.skills[skill].generated) {
+      fileStatus.skills[skill].generated = true
+      const skillName = skill.split('/')[2]
+      console.log(`   ✅ ${skillName}/SKILL.md generated`)
+    }
+  }
 
   // Check if all files are generated
-  if (missingDocs.length === 0 && missingSkills.length === 0) {
-    console.log('✅ All files generated successfully!')
+  const allDocsComplete = completedDocs.length === expectedDocsToCheck.length
+  const allSkillsComplete = completedSkills.length === expectedSkillsToCheck.length
+
+  if (allDocsComplete && allSkillsComplete) {
+    console.log('\n✅ All files generated successfully!')
     break
   }
 
   pollCount++
 
+  // Progress indicator
+  const totalExpected = expectedDocsToCheck.length + expectedSkillsToCheck.length
+  const totalCompleted = completedDocs.length + completedSkills.length
+  console.log(`   [${pollCount * 30}s] Progress: ${totalCompleted}/${totalExpected} files`)
+
   if (pollCount >= maxPolls) {
-    console.log('\n⚠️  Timeout reached (600s). Some files may still be generating.')
-    console.log('   Use /tasks to check agent status.')
+    console.log('\n⚠️  Timeout reached (600s). Generating fallback templates for missing files...')
     break
   }
 
@@ -640,9 +731,190 @@ while (pollCount < maxPolls) {
 
 ---
 
-## Step 7: Cleanup and Completion
+## Step 7: Fallback Template Generation
 
-**Action**: Remove setup_progress and display summary:
+**Action**: Generate minimal templates for files that weren't created by agents:
+
+```typescript
+// Fallback templates for missing documentation files
+const fallbackTemplates = {
+  'product-requirements.md': `# Product Requirements
+
+> ⚠️ This is a fallback template. Please update with actual project requirements.
+
+## Overview
+
+<!-- Describe the product vision and goals -->
+
+## User Personas
+
+<!-- Define target users -->
+
+## User Stories
+
+<!-- List user stories in "As a... I want... So that..." format -->
+
+## Acceptance Criteria
+
+<!-- Define success criteria -->
+
+---
+*Generated by EDAF Setup (fallback template)*
+`,
+  'functional-design.md': `# Functional Design
+
+> ⚠️ This is a fallback template. Please update with actual functional specifications.
+
+## Features
+
+<!-- List and describe main features -->
+
+## System Behavior
+
+<!-- Describe system behavior and workflows -->
+
+## API Specifications
+
+<!-- Document API endpoints if applicable -->
+
+---
+*Generated by EDAF Setup (fallback template)*
+`,
+  'development-guidelines.md': `# Development Guidelines
+
+> ⚠️ This is a fallback template. Please update with project-specific guidelines.
+
+## Code Style
+
+<!-- Define coding conventions -->
+
+## Development Workflow
+
+<!-- Describe git workflow, PR process, etc. -->
+
+## Best Practices
+
+<!-- List development best practices -->
+
+---
+*Generated by EDAF Setup (fallback template)*
+`,
+  'repository-structure.md': `# Repository Structure
+
+> ⚠️ This is a fallback template. Please update with actual structure.
+
+## Directory Layout
+
+\`\`\`
+├── src/           # Source code
+├── tests/         # Test files
+├── docs/          # Documentation
+└── .claude/       # EDAF configuration
+\`\`\`
+
+## Module Responsibilities
+
+<!-- Describe each module's purpose -->
+
+---
+*Generated by EDAF Setup (fallback template)*
+`,
+  'architecture.md': `# Architecture
+
+> ⚠️ This is a fallback template. Please update with actual architecture.
+
+## System Overview
+
+<!-- High-level architecture description -->
+
+## Components
+
+<!-- List main components and their responsibilities -->
+
+## Technical Decisions
+
+<!-- Document key technical decisions and rationale -->
+
+---
+*Generated by EDAF Setup (fallback template)*
+`,
+  'glossary.md': `# Glossary
+
+> ⚠️ This is a fallback template. Please update with project-specific terms.
+
+## Domain Terms
+
+| Term | Definition |
+|------|------------|
+| <!-- term --> | <!-- definition --> |
+
+## Technical Terms
+
+| Term | Definition |
+|------|------------|
+| <!-- term --> | <!-- definition --> |
+
+---
+*Generated by EDAF Setup (fallback template)*
+`
+}
+
+// Generate fallback templates for missing docs
+const missingDocs = expectedDocsToCheck.filter(doc => !fs.existsSync(doc))
+if (missingDocs.length > 0) {
+  console.log('\n📝 Generating fallback templates for missing docs:')
+  for (const doc of missingDocs) {
+    const fileName = path.basename(doc)
+    if (fallbackTemplates[fileName]) {
+      fs.writeFileSync(doc, fallbackTemplates[fileName])
+      fileStatus.docs[doc].fallback = true
+      console.log(`   📄 ${fileName} (fallback template)`)
+    }
+  }
+}
+
+// Generate fallback templates for missing skills
+const missingSkills = expectedSkillsToCheck.filter(skill => !fs.existsSync(skill))
+if (missingSkills.length > 0) {
+  console.log('\n📝 Generating fallback templates for missing skills:')
+  for (const skill of missingSkills) {
+    const skillName = skill.split('/')[2]
+    const fallbackSkillContent = `# ${skillName.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+
+> ⚠️ This is a fallback template. Run \`/review-standards\` to generate actual standards.
+
+## Overview
+
+This skill defines coding standards for the project.
+
+## Rules
+
+<!-- Define specific rules -->
+
+## Examples
+
+<!-- Provide code examples -->
+
+---
+*Generated by EDAF Setup (fallback template)*
+`
+    // Ensure directory exists
+    const skillDir = path.dirname(skill)
+    if (!fs.existsSync(skillDir)) {
+      fs.mkdirSync(skillDir, { recursive: true })
+    }
+    fs.writeFileSync(skill, fallbackSkillContent)
+    fileStatus.skills[skill].fallback = true
+    console.log(`   📖 ${skillName}/SKILL.md (fallback template)`)
+  }
+}
+```
+
+---
+
+## Step 8: Cleanup and Completion
+
+**Action**: Remove setup_progress and display final summary:
 
 ```typescript
 // Remove setup_progress from config
@@ -654,29 +926,38 @@ if (fs.existsSync('.claude/edaf-config.yml')) {
 }
 
 // Final summary
-console.log('\n' + '═'.repeat(50))
+console.log('\n' + '═'.repeat(60))
 console.log('  EDAF v1.0 Setup Complete!')
-console.log('═'.repeat(50))
+console.log('═'.repeat(60))
 
 console.log('\n📁 Generated Files:')
 
-// List generated docs
+// List docs with status indicators
 console.log('\n   docs/:')
 for (const doc of expectedDocsToCheck) {
-  if (fs.existsSync(doc)) {
-    console.log(`     ✅ ${path.basename(doc)}`)
+  const fileName = path.basename(doc)
+  const status = fileStatus.docs[doc]
+  if (status.generated && !status.fallback) {
+    console.log(`     ✅ ${fileName} (agent-generated)`)
+  } else if (status.fallback) {
+    console.log(`     📄 ${fileName} (fallback template - please review)`)
   } else {
-    console.log(`     ❌ ${path.basename(doc)} (not generated)`)
+    console.log(`     ❌ ${fileName} (not generated)`)
   }
 }
 
-// List generated skills
+// List skills with status indicators
 if (expectedSkillsToCheck.length > 0) {
   console.log('\n   .claude/skills/:')
   for (const skill of expectedSkillsToCheck) {
-    if (fs.existsSync(skill)) {
-      const skillName = skill.split('/')[2]
-      console.log(`     ✅ ${skillName}/SKILL.md`)
+    const skillName = skill.split('/')[2]
+    const status = fileStatus.skills[skill]
+    if (status.generated && !status.fallback) {
+      console.log(`     ✅ ${skillName}/SKILL.md (agent-generated)`)
+    } else if (status.fallback) {
+      console.log(`     📖 ${skillName}/SKILL.md (fallback - run /review-standards)`)
+    } else {
+      console.log(`     ❌ ${skillName}/SKILL.md (not generated)`)
     }
   }
 }
@@ -685,28 +966,93 @@ console.log('\n📋 Configuration:')
 console.log(`   Language: ${docLang === 'en' ? 'English' : 'Japanese'} docs, ${termLang === 'en' ? 'English' : 'Japanese'} output`)
 console.log(`   Docker: ${dockerConfig.enabled ? 'Enabled (' + dockerConfig.main_service + ')' : 'Disabled'}`)
 
+// Count fallbacks
+const fallbackDocsCount = Object.values(fileStatus.docs).filter(s => s.fallback).length
+const fallbackSkillsCount = Object.values(fileStatus.skills).filter(s => s.fallback).length
+const totalFallbacks = fallbackDocsCount + fallbackSkillsCount
+
+if (totalFallbacks > 0) {
+  console.log('\n⚠️  Note:')
+  console.log(`   ${totalFallbacks} file(s) used fallback templates.`)
+  console.log('   Please review and update these files with actual content.')
+  if (fallbackSkillsCount > 0) {
+    console.log('   Run /review-standards to regenerate skill files from your code.')
+  }
+}
+
 console.log('\n🚀 Next Steps:')
 console.log('   1. Review generated docs in docs/')
-console.log('   2. Start implementing features with EDAF 7-phase workflow')
-console.log('   3. Run /review-standards to update coding standards anytime')
+if (totalFallbacks > 0) {
+  console.log('   2. Update fallback templates with actual content')
+  console.log('   3. Run /review-standards if skill templates need updating')
+  console.log('   4. Start implementing features with EDAF 7-phase workflow')
+} else {
+  console.log('   2. Start implementing features with EDAF 7-phase workflow')
+  console.log('   3. Run /review-standards to update coding standards anytime')
+}
 
-console.log('\n' + '═'.repeat(50))
+console.log('\n' + '═'.repeat(60))
 ```
 
 ---
 
 ## Summary
 
-This optimized `/setup` command:
+This optimized `/setup` command uses a **scalable 1:1 pattern**:
 
-1. **Prevents context exhaustion** by using Fire & Forget pattern
-2. **Tracks progress** via `setup_progress` in edaf-config.yml
-3. **Supports interruption recovery** by checking for existing setup_progress
-4. **Polls for completion** instead of waiting for TaskOutput
-5. **Cleans up** by removing setup_progress after completion
+### Core Principles
 
-**Key Differences from Original:**
-- `run_in_background: true` for all Task launches
-- NO `TaskOutput` calls (results not retrieved)
-- Polling via `fs.existsSync()` instead of waiting for agent results
-- Temporary `setup_progress` section for tracking and recovery
+1. **1 Agent = 1 File**: Each agent generates exactly one output file
+   - Documentation: 6 `documentation-worker` instances (one per doc file)
+   - Skills: N `general-purpose` instances (one per skill)
+
+2. **Parallel Execution**: All agents run simultaneously in background
+   - Maximizes throughput
+   - Independent failure handling
+
+3. **Fire & Forget + Fallback**: No TaskOutput calls, but fallback on timeout
+   - Prevents context exhaustion
+   - Ensures all files exist after setup
+
+### Architecture
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    SCALABLE 1:1 PATTERN                     │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  Documentation (6 agents × 1 file)                          │
+│  ┌────────┐ ┌────────┐ ┌────────┐ ┌────────┐ ┌────────┐ ┌────────┐ │
+│  │doc-wkr │ │doc-wkr │ │doc-wkr │ │doc-wkr │ │doc-wkr │ │doc-wkr │ │
+│  │prod-req│ │func-dsg│ │dev-gide│ │repo-str│ │arch    │ │glossary│ │
+│  └────────┘ └────────┘ └────────┘ └────────┘ └────────┘ └────────┘ │
+│                                                             │
+│  Skills (N agents × 1 file)                                 │
+│  ┌────────┐ ┌────────┐ ┌────────┐ ┌────────┐                │
+│  │general │ │general │ │general │ │general │ ...            │
+│  │ts-std  │ │react-st│ │test-std│ │sec-std │                │
+│  └────────┘ └────────┘ └────────┘ └────────┘                │
+│                                                             │
+│  Monitoring: File existence polling (30s interval)          │
+│  Fallback: Template generation on 600s timeout              │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Key Features
+
+| Feature | Description |
+|---------|-------------|
+| Context Safety | Fire & Forget - no TaskOutput calls |
+| Scalability | 1:1 pattern - add files by adding to array |
+| Resilience | Fallback templates ensure setup always completes |
+| Progress Tracking | Real-time file existence monitoring |
+| Recovery | `setup_progress` in config enables resume |
+
+### Benefits Over Previous Design
+
+| Aspect | Before | After |
+|--------|--------|-------|
+| Doc agents | 1 agent × 6 files | 6 agents × 1 file |
+| Failure impact | All 6 docs fail | Only 1 doc fails |
+| Timeout handling | Nothing generated | Fallback templates |
+| Scalability | Hard to add files | Just add to array |
