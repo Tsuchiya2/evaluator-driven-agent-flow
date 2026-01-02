@@ -5,11 +5,11 @@
       "Bash(docker-compose exec:*)"
     ],
     "deny": [
-      "Bash(git add*)",
-      "Bash(git commit*)",
-      "Bash(git push*)",
-      "Bash(rm -rf*)",
-      "Bash(git push --force*)"
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(rm -rf:*)",
+      "Bash(git push --force:*)"
     ],
     "ask": []
   },
