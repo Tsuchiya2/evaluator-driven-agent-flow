@@ -2,49 +2,118 @@
 description: Interactive setup for EDAF v1.0 Self-Adapting System / EDAF v1.0 自己適応型システムのインタラクティブセットアップ
 ---
 
-# EDAF v1.0 - Interactive Setup / インタラクティブセットアップ
+# EDAF v1.0 - Interactive Setup (Optimized)
 
 Welcome to EDAF (Evaluator-Driven Agent Flow) v1.0!
-EDAF (Evaluator-Driven Agent Flow) v1.0へようこそ！
 
-This setup wizard will help you configure the self-adapting workers and evaluators for your project.
-このセットアップウィザードは、プロジェクトの自己適応型ワーカーとエバリュエーターを設定するお手伝いをします。
+This setup wizard uses an optimized **Fire & Forget** pattern to prevent context exhaustion.
 
 ---
 
-## Step 0: Language Preferences / ステップ0: 言語設定
+## Architecture Overview
 
-**IMPORTANT / 重要**: Please select your language preference first. This will affect how Claude Code responds to you and generates documentation.
-まず言語設定を選択してください。これにより、Claude Codeがどのように応答し、ドキュメントを生成するかが決まります。
+```
+Phase 1: Interactive Setup (Main Agent)
+    ├── Language selection
+    ├── Project auto-detection
+    ├── Docker configuration
+    ├── CLAUDE.md generation
+    └── edaf-config.yml generation (with setup_progress)
 
-**Action / アクション**: Use AskUserQuestion to select language preference:
+Phase 2: Fire & Forget (Background Agents)
+    ├── documentation-worker (background)
+    └── *-standards agents (background)
+    # NO TaskOutput - results not retrieved
+
+Phase 3: Polling (Main Agent)
+    └── Check file existence every 10s (max 600s)
+
+Phase 4: Completion (Main Agent)
+    ├── Display generated files
+    └── Remove setup_progress from edaf-config.yml
+```
+
+---
+
+## Step 0: Check for Interrupted Setup
+
+**Action**: Check if previous setup was interrupted:
 
 ```typescript
 const fs = require('fs')
 const path = require('path')
+const yaml = require('js-yaml')
 
+// Check for interrupted setup
+if (fs.existsSync('.claude/edaf-config.yml')) {
+  try {
+    const existingConfig = yaml.load(fs.readFileSync('.claude/edaf-config.yml', 'utf-8'))
+
+    if (existingConfig && existingConfig.setup_progress && existingConfig.setup_progress.status === 'in_progress') {
+      console.log('\n⚠️  Previous setup was interrupted / 前回のセットアップが中断されています\n')
+
+      const resumeResponse = await AskUserQuestion({
+        questions: [
+          {
+            question: "Resume from where it left off? / 中断した箇所から再開しますか？",
+            header: "Resume",
+            multiSelect: false,
+            options: [
+              {
+                label: "Resume - Check file generation status",
+                description: "Continue polling for file generation. Recommended if agents are still running."
+              },
+              {
+                label: "Restart - Start fresh setup",
+                description: "Delete progress and start from the beginning."
+              }
+            ]
+          }
+        ]
+      })
+
+      if (resumeResponse.answers['0'].includes('Resume')) {
+        // Jump to Phase 3 (Polling)
+        console.log('\n🔄 Resuming setup... / セットアップを再開中...\n')
+        // The polling logic will be executed in Step 6
+      } else {
+        // Clear setup_progress and restart
+        delete existingConfig.setup_progress
+        fs.writeFileSync('.claude/edaf-config.yml', yaml.dump(existingConfig))
+        console.log('\n🔄 Restarting setup... / セットアップを最初から開始...\n')
+      }
+    }
+  } catch (e) {
+    // Config file exists but is invalid, continue with fresh setup
+  }
+}
+```
+
+---
+
+## Step 1: Language Preferences
+
+**Action**: Select language preference:
+
+```typescript
 const langResponse = await AskUserQuestion({
   questions: [
     {
       question: "Select your language preference for EDAF / EDAFの言語設定を選択してください",
-      header: "Language / 言語",
+      header: "Language",
       multiSelect: false,
       options: [
         {
           label: "Option 1: EN docs + EN output",
-          description: "Documentation in English, Terminal output in English. Best for English-speaking teams. / 英語ドキュメント、英語出力。英語圏チームに最適。"
+          description: "Documentation in English, Terminal output in English. Best for English-speaking teams."
         },
         {
-          label: "Option 2: JA docs + JA output / 日本語ドキュメント + 日本語出力",
-          description: "Documentation in Japanese, Terminal output in Japanese. Best for Japanese teams. / 日本語ドキュメント、日本語出力。日本語チームに最適。"
+          label: "Option 2: JA docs + JA output",
+          description: "Documentation in Japanese, Terminal output in Japanese. Best for Japanese teams."
         },
         {
-          label: "Option 3: EN docs + JA output / 英語ドキュメント + 日本語出力",
-          description: "Documentation in English, Terminal output in Japanese. Best for learning English while working in Japanese. / 英語ドキュメント、日本語出力。英語学習しながら日本語で作業。"
-        },
-        {
-          label: "Option 4: EN docs + JA output + JA translation / 英語ドキュメント + 日本語出力 + 日本語翻訳",
-          description: "Documentation in English with Japanese translation saved separately. Terminal output in Japanese. Best for bilingual teams. / 英語ドキュメントと日本語翻訳を両方保存。ターミナル出力は日本語。バイリンガルチームに最適。"
+          label: "Option 3: EN docs + JA output",
+          description: "Documentation in English, Terminal output in Japanese."
         }
       ]
     }
@@ -55,48 +124,164 @@ const langResponse = await AskUserQuestion({
 const selected = langResponse.answers['0']
 let docLang = 'en'
 let termLang = 'en'
-let dualDocs = false
 
 if (selected.includes('Option 1')) {
   docLang = 'en'
   termLang = 'en'
-  dualDocs = false
 } else if (selected.includes('Option 2')) {
   docLang = 'ja'
   termLang = 'ja'
-  dualDocs = false
 } else if (selected.includes('Option 3')) {
   docLang = 'en'
   termLang = 'ja'
-  dualDocs = false
-} else if (selected.includes('Option 4')) {
-  docLang = 'en'
-  termLang = 'ja'
-  dualDocs = true
 }
 
-console.log('\n✅ Language preference set / 言語設定が完了しました:')
-console.log('   Documentation / ドキュメント:', docLang === 'en' ? 'English / 英語' : 'Japanese / 日本語')
-console.log('   Terminal Output / ターミナル出力:', termLang === 'en' ? 'English / 英語' : 'Japanese / 日本語')
-if (dualDocs) {
-  console.log('   Dual Language Docs / 二言語ドキュメント: Enabled (EN + JA) / 有効（英語 + 日本語）')
+console.log('\n✅ Language preference set:')
+console.log('   Documentation:', docLang === 'en' ? 'English' : 'Japanese')
+console.log('   Terminal Output:', termLang === 'en' ? 'English' : 'Japanese')
+```
+
+---
+
+## Step 2: Verify Installation
+
+**Action**: Check for installed components:
+
+```typescript
+const checks = {
+  workers: fs.existsSync('.claude/agents/workers/database-worker-v1-self-adapting.md'),
+  evaluators: fs.existsSync('.claude/agents/evaluators/phase5-code/code-quality-evaluator-v1-self-adapting.md'),
+  setupCommand: fs.existsSync('.claude/commands/setup.md')
+}
+
+console.log('\n📋 Installation Status:')
+console.log('   Workers:', checks.workers ? '✅ Installed' : '❌ Not found')
+console.log('   Evaluators:', checks.evaluators ? '✅ Installed' : '❌ Not found')
+console.log('   /setup command:', checks.setupCommand ? '✅ Installed' : '❌ Not found')
+
+if (!checks.workers || !checks.evaluators) {
+  console.log('\n⚠️  Some components are missing. Please run install.sh first.')
+  console.log('   bash evaluator-driven-agent-flow/scripts/install.sh')
 }
 ```
 
-**Next / 次**: Save configuration and generate CLAUDE.md
-
-```typescript
-// NOTE: Configuration will be saved after Docker detection in Step 2
-// Docker検出後（Step 2）に設定を保存します
-console.log('\n📝 Language preferences will be saved after environment detection')
-console.log('📝 言語設定は環境検出後に保存されます')
-
-// Generate CLAUDE.md
-let claudeMd = `---
-description: EDAF v1.0 Configuration and Language Preferences
 ---
 
-# EDAF v1.0 - Claude Code Configuration
+## Step 3: Project Auto-Detection & Docker Configuration
+
+**Action**: Detect project type and Docker environment:
+
+```typescript
+// Detect project type
+let projectType = 'unknown'
+let detectedFrameworks = []
+
+if (fs.existsSync('package.json')) {
+  const packageJson = JSON.parse(fs.readFileSync('package.json', 'utf-8'))
+  const deps = { ...packageJson.dependencies, ...packageJson.devDependencies }
+
+  projectType = 'node'
+  console.log('\n📦 Detected: JavaScript/TypeScript Project\n')
+
+  if (deps.react) detectedFrameworks.push('React')
+  if (deps.next) detectedFrameworks.push('Next.js')
+  if (deps.vue) detectedFrameworks.push('Vue')
+  if (deps.express) detectedFrameworks.push('Express')
+  if (deps['@nestjs/core']) detectedFrameworks.push('NestJS')
+  if (deps.typescript) detectedFrameworks.push('TypeScript')
+  if (deps.jest) detectedFrameworks.push('Jest')
+  if (deps.vitest) detectedFrameworks.push('Vitest')
+  if (deps.eslint) detectedFrameworks.push('ESLint')
+
+  console.log('   Frameworks:', detectedFrameworks.join(', ') || 'None detected')
+}
+
+if (fs.existsSync('requirements.txt') || fs.existsSync('pyproject.toml')) {
+  projectType = 'python'
+  console.log('\n🐍 Detected: Python Project')
+}
+
+if (fs.existsSync('go.mod')) {
+  projectType = 'go'
+  console.log('\n🔵 Detected: Go Project')
+}
+
+// Docker detection
+let dockerConfig = { enabled: false }
+const composeFiles = ['compose.yml', 'compose.yaml', 'docker-compose.yml', 'docker-compose.yaml']
+let composeFile = composeFiles.find(f => fs.existsSync(f))
+
+if (composeFile) {
+  console.log('\n🐳 Docker Compose detected:', composeFile)
+
+  const compose = fs.readFileSync(composeFile, 'utf-8')
+  const serviceMatches = compose.match(/^  (\w+):/gm)
+  const services = serviceMatches ? serviceMatches.map(s => s.trim().replace(':', '')) : []
+
+  const dockerResponse = await AskUserQuestion({
+    questions: [
+      {
+        question: "How should commands be executed?",
+        header: "Docker",
+        multiSelect: false,
+        options: [
+          {
+            label: "Docker container",
+            description: "Execute via docker compose exec (recommended for Docker development)"
+          },
+          {
+            label: "Local machine",
+            description: "Execute on host machine directly"
+          }
+        ]
+      }
+    ]
+  })
+
+  if (dockerResponse.answers['0'].includes('Docker')) {
+    // Select service
+    if (services.length > 1) {
+      const serviceResponse = await AskUserQuestion({
+        questions: [
+          {
+            question: "Select main service for command execution",
+            header: "Service",
+            multiSelect: false,
+            options: services.slice(0, 4).map(s => ({
+              label: s,
+              description: `Execute commands in '${s}' container`
+            }))
+          }
+        ]
+      })
+      dockerConfig = {
+        enabled: true,
+        compose_file: composeFile,
+        main_service: serviceResponse.answers['0'],
+        exec_prefix: `docker compose exec ${serviceResponse.answers['0']}`
+      }
+    } else if (services.length === 1) {
+      dockerConfig = {
+        enabled: true,
+        compose_file: composeFile,
+        main_service: services[0],
+        exec_prefix: `docker compose exec ${services[0]}`
+      }
+    }
+    console.log('   Docker execution enabled:', dockerConfig.exec_prefix)
+  }
+}
+```
+
+---
+
+## Step 4: Generate CLAUDE.md and Configuration
+
+**Action**: Generate CLAUDE.md:
+
+```typescript
+// Generate CLAUDE.md content
+let claudeMd = `# EDAF v1.0 - Claude Code Configuration
 
 ## Language Preferences
 
@@ -107,381 +292,251 @@ Do not edit manually - run \`/setup\` again to change preferences.
 
 - **Documentation Language**: ${docLang === 'en' ? 'English' : 'Japanese'}
 - **Terminal Output Language**: ${termLang === 'en' ? 'English' : 'Japanese'}
-- **Save Dual Language Docs**: ${dualDocs ? 'Yes (EN + JA)' : 'No'}
+- **Save Dual Language Docs**: No
 
 ---
 
 ## EDAF 7-Phase Gate System
 
-**When the user requests to implement a feature using "エージェントフロー" (agent flow) or "EDAF", follow this workflow:**
+**When implementing features, fixing bugs, or making changes, automatically follow this workflow:**
 
-> **Detailed instructions for each phase are in \`.claude/skills/edaf-orchestration/\`**
+> Triggered by natural language requests for implementation work (no need to say "EDAF")
+> Detailed workflows: \`.claude/skills/edaf-orchestration/PHASE{1-7}-*.md\`
 
 ### Quick Reference
 
 | Phase | Agent | Evaluators | Pass Criteria |
 |-------|-------|------------|---------------|
-| 1. Requirements | requirements-gatherer | 7 requirements evaluators | All ≥ 8.0/10 |
-| 2. Design | designer | 7 design evaluators | All ≥ 8.0/10 |
-| 3. Planning | planner | 7 planner evaluators | All ≥ 8.0/10 |
-| 4. Implementation | 4 workers | 1 quality-gate evaluator | All workers complete + Score 10.0 (lint + tests) |
-| 5. Code Review | - | 7 code evaluators + UI verification | All ≥ 8.0/10 |
-| 6. Documentation | documentation-worker | 5 documentation evaluators | All ≥ 8.0/10 |
-| 7. Deployment | - | 5 deployment evaluators | All ≥ 8.0/10 |
+| 1. Requirements | requirements-gatherer | 7 | All ≥ 8.0/10 |
+| 2. Design | designer | 7 | All ≥ 8.0/10 |
+| 3. Planning | planner | 7 | All ≥ 8.0/10 |
+| 4. Implementation | 4 workers | 1 quality-gate | 10.0 (lint+tests) |
+| 5. Code Review | - | 7 + UI | All ≥ 8.0/10 |
+| 6. Documentation | documentation-worker | 5 | All ≥ 8.0/10 |
+| 7. Deployment | - | 5 | All ≥ 8.0/10 |
 
-### Phase 1: Requirements Gathering Gate
-→ See \`.claude/skills/edaf-orchestration/PHASE1-REQUIREMENTS.md\`
+---
 
-1. Launch \`requirements-gatherer\` agent (interactive dialogue)
-2. Use 5W2H framework to clarify requirements
-3. Generate requirements document → \`.steering/{YYYY-MM-DD}-{feature-slug}/idea.md\`
-4. Run 7 requirements evaluators in parallel
-5. Iterate with user until all pass
+### EDAF Execution Pattern
 
-### Phase 2: Design Gate
-→ See \`.claude/skills/edaf-orchestration/PHASE2-DESIGN.md\`
+**For each phase**:
 
-1. Launch \`designer\` agent (uses idea.md as input)
-2. Design document → \`.steering/{YYYY-MM-DD}-{feature-slug}/design.md\`
-3. Run 7 design evaluators in parallel
-4. Revise until all pass
+1. **Execute** → Run agent/worker to generate artifact
+2. **Evaluate** → Run ALL evaluators in parallel (use Task tool)
+3. **Check** results:
+   - ✅ **ALL pass (≥ threshold)** → Proceed to next phase
+   - ❌ **ANY fail (< threshold)** → Feedback loop:
+     1. Read evaluator reports for specific feedback
+     2. Revise artifact based on feedback
+     3. Re-run ALL evaluators (not just failed ones)
+     4. Repeat until ALL pass (unlimited iterations)
 
-### Phase 3: Planning Gate
-→ See \`.claude/skills/edaf-orchestration/PHASE3-PLANNING.md\`
+**This feedback loop is EDAF's core quality mechanism.**
 
-1. Launch \`planner\` agent (uses design.md as input)
-2. Task plan → \`.steering/{YYYY-MM-DD}-{feature-slug}/tasks.md\`
-3. Run 7 planner evaluators in parallel
-4. Revise until all pass
+**Artifacts by Phase**:
+- Phase 1: \`.steering/{date}-{feature}/idea.md\` (requirements)
+- Phase 2: \`.steering/{date}-{feature}/design.md\` (technical design)
+- Phase 3: \`.steering/{date}-{feature}/tasks.md\` (task plan)
+- Phase 4: Source code (implementation)
+- Phase 5: \`.steering/{date}-{feature}/reports/\` (evaluation reports)
+- Phase 6: \`docs/\` (permanent documentation updates)
+- Phase 7: Deployment configs
 
-### Phase 4: Implementation
-→ See \`.claude/skills/edaf-orchestration/PHASE4-IMPLEMENTATION.md\`
+**Permanent Documentation** (\`docs/\`):
+- \`product-requirements.md\`, \`functional-design.md\`, \`development-guidelines.md\`
+- \`repository-structure.md\`, \`architecture.md\`, \`glossary.md\`
 
-Launch workers in order (using tasks.md as guide):
-1. \`database-worker-v1-self-adapting\`
-2. \`backend-worker-v1-self-adapting\`
-3. \`frontend-worker-v1-self-adapting\`
-4. \`test-worker-v1-self-adapting\`
+---
 
-Then run quality gate:
-- **Quality Gate Evaluator**: Ultra-strict quality check (Score 10.0 = PASS, else FAIL)
-- Checks BOTH lint (zero errors, zero warnings) AND tests (all passing)
-- Auto-fixes: Re-invokes workers with feedback if failing
-- Report → \`.steering/{YYYY-MM-DD}-{feature-slug}/reports/phase4-quality-gate.md\`
+## Critical Rules
 
-### Phase 5: Code Review Gate
-→ See \`.claude/skills/edaf-orchestration/PHASE5-CODE.md\`
+1. **NEVER skip phases**
+2. **ALWAYS run evaluators in parallel** (use Task tool)
+3. **ALWAYS iterate until ALL evaluators pass** (no exceptions)
+4. **IF any evaluator fails**:
+   - Read evaluator report for specific feedback
+   - Revise artifact based on feedback
+   - Re-run ALL evaluators (not just failed ones)
+   - Repeat until ALL pass (unlimited iterations)
+5. **Phase 1 is mandatory** for new features (requirements gathering)
+6. **Phase 4 quality-gate is ultra-strict** (10.0 = zero lint errors/warnings + all tests pass)
+7. **UI verification required** if frontend modified (Phase 5)
 
-1. Run 7 code evaluators in parallel
-2. Fix issues until all pass
-3. **If frontend modified**: Launch \`ui-verification-worker\`
-   - See \`.claude/skills/ui-verification/\` for patterns
-   - Screenshots → \`.steering/{YYYY-MM-DD}-{feature-slug}/screenshots/\`
-   - Report → \`.steering/{YYYY-MM-DD}-{feature-slug}/reports/phase5-ui-verification.md\`
+---
 
-### Phase 6: Documentation Update
-→ See \`.claude/skills/edaf-orchestration/PHASE6-DOCUMENTATION.md\`
+## Component Discovery
 
-1. Launch \`documentation-worker\` to update permanent docs
-2. Updates \`docs/\` based on implementation
-3. Run 5 documentation evaluators in parallel
+**All components are auto-discovered from file system. No manual listing needed.**
 
-### Phase 7: Deployment Gate (Optional)
-→ See \`.claude/skills/edaf-orchestration/PHASE7-DEPLOYMENT.md\`
+**Locations**:
+- **Agents**: \`.claude/agents/*.md\` + \`.claude/agents/workers/*.md\`
+- **Evaluators**: \`.claude/agents/evaluators/phase{1-7}-*/*.md\`
+- **Skills**: \`.claude/skills/*/SKILL.md\` (coding standards, workflows)
+- **Commands**: \`.claude/commands/*.md\` (e.g., \`/review-standards\`)
+- **Config**: \`.claude/edaf-config.yml\`, \`.claude/agent-models.yml\`
 
-1. Run 5 deployment evaluators in parallel
-2. Fix issues until all pass
-
-**CRITICAL RULES:**
-- NEVER skip phases
-- NEVER launch evaluators directly - always use Task tool with subagent_type
-- ALWAYS launch all evaluators in each phase in parallel
-- ALWAYS wait for ALL evaluators to approve before proceeding to next phase
-
-**NOTE:** Notification sounds will play automatically when each Task completes (configured via \`.claude/settings.json\` hooks)
+**Component Count**:
+- 9 Agents (requirements-gatherer, designer, planner, 4 workers, documentation-worker, ui-verification-worker)
+- 39 Evaluators (7 per phase for phases 1-3,5,6; 1 for phase 4; 5 for phase 7)
+- Total: 48 components
 
 ---
 
 ## Instructions for Claude Code
 
-When working with EDAF Workers and Evaluators, please follow these rules:
+### Terminal Output Language
+Respond in **${termLang === 'en' ? 'ENGLISH' : 'JAPANESE'}** for all output.
 
-### 1. Terminal Output Language
+### Documentation Language
+Generate documentation in **${docLang === 'en' ? 'ENGLISH' : 'JAPANESE'}**.
 
-`
+### Agent Behavior
+- **Workers**: Follow project coding standards in \`.claude/skills/\`
+- **Evaluators**: Output in terminal language, generate reports in documentation language
+- **All agents**: Read detailed phase instructions in \`.claude/skills/edaf-orchestration/\`
 
-if (termLang === 'ja') {
-  claudeMd += `**Respond to the user in JAPANESE for all terminal output, messages, and explanations.**
-
-Examples:
-- "✅ データベースモデルを作成しました"
-- "📋 コード品質評価を開始します"
-- "❌ エラー: ファイルが見つかりません"
-`
-} else {
-  claudeMd += `**Respond to the user in ENGLISH for all terminal output, messages, and explanations.**
-
-Examples:
-- "✅ Database model created"
-- "📋 Starting code quality evaluation"
-- "❌ Error: File not found"
-`
-}
-
-claudeMd += `
-### 2. Documentation Language
-
-`
-
-if (docLang === 'ja') {
-  claudeMd += `**Generate ALL documentation in JAPANESE.**
-
-When creating markdown files, API documentation, README files, or code comments:
-- Write in Japanese
-- Use Japanese technical terms where appropriate
-- Provide Japanese examples
-
-Example:
-\`\`\`markdown
-# ユーザーモデル
-
-## 概要
-
-このモデルはユーザー情報を管理します。
-
-## フィールド
-
-- \`email\`: メールアドレス（必須）
-- \`password\`: パスワード（ハッシュ化済み）
-\`\`\`
-`
-} else {
-  claudeMd += `**Generate ALL documentation in ENGLISH.**
-
-When creating markdown files, API documentation, README files, or code comments:
-- Write in English
-- Use standard English technical terms
-- Provide English examples
-
-Example:
-\`\`\`markdown
-# User Model
-
-## Overview
-
-This model manages user information.
-
-## Fields
-
-- \`email\`: Email address (required)
-- \`password\`: Password (hashed)
-\`\`\`
-`
-}
-
-if (dualDocs) {
-  claudeMd += `
-### 3. Dual Language Documentation
-
-**After generating English documentation, automatically create a Japanese translation.**
-
-Process:
-1. Generate documentation in English (save to \`docs/\`)
-2. Translate the English documentation to Japanese
-3. Save the Japanese version to \`docs/tmp/ja/\`
-
-Example:
-- English: \`docs/User.md\`
-- Japanese: \`docs/tmp/ja/User.md\`
-
-The Japanese translation should:
-- Maintain the same structure and formatting
-- Translate all content including code comments
-- Preserve code blocks and technical terms where appropriate
-`
-}
-
-claudeMd += `
----
-
-## Notification System
-
-EDAF includes a sound notification system to alert you when tasks complete or errors occur.
-
-### Automatic Notifications (via Hooks)
-
-**Notifications play automatically** when any Task completes, thanks to Claude Code hooks configured in \`.claude/settings.json\`:
-
-\`\`\`json
-{
-  "hooks": {
-    "tool-result": {
-      "Task": "bash .claude/scripts/notification.sh 'Task completed' WarblerSong"
-    }
-  }
-}
-\`\`\`
-
-**What happens automatically:**
-- When Designer completes → WarblerSong plays (3 times, 1.8s intervals)
-- When Planner completes → WarblerSong plays
-- When any Worker completes → WarblerSong plays
-- When any Evaluator completes → WarblerSong plays
-
-**No manual action required!** The notification system is fully automated.
-
-### Manual Notifications (Optional)
-
-You can also play notifications manually if needed:
-
-\`\`\`bash
-bash .claude/scripts/notification.sh "Custom message" WarblerSong
-\`\`\`
-
-**Available Sounds:**
-- \`WarblerSong\` - Pleasant bird song (for task completion)
-- \`CatMeow\` - Cat meow (for errors or attention needed)
-- \`Glass\` - System glass sound (macOS only)
-
-**Configuration:**
-- Hook settings: \`.claude/settings.json\`
-- Sound files: \`.claude/sounds/\`
-- Notification script: \`.claude/scripts/notification.sh\`
-- Playback: 3 times with 1.8 second intervals
-
----
-
-## Worker-Specific Instructions
-
-### Database Worker
-
-When generating database models:
-- Follow the documentation language setting above
-- Use appropriate naming conventions for the target language
-- Generate migration files with proper comments
-
-### Backend Worker
-
-When generating backend code:
-- Follow the documentation language setting above
-- Generate API documentation in the specified language
-- Use proper error messages in the terminal output language
-
-### Frontend Worker
-
-When generating frontend components:
-- Follow the documentation language setting above
-- Generate component documentation in the specified language
-- Use proper UI text in the terminal output language
-
-### Test Worker
-
-When generating tests:
-- Follow the documentation language setting above
-- Write test descriptions in the specified language
-- Use proper assertion messages in the terminal output language
-
----
-
-## Evaluator-Specific Instructions
-
-All evaluators should:
-- Output evaluation results in the terminal output language
-- Generate reports in the documentation language
-- Use proper scoring explanations in the terminal output language
+### Setup
+For initial project setup, see README.md for \`/setup\` command instructions.
 
 ---
 
 **Last Updated**: Auto-generated by \`/setup\` command
-**Configuration File**: \`.claude/edaf-config.yml\`
+**Configuration**: \`.claude/edaf-config.yml\`
 `
 
 // Save CLAUDE.md
 fs.writeFileSync('.claude/CLAUDE.md', claudeMd)
-console.log('✅ CLAUDE.md generated successfully')
-console.log('✅ CLAUDE.md を生成しました')
-console.log('\n📄 Claude Code will now follow your language preferences.')
-console.log('📄 Claude Code は設定した言語設定に従います。')
+console.log('\n✅ CLAUDE.md generated')
 ```
 
 ---
 
-## Step 1: Verify Installation / ステップ1: インストール確認
+## Step 5: Standards Learning Selection & Fire & Forget Launch
 
-First, let me check what's already installed in your project.
-まず、プロジェクトに何がインストールされているかを確認します。
-
-**Action / アクション**: Check for installed components / インストール済みコンポーネントをチェック:
+**Action**: Ask about standards learning and launch agents:
 
 ```typescript
-const checks = {
-  workers: fs.existsSync('.claude/agents/workers/database-worker-v1-self-adapting.md'),
-  evaluators: fs.existsSync('.claude/agents/evaluators/phase5-code/code-quality-evaluator-v1-self-adapting.md'),
-  setupCommand: fs.existsSync('.claude/commands/setup.md'),
-  config: fs.existsSync('.claude/edaf-config.yml'),
-  claudeMd: fs.existsSync('.claude/CLAUDE.md'),
-  configExample: fs.existsSync('.claude/edaf-config.example.yml')
+// Detect code for standards learning
+const codePatterns = {
+  typescript: [],
+  react: [],
+  python: [],
+  test: []
 }
 
-console.log('\nInstallation Status / インストール状況:')
-console.log('✅ Workers / ワーカー:', checks.workers ? 'Installed / インストール済み' : '❌ Not found / 見つかりません')
-console.log('✅ Evaluators / エバリュエーター:', checks.evaluators ? 'Installed / インストール済み' : '❌ Not found / 見つかりません')
-console.log('✅ /setup command / /setupコマンド:', checks.setupCommand ? 'Installed / インストール済み' : '❌ Not found / 見つかりません')
-console.log('✅ CLAUDE.md:', checks.claudeMd ? 'Generated / 生成済み' : '❌ Not found / 見つかりません')
-console.log('📋 Config / 設定:', checks.config ? 'Configured / 設定済み' : 'Not configured (using auto-detection) / 未設定（自動検出を使用）')
-```
-
-**If workers/evaluators are not installed / ワーカー/エバリュエーターがインストールされていない場合**:
-
-You need to run the installation script first:
-まずインストールスクリプトを実行してください:
-
-```bash
-cd /path/to/your/project
-git clone https://github.com/Tsuchiya2/evaluator-driven-agent-flow.git
-bash evaluator-driven-agent-flow/scripts/install.sh
-```
-
-Then restart Claude Code and run `/setup` again.
-その後、Claude Codeを再起動して、再度 `/setup` を実行してください。
-
----
-
-## Step 1.5: Configure Agent Files / ステップ1.5: エージェントファイルの設定
-
-**Action / アクション**: Add YAML frontmatter to agent files for Claude Code recognition:
-
-```typescript
-console.log('\n🔧 Configuring agents for Claude Code... / Claude Code用にエージェントを設定中...')
-
-const { execSync } = require('child_process')
-
+// Use Glob to detect files (simplified check)
 try {
-  execSync('bash .claude/scripts/add-frontmatter.sh', { stdio: 'inherit' })
-  console.log('✅ Agents configured successfully / エージェント設定が完了しました')
-} catch (error) {
-  console.log('⚠️  Warning: Could not configure agents / 警告: エージェント設定に失敗しました')
-  console.log('   This may happen if agents are already configured / エージェントが既に設定されている可能性があります')
+  const { execSync } = require('child_process')
+  const tsFiles = execSync('find . -name "*.ts" -not -path "*/node_modules/*" -not -path "*/dist/*" 2>/dev/null | head -5', { encoding: 'utf-8' }).trim()
+  if (tsFiles) codePatterns.typescript = tsFiles.split('\n').filter(f => f)
+
+  const tsxFiles = execSync('find . -name "*.tsx" -not -path "*/node_modules/*" -not -path "*/dist/*" 2>/dev/null | head -5', { encoding: 'utf-8' }).trim()
+  if (tsxFiles) codePatterns.react = tsxFiles.split('\n').filter(f => f)
+
+  const testFiles = execSync('find . -name "*.test.*" -o -name "*.spec.*" 2>/dev/null | head -5', { encoding: 'utf-8' }).trim()
+  if (testFiles) codePatterns.test = testFiles.split('\n').filter(f => f)
+} catch (e) {
+  // Ignore errors
 }
-```
 
----
+const hasCode = codePatterns.typescript.length > 0 || codePatterns.react.length > 0 || codePatterns.python.length > 0
 
-## Step 1.6: Generate Permanent Documentation / ステップ1.6: 永続ドキュメントの生成
+// Define expected files (FIXED - docs are always the same 6 files)
+const expectedDocs = [
+  'docs/product-requirements.md',
+  'docs/functional-design.md',
+  'docs/development-guidelines.md',
+  'docs/repository-structure.md',
+  'docs/architecture.md',
+  'docs/glossary.md'
+]
 
-**Action / アクション**: Generate permanent documentation in `docs/`:
+let expectedSkills = []
+let selectedStandards = []
 
-```typescript
-console.log('\n📚 Generating permanent documentation... / 永続ドキュメントを生成中...')
+if (hasCode) {
+  console.log('\n📚 Existing code detected for standards learning')
 
-const docResult = await Task({
+  const standardsResponse = await AskUserQuestion({
+    questions: [
+      {
+        question: "Learn coding standards from existing code?",
+        header: "Standards",
+        multiSelect: false,
+        options: [
+          {
+            label: "Yes, learn all standards (Recommended)",
+            description: "Analyze code and create enforceable standards for Phase 4-6"
+          },
+          {
+            label: "Skip for now",
+            description: "You can run /setup again later to create standards"
+          }
+        ]
+      }
+    ]
+  })
+
+  if (standardsResponse.answers['0'].includes('Yes')) {
+    // Determine which standards to create based on detected code
+    if (codePatterns.typescript.length > 0) {
+      selectedStandards.push('typescript-standards')
+      expectedSkills.push('.claude/skills/typescript-standards/SKILL.md')
+    }
+    if (codePatterns.react.length > 0) {
+      selectedStandards.push('react-standards')
+      expectedSkills.push('.claude/skills/react-standards/SKILL.md')
+    }
+    if (codePatterns.test.length > 0) {
+      selectedStandards.push('test-standards')
+      expectedSkills.push('.claude/skills/test-standards/SKILL.md')
+    }
+    // Always add security if any code exists
+    selectedStandards.push('security-standards')
+    expectedSkills.push('.claude/skills/security-standards/SKILL.md')
+
+    console.log('   Standards to learn:', selectedStandards.join(', '))
+  }
+} else {
+  console.log('\n📚 No existing code detected, skipping standards learning')
+}
+
+// Save configuration WITH setup_progress (temporary section)
+const config = {
+  language_preferences: {
+    documentation_language: docLang,
+    terminal_output_language: termLang,
+    save_dual_language_docs: false
+  },
+  docker: dockerConfig,
+  // Temporary section - will be removed on completion
+  setup_progress: {
+    status: 'in_progress',
+    started_at: new Date().toISOString(),
+    expected_docs: expectedDocs,
+    expected_skills: expectedSkills
+  }
+}
+
+fs.writeFileSync('.claude/edaf-config.yml', yaml.dump(config))
+console.log('\n✅ Configuration saved to .claude/edaf-config.yml')
+
+// Create directories
+if (!fs.existsSync('docs')) fs.mkdirSync('docs', { recursive: true })
+if (!fs.existsSync('.claude/skills')) fs.mkdirSync('.claude/skills', { recursive: true })
+
+// === FIRE & FORGET: Launch agents in background ===
+console.log('\n🚀 Launching background agents (Fire & Forget)...\n')
+
+// Launch documentation-worker (background, no TaskOutput)
+await Task({
   subagent_type: 'documentation-worker',
   model: 'sonnet',
-  description: 'Generate initial documentation',
+  run_in_background: true,
+  description: 'Generate docs (background)',
   prompt: `Generate permanent documentation for this project.
 
-**Task**: Analyze the codebase and create 6 permanent docs in docs/:
-
+**Task**: Create 6 docs in docs/:
 1. product-requirements.md
 2. functional-design.md
 3. development-guidelines.md
@@ -493,994 +548,189 @@ const docResult = await Task({
 - Use Read and Glob tools to analyze the codebase
 - Detect language, framework, architecture patterns
 - Generate comprehensive but concise documentation
-- Use templates but adapt to project specifics
-- If information is unclear, make reasonable inferences based on code
+- Documentation language: ${docLang === 'en' ? 'English' : 'Japanese'}
 
-**Current Working Directory**: ${process.cwd()}
-`
+**Current Working Directory**: ${process.cwd()}`
 })
 
-console.log('✅ Permanent documentation generated / 永続ドキュメントを生成しました')
-console.log('')
-console.log('📁 Created in docs/:')
-console.log('  ├── product-requirements.md')
-console.log('  ├── functional-design.md')
-console.log('  ├── development-guidelines.md')
-console.log('  ├── repository-structure.md')
-console.log('  ├── architecture.md')
-console.log('  └── glossary.md')
-console.log('')
-console.log('💡 These docs will be automatically updated during Phase 5 of EDAF workflow.')
-console.log('💡 Phase 5 のEDAFワークフロー中に、これらのドキュメントは自動的に更新されます。')
+console.log('   📄 documentation-worker launched (background)')
+
+// Launch standards agents if selected
+for (const standard of selectedStandards) {
+  // Create directory
+  fs.mkdirSync(`.claude/skills/${standard}`, { recursive: true })
+
+  await Task({
+    subagent_type: 'general-purpose',
+    model: 'sonnet',
+    run_in_background: true,
+    description: `Generate ${standard} (background)`,
+    prompt: `Generate coding standards: ${standard}
+
+**Output**: .claude/skills/${standard}/SKILL.md
+
+**Instructions**:
+1. Analyze existing code using Glob and Read tools
+2. Extract naming conventions, file structure, patterns
+3. Create SKILL.md with actionable rules and examples
+4. Include enforcement checklist for Phase 4-6
+
+**Current Working Directory**: ${process.cwd()}`
+  })
+
+  console.log(`   📖 ${standard} agent launched (background)`)
+}
+
+console.log('\n✅ All agents launched. NO TaskOutput called (Fire & Forget).')
+console.log('   Agents are working in the background...\n')
 ```
 
 ---
 
-## Step 2: Auto-Detect Project Configuration / ステップ2: プロジェクト設定の自動検出（※旧Step 2、Step番号は参考）
+## Step 6: Polling for File Generation
 
-Let me analyze your project to detect:
-プロジェクトを分析して、以下を検出します:
-
-- Programming language / プログラミング言語
-- Framework / フレームワーク
-- ORM/Database / ORM/データベース
-- Testing framework / テストフレームワーク
-- Code quality tools / コード品質ツール
-
-**Action / アクション**: Run auto-detection / 自動検出を実行:
+**Action**: Poll for file existence (10s interval, max 600s):
 
 ```typescript
-// Read package.json (for TypeScript/JavaScript projects)
-// package.json を読み込み (TypeScript/JavaScript プロジェクト)
-if (fs.existsSync('package.json')) {
-  const packageJson = JSON.parse(fs.readFileSync('package.json', 'utf-8'))
-  const deps = { ...packageJson.dependencies, ...packageJson.devDependencies }
+console.log('⏳ Polling for file generation (10s interval, max 600s)...\n')
 
-  console.log('\n📦 Detected JavaScript/TypeScript Project / JavaScript/TypeScript プロジェクトを検出しました\n')
+const pollInterval = 10000  // 10 seconds
+const maxPolls = 60         // 60 * 10s = 600s (10 minutes)
+let pollCount = 0
 
-  // Detect framework / フレームワーク検出
-  if (deps.express) console.log('  Backend / バックエンド: Express')
-  if (deps.fastify) console.log('  Backend / バックエンド: Fastify')
-  if (deps['@nestjs/core']) console.log('  Backend / バックエンド: NestJS')
-  if (deps.react) console.log('  Frontend / フロントエンド: React')
-  if (deps.vue) console.log('  Frontend / フロントエンド: Vue')
-  if (deps.angular) console.log('  Frontend / フロントエンド: Angular')
+// Read expected files from config
+let expectedDocsToCheck = expectedDocs
+let expectedSkillsToCheck = expectedSkills
 
-  // Detect ORM / ORM検出
-  if (deps.sequelize) console.log('  ORM: Sequelize')
-  if (deps.typeorm) console.log('  ORM: TypeORM')
-  if (deps.prisma) console.log('  ORM: Prisma')
-
-  // Detect testing / テストフレームワーク検出
-  if (deps.jest) console.log('  Testing / テスト: Jest')
-  if (deps.vitest) console.log('  Testing / テスト: Vitest')
-  if (deps['@playwright/test']) console.log('  E2E: Playwright')
-
-  // Detect linting / リンター検出
-  if (deps.eslint) console.log('  Linting / リンター: ESLint')
-  if (deps.typescript) console.log('  Type Checker / 型チェッカー: TypeScript')
+// If resuming, read from config
+if (fs.existsSync('.claude/edaf-config.yml')) {
+  try {
+    const configData = yaml.load(fs.readFileSync('.claude/edaf-config.yml', 'utf-8'))
+    if (configData.setup_progress) {
+      expectedDocsToCheck = configData.setup_progress.expected_docs || expectedDocs
+      expectedSkillsToCheck = configData.setup_progress.expected_skills || []
+    }
+  } catch (e) {}
 }
 
-// Read requirements.txt (for Python projects)
-// requirements.txt を読み込み (Pythonプロジェクト)
-if (fs.existsSync('requirements.txt')) {
-  const requirements = fs.readFileSync('requirements.txt', 'utf-8')
-  console.log('\n🐍 Detected Python Project / Python プロジェクトを検出しました\n')
+const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms))
 
-  if (requirements.includes('django')) console.log('  Framework / フレームワーク: Django')
-  if (requirements.includes('fastapi')) console.log('  Framework / フレームワーク: FastAPI')
-  if (requirements.includes('flask')) console.log('  Framework / フレームワーク: Flask')
-  if (requirements.includes('sqlalchemy')) console.log('  ORM: SQLAlchemy')
-  if (requirements.includes('pytest')) console.log('  Testing / テスト: pytest')
-  if (requirements.includes('pylint')) console.log('  Linting / リンター: pylint')
-}
+while (pollCount < maxPolls) {
+  // Check which files exist
+  const missingDocs = expectedDocsToCheck.filter(doc => !fs.existsSync(doc))
+  const missingSkills = expectedSkillsToCheck.filter(skill => !fs.existsSync(skill))
 
-// Read go.mod (for Go projects)
-// go.mod を読み込み (Goプロジェクト)
-if (fs.existsSync('go.mod')) {
-  const goMod = fs.readFileSync('go.mod', 'utf-8')
-  console.log('\n🔵 Detected Go Project / Go プロジェクトを検出しました\n')
+  // Display progress
+  const elapsed = pollCount * 10
+  console.log(`\n⏳ Checking file generation... (${elapsed}s elapsed)`)
 
-  if (goMod.includes('gin-gonic/gin')) console.log('  Framework / フレームワーク: Gin')
-  if (goMod.includes('gorm.io/gorm')) console.log('  ORM: GORM')
-}
+  console.log('\n   docs/:')
+  for (const doc of expectedDocsToCheck) {
+    const exists = fs.existsSync(doc)
+    const basename = path.basename(doc)
+    console.log(`     ${exists ? '✅' : '⏳'} ${basename}`)
+  }
 
-// Read Cargo.toml (for Rust projects)
-// Cargo.toml を読み込み (Rustプロジェクト)
-if (fs.existsSync('Cargo.toml')) {
-  console.log('\n🦀 Detected Rust Project / Rust プロジェクトを検出しました\n')
-}
+  if (expectedSkillsToCheck.length > 0) {
+    console.log('\n   skills/:')
+    for (const skill of expectedSkillsToCheck) {
+      const exists = fs.existsSync(skill)
+      const skillName = skill.split('/')[2]  // .claude/skills/NAME/SKILL.md
+      console.log(`     ${exists ? '✅' : '⏳'} ${skillName}`)
+    }
+  }
 
-// Read pom.xml (for Java projects)
-// pom.xml を読み込み (Javaプロジェクト)
-if (fs.existsSync('pom.xml')) {
-  console.log('\n☕ Detected Java Project / Java プロジェクトを検出しました\n')
-}
-```
-
-### Docker Environment Detection / Docker環境検出
-
-**Action / アクション**: Detect Docker environment / Docker環境を検出:
-
-```typescript
-// Detect Docker / Docker検出
-let dockerConfig = {
-  hasDocker: false,
-  composeFile: null,
-  mainService: null,
-  execPrefix: null
-}
-
-// Check for all possible Docker Compose file names
-const composeFileNames = [
-  'compose.yml',
-  'compose.yaml',
-  'compose-dev.yml',
-  'compose-dev.yaml',
-  'docker-compose.yml',
-  'docker-compose.yaml'
-]
-
-let composeFile = null
-for (const fileName of composeFileNames) {
-  if (fs.existsSync(fileName)) {
-    composeFile = fileName
+  // Check if all files are generated
+  if (missingDocs.length === 0 && missingSkills.length === 0) {
+    console.log('\n✅ All files generated successfully!')
     break
   }
+
+  // Show remaining
+  const totalMissing = missingDocs.length + missingSkills.length
+  console.log(`\n   ⏳ Waiting for ${totalMissing} file(s)...`)
+
+  pollCount++
+
+  if (pollCount >= maxPolls) {
+    console.log('\n⚠️  Timeout reached (600s). Some files may still be generating.')
+    console.log('   Use /tasks to check agent status.')
+    break
+  }
+
+  await sleep(pollInterval)
+}
+```
+
+---
+
+## Step 7: Cleanup and Completion
+
+**Action**: Remove setup_progress and display summary:
+
+```typescript
+// Remove setup_progress from config
+if (fs.existsSync('.claude/edaf-config.yml')) {
+  const finalConfig = yaml.load(fs.readFileSync('.claude/edaf-config.yml', 'utf-8'))
+  delete finalConfig.setup_progress
+  fs.writeFileSync('.claude/edaf-config.yml', yaml.dump(finalConfig))
+  console.log('\n✅ Cleaned up setup_progress from edaf-config.yml')
 }
 
-if (composeFile) {
-  console.log('\n🐳 Detected Docker Compose / Docker Compose を検出しました')
-  console.log(`   File / ファイル: ${composeFile}`)
+// Final summary
+console.log('\n' + '═'.repeat(50))
+console.log('  EDAF v1.0 Setup Complete!')
+console.log('═'.repeat(50))
 
-  // Parse docker-compose.yml to find services
-  const compose = fs.readFileSync(composeFile, 'utf-8')
-  const serviceMatches = compose.match(/^  (\w+):/gm)
-  const services = serviceMatches ? serviceMatches.map(s => s.trim().replace(':', '')) : []
+console.log('\n📁 Generated Files:')
 
-  console.log(`   Services / サービス: ${services.join(', ')}`)
-
-  // Ask user how to execute commands
-  const dockerResponse = await AskUserQuestion({
-    questions: [
-      {
-        question: "Docker environment detected. How should commands be executed? / Docker環境が検出されました。コマンドをどのように実行しますか？",
-        header: "Docker / Docker",
-        multiSelect: false,
-        options: [
-          {
-            label: "Run inside Docker containers / Dockerコンテナ内で実行",
-            description: `Execute commands via docker compose exec (recommended for development). / docker compose exec経由でコマンドを実行（開発に推奨）`
-          },
-          {
-            label: "Run locally / ローカルで実行",
-            description: "Execute commands on host machine (not recommended if using Docker for development). / ホストマシンでコマンドを実行（Docker開発環境の場合は非推奨）"
-          }
-        ]
-      }
-    ]
-  })
-
-  if (dockerResponse.answers['0'].includes('Run inside Docker')) {
-    // Ask which service to use
-    const serviceResponse = await AskUserQuestion({
-      questions: [
-        {
-          question: `Select the main service for command execution / コマンド実行用のメインサービスを選択してください`,
-          header: "Service",
-          multiSelect: false,
-          options: services.map(service => ({
-            label: service,
-            description: `Execute commands in '${service}' container / '${service}' コンテナ内でコマンドを実行`
-          }))
-        }
-      ]
-    })
-
-    const mainService = serviceResponse.answers['0']
-
-    // Determine Docker Compose command (docker-compose vs docker compose)
-    let composeCommand = 'docker compose'
-    try {
-      require('child_process').execSync('docker compose version', { stdio: 'ignore' })
-    } catch {
-      composeCommand = 'docker-compose'
-    }
-
-    dockerConfig = {
-      hasDocker: true,
-      composeFile: composeFile,
-      mainService: mainService,
-      execPrefix: `${composeCommand} exec ${mainService}`
-    }
-
-    console.log(`\n✅ Docker configuration / Docker設定:`)
-    console.log(`   Main service / メインサービス: ${mainService}`)
-    console.log(`   Command prefix / コマンドプレフィックス: ${composeCommand} exec ${mainService}`)
+// List generated docs
+console.log('\n   docs/:')
+for (const doc of expectedDocsToCheck) {
+  if (fs.existsSync(doc)) {
+    console.log(`     ✅ ${path.basename(doc)}`)
   } else {
-    console.log(`\n✅ Using local execution / ローカル実行を使用`)
-  }
-
-} else if (fs.existsSync('Dockerfile')) {
-  console.log('\n🐳 Detected Dockerfile / Dockerfile を検出しました')
-  console.log('   Recommend using Docker Compose for development / 開発にはDocker Composeの使用を推奨します')
-}
-
-// Save configuration including Docker and language preferences
-// Docker設定と言語設定を含む設定を保存
-const config = {
-  language_preferences: {
-    documentation_language: docLang,
-    terminal_output_language: termLang,
-    save_dual_language_docs: dualDocs
-  },
-  docker: dockerConfig.hasDocker ? {
-    enabled: true,
-    compose_file: dockerConfig.composeFile,
-    main_service: dockerConfig.mainService,
-    exec_prefix: dockerConfig.execPrefix
-  } : {
-    enabled: false
+    console.log(`     ❌ ${path.basename(doc)} (not generated)`)
   }
 }
 
-const yaml = require('js-yaml')
-fs.writeFileSync('.claude/edaf-config.yml', yaml.dump(config))
-console.log('\n✅ Configuration saved to .claude/edaf-config.yml')
-console.log('✅ 設定を .claude/edaf-config.yml に保存しました')
-
-if (dockerConfig.hasDocker) {
-  console.log('   Docker: Enabled / 有効')
-  console.log(`   Service: ${dockerConfig.mainService}`)
-} else {
-  console.log('   Docker: Disabled (local execution) / 無効（ローカル実行）')
-}
-```
-
----
-
-## Step 3: Configuration Options / ステップ3: 設定オプション
-
-Based on auto-detection, you have **3 options** for EDAF configuration:
-自動検出の結果に基づいて、EDAF設定には**3つのオプション**があります:
-
-### Option A: Use Auto-Detection (Recommended) / オプションA: 自動検出を使用（推奨）
-
-**No additional configuration needed! / 追加設定不要です！**
-
-EDAF will automatically detect your:
-EDAFは自動的に以下を検出します:
-
-- Language and framework / 言語とフレームワーク
-- Testing tools / テストツール
-- Code quality tools / コード品質ツール
-- Security scanners / セキュリティスキャナー
-
-Just start using the workers and evaluators. They adapt automatically.
-ワーカーとエバリュエーターを使い始めるだけです。自動的に適応します。
-
-**Choose this if / こちらを選択する場合**: Your project uses common tools and standard configurations.
-プロジェクトが一般的なツールと標準的な設定を使用している場合。
-
----
-
-### Option B: Create Custom Configuration / オプションB: カスタム設定を作成
-
-Create `.claude/edaf-config.yml` to customize settings.
-`.claude/edaf-config.yml` を作成して設定をカスタマイズします。
-
-**Action / アクション**: Ask if user wants custom configuration:
-
-```typescript
-const configResponse = await AskUserQuestion({
-  questions: [
-    {
-      question: "Do you want to customize EDAF settings? / EDAF設定をカスタマイズしますか？",
-      header: "Config / 設定",
-      multiSelect: false,
-      options: [
-        {
-          label: "No, use auto-detection / いいえ、自動検出を使用",
-          description: "Recommended for most projects. Zero configuration required. / ほとんどのプロジェクトに推奨。設定不要です。"
-        },
-        {
-          label: "Yes, customize settings / はい、設定をカスタマイズ",
-          description: "Advanced: Manually specify thresholds and tools. / 上級者向け: 閾値とツールを手動で指定します。"
-        }
-      ]
-    }
-  ]
-})
-```
-
-**If user chooses "Yes, customize settings" / ユーザーが「はい、設定をカスタマイズ」を選択した場合**:
-
-Copy the example configuration and guide them:
-設定例をコピーしてガイドします:
-
-```bash
-cp .claude/edaf-config.example.yml .claude/edaf-config.yml
-```
-
-You can now edit `.claude/edaf-config.yml` to customize:
-`.claude/edaf-config.yml` を編集して以下をカスタマイズできます:
-
-- Quality thresholds / 品質閾値
-- Testing coverage targets / テストカバレッジ目標
-- Security strictness / セキュリティ厳格度
-- Performance budgets / パフォーマンス予算
-
----
-
-## Step 4: Verify Setup / ステップ4: セットアップの確認
-
-Let me verify the setup is working:
-セットアップが正常に動作しているか確認します:
-
-**Action / アクション**: Test configuration:
-
-```typescript
-console.log('\n🔍 Testing Component Detection... / コンポーネント検出をテスト中...\n')
-
-// Test Worker auto-detection / ワーカーの自動検出をテスト
-console.log('📋 Workers / ワーカー:')
-console.log('  - database-worker-v1: Will auto-detect ORM / ORMを自動検出します')
-console.log('  - backend-worker-v1: Will auto-detect framework / フレームワークを自動検出します')
-console.log('  - frontend-worker-v1: Will auto-detect UI framework / UIフレームワークを自動検出します')
-console.log('  - test-worker-v1: Will auto-detect testing framework / テストフレームワークを自動検出します')
-
-// Test Evaluator auto-detection / エバリュエーターの自動検出をテスト
-console.log('\n📊 Evaluators / エバリュエーター:')
-console.log('  - code-quality: Will auto-detect linter & type checker / リンターと型チェッカーを自動検出します')
-console.log('  - code-testing: Will auto-detect test framework & coverage tool / テストフレームワークとカバレッジツールを自動検出します')
-console.log('  - code-security: Will auto-detect security scanners / セキュリティスキャナーを自動検出します')
-console.log('  - code-documentation: Will auto-detect doc style / ドキュメントスタイルを自動検出します')
-console.log('  - code-maintainability: Universal complexity analysis / ユニバーサル複雑度分析')
-console.log('  - code-performance: Universal anti-pattern detection / ユニバーサルアンチパターン検出')
-console.log('  - code-implementation-alignment: Requirements verification / 要件検証')
-
-console.log('\n✅ All components ready! / すべてのコンポーネントが準備完了！')
-```
-
----
-
-## Step 5: Next Steps / ステップ5: 次のステップ
-
-Setup complete! Here's what you can do next:
-セットアップ完了！次にできることは以下の通りです:
-
-### 1. Test Language Settings / 言語設定をテスト
-
-Try Claude Code in Japanese or English:
-日本語または英語でClaude Codeに試してみてください:
-
-**Example / 例**:
-
-```
-EN: "Create a User model with email and password fields"
-JA: "メールアドレスとパスワードフィールドを持つUserモデルを作成してください"
-```
-
-Claude Code will respond according to your language preference.
-Claude Codeは設定した言語設定に従って応答します。
-
-### 2. View Documentation / ドキュメントを確認
-
-```bash
-# View permanent documentation / 永続ドキュメントを確認
-ls docs/
-
-# View worker specifications / ワーカーの仕様を確認
-ls .claude/agents/workers/
-
-# View evaluator specifications / エバリュエーターの仕様を確認
-ls .claude/agents/evaluators/
-
-# View EDAF phase workflows / EDAFフェーズワークフローを確認
-ls .claude/skills/edaf-orchestration/
-
-# Read a specific worker / 特定のワーカーを読む
-cat .claude/agents/workers/database-worker-v1-self-adapting.md
-```
-
-### 3. Change Language Settings / 言語設定を変更
-
-To change your language preference, simply run `/setup` again:
-言語設定を変更するには、再度 `/setup` を実行してください:
-
-```
-/setup
-```
-
----
-
-## Step 6: Detect Lint Tools / ステップ6: リントツールの検出
-
-**Purpose / 目的**: Detect existing lint/format tools for Phase 4 quality gate
-プロジェクトの既存のリント・フォーマットツールを検出してPhase 4の品質ゲートで使用します
-
-```typescript
-// Run lint detection
-console.log('\n🔍 Detecting lint tools in project...')
-console.log('   プロジェクト内のリントツールを検出中...\n')
-
-const lintDetection = await bash('bash .claude/scripts/detect-linters.sh')
-
-console.log(lintDetection.output)
-
-if (lintDetection.exitCode === 0) {
-  console.log('✅ Lint detection complete / リント検出完了')
-  console.log('   Phase 4 will run automatic lint checks after code generation')
-  console.log('   Phase 4ではコード生成後に自動的にリントチェックが実行されます\n')
-} else {
-  console.log('⚠️  Lint detection encountered issues / リント検出で問題が発生しました\n')
-}
-```
-
-**What happens / 動作説明**:
-- Detects ESLint, Prettier, TypeScript, Ruff, Black, Flake8, mypy, golangci-lint, rustfmt, clippy, RuboCop, etc.
-- ESLint, Prettier, TypeScript, Ruff, Black, Flake8, mypy, golangci-lint, rustfmt, clippy, RuboCopなどを検出
-- Saves configuration to `.claude/edaf-config.yml`
-- `.claude/edaf-config.yml`に設定を保存
-- Phase 4 will automatically run these checks after code generation
-- Phase 4でコード生成後に自動的にこれらのチェックを実行
-
-**No lint tools found? / リントツールが見つからない場合**:
-- That's OK! Phase 4 will proceed without lint checks (with a warning)
-- 問題ありません！Phase 4はリントチェックなしで進行します（警告付き）
-- You can add lint tools later and re-run `/setup`
-- 後でリントツールを追加して `/setup` を再実行できます
-
----
-
-## Step 7: Code Standards Learning / ステップ7: コード規約の学習
-
-**Purpose / 目的**: Learn project-specific coding standards from existing code and create enforceable skills
-既存コードからプロジェクト固有のコーディング規約を学習し、実行可能なスキルを作成します
-
-**When to use / いつ使用するか**: If your project has existing code with established patterns
-プロジェクトに確立されたパターンを持つ既存コードがある場合
-
-### Step 7.1: Detect Existing Code / 既存コードの検出
-
-```typescript
-console.log('\n📚 Detecting existing code for standards learning...')
-console.log('   規約学習用の既存コードを検出中...\n')
-
-// Detect code files
-const codePatterns = {
-  typescript: await glob('**/*.ts', { ignore: ['**/node_modules/**', '**/dist/**'] }),
-  react: await glob('**/*.tsx', { ignore: ['**/node_modules/**', '**/dist/**'] }),
-  python: await glob('**/*.py', { ignore: ['**/venv/**', '**/__pycache__/**'] }),
-  go: await glob('**/*.go', { ignore: ['**/vendor/**'] }),
-  rust: await glob('**/*.rs', { ignore: ['**/target/**'] }),
-  test: await glob('**/*.{test,spec}.{ts,tsx,js,jsx,py}', { ignore: ['**/node_modules/**'] })
-}
-
-const detectedLanguages = []
-const standardsToCreate = []
-
-// Analyze detected files
-if (codePatterns.typescript.length > 0) {
-  detectedLanguages.push('TypeScript')
-  standardsToCreate.push({
-    name: 'typescript-standards',
-    label: 'TypeScript Standards',
-    description: `TypeScript coding standards (${codePatterns.typescript.length} files)`
-  })
-}
-
-if (codePatterns.react.length > 0) {
-  detectedLanguages.push('React')
-  standardsToCreate.push({
-    name: 'react-standards',
-    label: 'React Component Standards',
-    description: `React/TSX patterns (${codePatterns.react.length} files)`
-  })
-}
-
-if (codePatterns.python.length > 0) {
-  detectedLanguages.push('Python')
-  standardsToCreate.push({
-    name: 'python-standards',
-    label: 'Python Standards',
-    description: `Python coding standards (${codePatterns.python.length} files)`
-  })
-
-  // Detect FastAPI
-  if (fs.existsSync('requirements.txt')) {
-    const requirements = fs.readFileSync('requirements.txt', 'utf-8')
-    if (requirements.includes('fastapi')) {
-      standardsToCreate.push({
-        name: 'fastapi-standards',
-        label: 'FastAPI Standards',
-        description: 'FastAPI API design patterns'
-      })
+// List generated skills
+if (expectedSkillsToCheck.length > 0) {
+  console.log('\n   .claude/skills/:')
+  for (const skill of expectedSkillsToCheck) {
+    if (fs.existsSync(skill)) {
+      const skillName = skill.split('/')[2]
+      console.log(`     ✅ ${skillName}/SKILL.md`)
     }
   }
 }
 
-if (codePatterns.go.length > 0) {
-  detectedLanguages.push('Go')
-  standardsToCreate.push({
-    name: 'go-standards',
-    label: 'Go Standards',
-    description: `Go coding standards (${codePatterns.go.length} files)`
-  })
-}
-
-if (codePatterns.rust.length > 0) {
-  detectedLanguages.push('Rust')
-  standardsToCreate.push({
-    name: 'rust-standards',
-    label: 'Rust Standards',
-    description: `Rust coding standards (${codePatterns.rust.length} files)`
-  })
-}
-
-// Always add test and security standards if any code exists
-if (detectedLanguages.length > 0) {
-  if (codePatterns.test.length > 0) {
-    standardsToCreate.push({
-      name: 'test-standards',
-      label: 'Test Standards',
-      description: `Testing patterns (${codePatterns.test.length} test files)`
-    })
-  }
-
-  standardsToCreate.push({
-    name: 'security-standards',
-    label: 'Security Standards',
-    description: 'Security best practices and patterns'
-  })
-}
-
-console.log('📊 Detected code:')
-console.log('   検出されたコード:\n')
-for (const lang of detectedLanguages) {
-  console.log(`   ✅ ${lang}`)
-}
-
-if (standardsToCreate.length === 0) {
-  console.log('\n⚠️  No existing code detected. Skipping standards learning.')
-  console.log('   既存コードが検出されませんでした。規約学習をスキップします。\n')
-} else {
-  console.log(`\n💡 ${standardsToCreate.length} coding standards can be learned from your codebase.`)
-  console.log(`   コードベースから ${standardsToCreate.length} 個の規約を学習できます。\n`)
-}
-```
-
-### Step 7.2: Ask User Confirmation / ユーザー確認
-
-```typescript
-if (standardsToCreate.length > 0) {
-  const standardsResponse = await AskUserQuestion({
-    questions: [
-      {
-        question: "Do you want to learn coding standards from existing code? / 既存コードから規約を学習しますか？",
-        header: "Standards",
-        multiSelect: false,
-        options: [
-          {
-            label: "Yes, learn all standards (Recommended) / はい、すべての規約を学習（推奨）",
-            description: "Analyze existing code and create enforceable standards. Phase 4-6 will check compliance. / 既存コードを分析して実行可能な規約を作成。Phase 4-6でコンプライアンスをチェック。"
-          },
-          {
-            label: "Select specific standards / 特定の規約を選択",
-            description: "Choose which standards to create. / 作成する規約を選択。"
-          },
-          {
-            label: "Skip for now / 今はスキップ",
-            description: "You can run /setup again later to create standards. / 後で /setup を再実行して規約を作成できます。"
-          }
-        ]
-      }
-    ]
-  })
-
-  let selectedStandards = []
-
-  if (standardsResponse.answers['0'].includes('Yes, learn all')) {
-    selectedStandards = standardsToCreate
-  } else if (standardsResponse.answers['0'].includes('Select specific')) {
-    // Ask which standards to create
-    const selectionResponse = await AskUserQuestion({
-      questions: [
-        {
-          question: "Select standards to learn / 学習する規約を選択",
-          header: "Standards",
-          multiSelect: true,
-          options: standardsToCreate.map(std => ({
-            label: std.label,
-            description: std.description
-          }))
-        }
-      ]
-    })
-
-    // Parse selected standards
-    const selected = selectionResponse.answers['0']
-    selectedStandards = standardsToCreate.filter(std =>
-      selected.includes(std.label)
-    )
-  }
-
-  if (selectedStandards.length === 0) {
-    console.log('\n⏭️  Skipping standards learning.')
-    console.log('   規約学習をスキップします。\n')
-  } else {
-    console.log(`\n🎓 Learning ${selectedStandards.length} coding standard(s)...`)
-    console.log(`   ${selectedStandards.length} 個の規約を学習中...\n`)
-  }
-```
-
-### Step 7.3: Launch Standards Learning Agent / 規約学習エージェントの起動
-
-```typescript
-  // Create skills directory
-  if (!fs.existsSync('.claude/skills')) {
-    fs.mkdirSync('.claude/skills', { recursive: true })
-  }
-
-  for (const standard of selectedStandards) {
-    console.log(`\n📖 Learning ${standard.label}...`)
-    console.log(`   ${standard.label} を学習中...\n`)
-
-    // Launch standards learning agent
-    const learningResult = await Task({
-      subagent_type: 'general-purpose',
-      model: 'sonnet',
-      description: `Generate ${standard.name}`,
-      prompt: `You are a coding standards expert with deep knowledge of all programming languages and frameworks.
-
-**Task**: Generate comprehensive coding standards for ${standard.label}
-
-**Standard Name**: ${standard.name}
-**Output Path**: .claude/skills/${standard.name}/SKILL.md
-**Detected Files**: ${standard.description}
-
----
-
-## Your Approach
-
-### Step 1: Detect Existing Code (if any)
-
-Use Glob tool to find relevant files for this standard:
-- For language standards (typescript, python, ruby, go, rust, etc.): Find source files (*.ts, *.py, *.rb, *.go, *.rs, etc.)
-- For framework standards (rails, react, vue, django, fastapi, etc.): Find framework-specific files
-- For test standards: Find test files (*.test.*, *.spec.*, *_test.*, test_*.*)
-- For security standards: Scan authentication, validation, database interaction code
-
-### Step 2: Analyze Code (if code exists)
-
-If code exists:
-1. Read 5-10 representative files using Read tool
-2. Identify actual patterns:
-   - Naming conventions (PascalCase? camelCase? snake_case?)
-   - File organization (directory structure, file naming)
-   - Import/export styles
-   - Error handling patterns
-   - Testing patterns (if applicable)
-   - Framework-specific patterns (if applicable)
-3. Extract real examples from the code
-4. Use AskUserQuestion to confirm ambiguous patterns
-
-### Step 3: Apply Best Practices (if no code OR to supplement)
-
-If no code exists, OR to supplement detected patterns:
-1. Use your LLM knowledge of ${standard.label} best practices
-2. Include industry-standard conventions (PEP 8 for Python, RuboCop for Ruby, ESLint for JavaScript, etc.)
-3. Provide concrete, actionable examples
-4. Include common anti-patterns to avoid
-
-### Step 4: Generate SKILL.md
-
-Create .claude/skills/${standard.name}/SKILL.md with this structure:
-
-**SKILL.md Template**:
-
-\`\`\`markdown
----
-description: ${standard.label} for this project
----
-
-# ${standard.label}
-
-**Purpose**: Enforce ${standard.label} during Phase 4 (Implementation), Phase 5 (Code Review), and Phase 6 (Documentation)
-
-**Generated**: ${new Date().toISOString().split('T')[0]}
-**Source**: [Analyzed from existing code | General best practices]
-
----
-
-## When to Use This Skill
-
-This skill is **automatically invoked** during:
-
-- **Phase 4**: Workers check compliance while generating code
-- **Phase 5**: Code evaluators verify adherence to standards
-- **Phase 6**: Documentation worker ensures docs match standards
-
----
-
-## Coding Standards
-
-### 1. Naming Conventions
-
-**Detected Patterns** (if code exists):
-- [Classes/Types: PascalCase (95% usage)]
-- [Functions/Methods: camelCase (98% usage)]
-- [Constants: SCREAMING_SNAKE_CASE (100% usage)]
-
-**Examples from Codebase** (use actual code if available):
-\`\`\`[language]
-// ✅ Good (from: path/to/file.ext)
-[Real code example]
-
-// ❌ Bad (anti-pattern)
-[Counter-example]
-\`\`\`
-
-**Rules**:
-- ✅ DO: [Specific, actionable rule based on detected patterns]
-- ❌ DON'T: [Specific anti-pattern to avoid]
-
-### 2. File Structure
-
-**Detected Directory Structure** (if code exists):
-\`\`\`
-[Show actual project structure]
-\`\`\`
-
-**Conventions**:
-- [File naming: snake_case.rb or PascalCase.tsx]
-- [Directory organization: feature-based or layer-based]
-
-### 3. Error Handling
-
-**Detected Patterns**:
-- [Try/catch usage, error types, logging patterns]
-
-**Examples**:
-\`\`\`[language]
-[Real error handling code from project]
-\`\`\`
-
-### 4. Code Style
-
-**Detected Patterns**:
-- [Indentation: 2 spaces or 4 spaces]
-- [Quotes: single or double]
-- [Semicolons: yes or no (for JS/TS)]
-- [Line length: max 80 or 100 or 120 characters]
-
-### 5. Framework-Specific Patterns (if applicable)
-
-**For ${standard.label}**:
-[Rails: MVC patterns, Active Record usage]
-[React: Component patterns, hooks usage]
-[FastAPI: Route patterns, dependency injection]
-[etc.]
-
-### 6. Testing Patterns (if test standard)
-
-**Detected Patterns**:
-- [Test framework: Jest, RSpec, pytest, etc.]
-- [Test structure: describe/it, test functions]
-- [Assertion style: expect, assert]
-- [Mocking patterns]
-
-### 7. Security Considerations (if security standard)
-
-**Critical Rules**:
-- Input validation
-- Authentication/Authorization
-- SQL injection prevention
-- XSS prevention
-- Secrets management
-
----
-
-## Enforcement Checklist
-
-**Phase 4 Workers**:
-- [ ] Follow detected naming conventions
-- [ ] Match file structure patterns
-- [ ] Use standard error handling
-- [ ] Follow code style (indentation, quotes, etc.)
-- [ ] Apply framework-specific patterns (if applicable)
-- [ ] Follow testing patterns (if test code)
-- [ ] Apply security rules (always)
-
-**Phase 5 Evaluators**:
-- [ ] Verify naming convention compliance (check actual usage percentages)
-- [ ] Validate file structure matches project patterns
-- [ ] Check error handling consistency
-- [ ] Verify code style compliance
-- [ ] Confirm framework pattern usage
-- [ ] Validate test quality (if tests)
-- [ ] Check security vulnerabilities
-
-**Phase 6 Documentation**:
-- [ ] Use consistent terminology
-- [ ] Follow documentation style from existing docs
-- [ ] Include code examples matching project style
-- [ ] Document testing approach
-- [ ] Include security considerations
-
----
-
-## Common Patterns (from codebase analysis)
-
-### Pattern 1: [Name]
-\`\`\`[language]
-[Real code pattern found in codebase]
-\`\`\`
-**Usage**: Found in [X] files
-**When to use**: [Explanation]
-
-### Pattern 2: [Name]
-\`\`\`[language]
-[Another real pattern]
-\`\`\`
-
----
-
-## Anti-Patterns to Avoid
-
-### ❌ Anti-Pattern 1: [Name]
-\`\`\`[language]
-[Bad code example]
-\`\`\`
-**Why bad**: [Explanation]
-**Better approach**: [Good example]
-
----
-
-## Configuration Files (if detected)
-
-- [\`.eslintrc.js\`: ESLint configuration detected]
-- [\`.rubocop.yml\`: RuboCop configuration detected]
-- [\`pyproject.toml\`: Ruff/Black configuration detected]
-- [etc.]
-
-**Note**: Generated code MUST comply with these tool configurations.
-
----
-
-**Last Updated**: ${new Date().toISOString()}
-**Analyzed Files**: ${standard.description}
-**Customization**: This file was auto-generated. Edit to add project-specific rules.
-\`\`\`
-
----
-
-## Critical Instructions
-
-**If existing code found**:
-1. Prioritize ACTUAL patterns over theoretical best practices
-2. Use REAL code examples (copy exact code with file paths)
-3. Calculate pattern usage percentages (e.g., "95% of classes use PascalCase")
-4. Ask user to confirm if multiple conflicting patterns found
-5. Include project-specific quirks and exceptions
-
-**If NO existing code found**:
-1. Use your LLM knowledge of ${standard.label} best practices
-2. Include industry-standard conventions
-3. Provide comprehensive, actionable examples
-4. Cover common scenarios and edge cases
-5. Include links to official style guides (if applicable)
-
-**Always**:
-- Be thorough but concise (aim for 150-300 lines)
-- Make rules actionable and verifiable
-- Include concrete examples with correct syntax
-- Organize by importance (most critical rules first)
-- Use checklist format for enforcement
-
-**Current Working Directory**: ${process.cwd()}
-`
-    })
-
-    console.log(`   ✅ ${standard.label} learned successfully`)
-  }
-
-  console.log('\n✅ All standards learned!')
-  console.log('   すべての規約を学習しました！\n')
-}
-```
-
-### Step 7.4: Update CLAUDE.md / CLAUDE.md の更新
-
-```typescript
-  // Update CLAUDE.md to enable standards checking
-  if (selectedStandards.length > 0) {
-    console.log('📝 Updating CLAUDE.md to enable standards checking...')
-    console.log('   規約チェックを有効化するためCLAUDE.mdを更新中...\n')
-
-    let claudeMd = fs.readFileSync('.claude/CLAUDE.md', 'utf-8')
-
-    // Add standards section before "## Instructions for Claude Code"
-    const standardsSection = `
----
-
-## Project Coding Standards
-
-**Learned from existing codebase** on ${new Date().toISOString().split('T')[0]}
-
-Your project has ${selectedStandards.length} coding standard(s) defined in \`.claude/skills/\`:
-
-${selectedStandards.map(std => `- **${std.label}**: \`.claude/skills/${std.name}/SKILL.md\``).join('\n')}
-
-### When to Apply Standards
-
-**Phase 4 (Implementation)**:
-- Workers MUST follow all applicable standards when generating code
-- Check \`.claude/skills/\` for relevant standards before writing code
-- Match naming conventions, file structure, and patterns
-
-**Phase 5 (Code Review)**:
-- Code evaluators MUST verify compliance with standards
-- Reference \`.claude/skills/\` during evaluation
-- Flag violations in evaluation reports
-
-**Phase 6 (Documentation)**:
-- Documentation worker MUST follow doc standards
-- Use consistent terminology from glossary
-- Match existing documentation style
-
-### How to Reference Standards
-
-Before generating code in Phase 4-6:
-
-\`\`\`typescript
-// Read applicable standards
-${selectedStandards.map(std => `const ${std.name.replace('-', '_')} = await Read('.claude/skills/${std.name}/SKILL.md')`).join('\n')}
-
-// Apply standards to code generation
-// Follow the rules and examples in the standards
-\`\`\`
-
-**CRITICAL**: Standards are NOT optional. All generated code MUST comply.
-
----
-`
-
-    // Insert before "## Instructions for Claude Code"
-    claudeMd = claudeMd.replace(
-      '## Instructions for Claude Code',
-      standardsSection + '## Instructions for Claude Code'
-    )
-
-    fs.writeFileSync('.claude/CLAUDE.md', claudeMd)
-
-    console.log('✅ CLAUDE.md updated with standards enforcement')
-    console.log('   CLAUDE.md に規約適用ルールを追加しました\n')
-  }
-}
+console.log('\n📋 Configuration:')
+console.log(`   Language: ${docLang === 'en' ? 'English' : 'Japanese'} docs, ${termLang === 'en' ? 'English' : 'Japanese'} output`)
+console.log(`   Docker: ${dockerConfig.enabled ? 'Enabled (' + dockerConfig.main_service + ')' : 'Disabled'}`)
+
+console.log('\n🚀 Next Steps:')
+console.log('   1. Review generated docs in docs/')
+console.log('   2. Start implementing features with EDAF 7-phase workflow')
+console.log('   3. Run /review-standards to update coding standards anytime')
+
+console.log('\n' + '═'.repeat(50))
 ```
 
 ---
 
-## Summary / まとめ
+## Summary
 
-✅ **Language preferences configured / 言語設定が完了しました**
-✅ **CLAUDE.md generated / CLAUDE.md を生成しました**
-✅ **Installation verified / インストール確認完了**
-✅ **Project auto-detected / プロジェクト自動検出完了**
-✅ **Lint tools detected / リントツール検出完了**
-✅ **Coding standards learned / コード規約の学習完了**
-✅ **Components ready to use / コンポーネント使用準備完了**
+This optimized `/setup` command:
 
-**Your EDAF v1.0 setup is complete! / EDAF v1.0のセットアップが完了しました！**
+1. **Prevents context exhaustion** by using Fire & Forget pattern
+2. **Tracks progress** via `setup_progress` in edaf-config.yml
+3. **Supports interruption recovery** by checking for existing setup_progress
+4. **Polls for completion** instead of waiting for TaskOutput
+5. **Cleans up** by removing setup_progress after completion
 
-Start implementing features using the 7-phase gate system for quality assurance.
-7フェーズゲートシステムを使用して、品質保証された機能実装を始めましょう。
-
----
-
-**For more information / 詳細情報**:
-
-- GitHub: https://github.com/Tsuchiya2/evaluator-driven-agent-flow
-- Workers / ワーカー: `.claude/agents/workers/`
-- Evaluators / エバリュエーター: `.claude/agents/evaluators/`
+**Key Differences from Original:**
+- `run_in_background: true` for all Task launches
+- NO `TaskOutput` calls (results not retrieved)
+- Polling via `fs.existsSync()` instead of waiting for agent results
+- Temporary `setup_progress` section for tracking and recovery
