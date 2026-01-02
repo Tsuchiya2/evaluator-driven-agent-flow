@@ -354,7 +354,6 @@ EDAF uses Claude Code hooks for automation:
 
 | Hook | Trigger | Action |
 |------|---------|--------|
-| `SubagentStop` | Worker completes | Play notification sound |
 | `PermissionRequest` | User input needed | Play alert sound |
 | `Stop` | Task completed | Play completion sound |
 

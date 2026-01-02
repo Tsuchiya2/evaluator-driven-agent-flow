@@ -38,17 +38,6 @@
           }
         ]
       }
-    ],
-    "SubagentStop": [
-      {
-        "matcher": "*worker*",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash \"$PWD/.claude/scripts/notification.sh\" 'Worker completed' WarblerSong"
-          }
-        ]
-      }
     ]
   }
 }
