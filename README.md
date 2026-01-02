@@ -194,26 +194,44 @@ The interactive setup wizard will guide you through:
 
 ## 🚀 How to Use EDAF
 
+### Session Start
+
+When you start a Claude Code session, you'll see:
+
+```
+🚀 EDAF v1.0 Ready / 準備完了
+   Start EDAF workflow: "Use EDAF workflow" / EDAFワークフローを開始: 「エージェントフローを使って」
+   (Switch anytime / いつでも切り替え可能)
+```
+
+You can choose:
+- **Start EDAF workflow**: Say "Use EDAF workflow" or "エージェントフローを使って"
+- **Quick questions**: Just ask directly
+- **Switch anytime**: Start EDAF even during a conversation
+
+---
+
 After running `/setup`, you can use EDAF in two ways:
 
-### Method 1: Full 6-Phase Gate System (Recommended)
+### Method 1: Full 7-Phase Gate System (Recommended)
 
-Use this when you want complete quality assurance with design, planning, implementation, review, and documentation:
+Use this when you want complete quality assurance with requirements gathering, design, planning, implementation, review, documentation, and deployment readiness:
 
 ```bash
 # Inside Claude Code
-"エージェントフローに沿ってユーザー認証機能を実装してください"
+"Use EDAF workflow to implement user authentication feature"
 # or
-"Implement user authentication feature using EDAF"
+"エージェントフローを使ってユーザー認証機能を実装してください"
 ```
 
 **What happens:**
-1. **Phase 1**: Designer creates design document → 7 design evaluators review it
-2. **Phase 2**: Planner creates task breakdown → 7 planner evaluators review it
-3. **Phase 3**: Workers implement code (database, backend, frontend, tests)
-4. **Phase 4**: 7 code evaluators review implementation + **UI/UX verification via Claude in Chrome (if frontend changed)**
-5. **Phase 5**: Documentation worker updates permanent docs in `docs/`
-6. **Phase 6** (optional): 5 deployment evaluators check production readiness
+1. **Phase 1**: Requirements gatherer collects requirements → 7 requirements evaluators review them
+2. **Phase 2**: Designer creates design document → 7 design evaluators review it
+3. **Phase 3**: Planner creates task breakdown → 7 planner evaluators review it
+4. **Phase 4**: Workers implement code (database, backend, frontend, tests) → Quality gate evaluator (lint + tests)
+5. **Phase 5**: 7 code evaluators review implementation + **UI/UX verification via Claude in Chrome (if frontend changed)**
+6. **Phase 6**: Documentation worker updates permanent docs in `docs/` → 5 documentation evaluators review
+7. **Phase 7** (optional): 5 deployment evaluators check production readiness
 
 **Result:** High-quality, well-designed, thoroughly tested code with synchronized documentation, visual verification, and automatic notifications at each phase.
 
@@ -339,18 +357,6 @@ Each agent uses an optimal model based on task criticality:
 
 See `.claude/agent-models.yml` for full configuration.
 
-### Status Line Integration
-
-Monitor EDAF progress in Claude Code's status line:
-
-```bash
-# Update phase status
-bash .claude/scripts/update-edaf-phase.sh "Phase 4: Code Review" "5/7 evaluators"
-
-# View current status
-bash .claude/scripts/edaf-status.sh
-```
-
 ### Evaluation Skills
 
 Reusable evaluation patterns in `.claude/skills/edaf-evaluation/`:
@@ -365,9 +371,10 @@ EDAF uses Claude Code hooks for automation:
 
 | Hook | Trigger | Action |
 |------|---------|--------|
-| `SubagentStop` | Evaluator/Worker completes | Play notification, log completion |
-| `SessionStart` | Session begins | Log session start |
-| `Notification` | User input needed | Play alert sound |
+| `SessionStart` | Session begins | Display bilingual EDAF workflow prompt |
+| `SubagentStop` | Worker completes | Play notification sound |
+| `PermissionRequest` | User input needed | Play alert sound |
+| `Stop` | Task completed | Play completion sound |
 
 ### Sandbox Mode
 
@@ -493,4 +500,4 @@ For issues, questions, or feedback:
 
 **Status**: ✅ Production Ready
 **Maintained**: Yes
-**Last Updated**: 2025-12-21
+**Last Updated**: 2026-01-02
