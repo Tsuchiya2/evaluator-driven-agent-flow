@@ -108,145 +108,89 @@ Do not edit manually - run \`/setup\` again to change preferences.
 - **Documentation Language**: ${docLang === 'en' ? 'English' : 'Japanese'}
 - **Terminal Output Language**: ${termLang === 'en' ? 'English' : 'Japanese'}
 - **Save Dual Language Docs**: ${dualDocs ? 'Yes (EN + JA)' : 'No'}
-- **UI Verification (MCP chrome-devtools)**: ${global.edafWSL2Mode ? '⚠️ DISABLED (WSL2 environment)' : 'Enabled'}
 
 ---
 
-## EDAF 4-Phase Gate System - IMPORTANT
+## EDAF 7-Phase Gate System
 
-${global.edafWSL2Mode ? \`
-> ⚠️ **WSL2 MODE DETECTED**: UI verification via MCP chrome-devtools is DISABLED.
-> UI検証（MCP chrome-devtools）は無効です（WSL2環境が検出されました）。
-> Phase 3 will skip all MCP chrome-devtools steps.
+**When the user requests to implement a feature using "エージェントフロー" (agent flow) or "EDAF", follow this workflow:**
 
-\` : ''}
+> **Detailed instructions for each phase are in \`.claude/skills/edaf-orchestration/\`**
 
-**When the user requests to implement a feature using "エージェントフロー" (agent flow) or "EDAF", you MUST follow this exact workflow:**
+### Quick Reference
 
-### Phase 1: Design Gate
-1. Launch \`designer\` agent via Task tool
-2. Designer creates design document in \`docs/designs/{feature-slug}.md\`
-3. Launch ALL 7 design evaluators in parallel via Task tool:
-   - design-consistency-evaluator
-   - design-extensibility-evaluator
-   - design-goal-alignment-evaluator
-   - design-maintainability-evaluator
-   - design-observability-evaluator
-   - design-reliability-evaluator
-   - design-reusability-evaluator
-4. Review evaluation results
-5. If evaluators request changes, ask designer to revise
-6. Repeat until all evaluators approve (≥ 7.0/10.0)
+| Phase | Agent | Evaluators | Pass Criteria |
+|-------|-------|------------|---------------|
+| 1. Requirements | requirements-gatherer | 7 requirements evaluators | All ≥ 8.0/10 |
+| 2. Design | designer | 7 design evaluators | All ≥ 8.0/10 |
+| 3. Planning | planner | 7 planner evaluators | All ≥ 8.0/10 |
+| 4. Implementation | 4 workers | 1 quality-gate evaluator | All workers complete + Score 10.0 (lint + tests) |
+| 5. Code Review | - | 7 code evaluators + UI verification | All ≥ 8.0/10 |
+| 6. Documentation | documentation-worker | 5 documentation evaluators | All ≥ 8.0/10 |
+| 7. Deployment | - | 5 deployment evaluators | All ≥ 8.0/10 |
 
-### Phase 2: Planning Gate
-1. Launch \`planner\` agent via Task tool
-2. Planner creates task plan in \`docs/plans/{feature-slug}-tasks.md\`
-3. Launch ALL 7 planner evaluators in parallel via Task tool:
-   - planner-clarity-evaluator
-   - planner-deliverable-structure-evaluator
-   - planner-dependency-evaluator
-   - planner-goal-alignment-evaluator
-   - planner-granularity-evaluator
-   - planner-responsibility-alignment-evaluator
-   - planner-reusability-evaluator
-4. Review evaluation results
-5. If evaluators request changes, ask planner to revise
-6. Repeat until all evaluators approve (≥ 7.0/10.0)
+### Phase 1: Requirements Gathering Gate
+→ See \`.claude/skills/edaf-orchestration/PHASE1-REQUIREMENTS.md\`
 
-### Phase 2.5: Implementation
-1. Launch appropriate worker agents via Task tool based on task plan:
-   - database-worker-v1-self-adapting (for database models)
-   - backend-worker-v1-self-adapting (for backend logic)
-   - frontend-worker-v1-self-adapting (for UI components)
-   - test-worker-v1-self-adapting (for tests)
-2. Workers implement code according to task plan
+1. Launch \`requirements-gatherer\` agent (interactive dialogue)
+2. Use 5W2H framework to clarify requirements
+3. Generate requirements document → \`.steering/{YYYY-MM-DD}-{feature-slug}/idea.md\`
+4. Run 7 requirements evaluators in parallel
+5. Iterate with user until all pass
 
-### Phase 3: Code Review Gate
-1. Launch ALL 7 code evaluators in parallel via Task tool:
-   - code-quality-evaluator-v1-self-adapting
-   - code-testing-evaluator-v1-self-adapting
-   - code-security-evaluator-v1-self-adapting
-   - code-documentation-evaluator-v1-self-adapting
-   - code-maintainability-evaluator-v1-self-adapting
-   - code-performance-evaluator-v1-self-adapting
-   - code-implementation-alignment-evaluator-v1-self-adapting
-2. Review evaluation results
-\${global.edafWSL2Mode ? \`3. **UI Verification: SKIPPED (WSL2 environment)**
-   - MCP chrome-devtools is not available in WSL2
-   - Manual verification recommended: open browser and check UI manually
-   - Document any issues found in review notes
-4. If evaluators find issues, fix them
-5. Repeat until all evaluators approve (≥ 7.0/10.0)\` : \`3. **If frontend files were modified (views, components, CSS, JavaScript):**
-   - **MANDATORY: Always ask user for login information:**
-     - Use AskUserQuestion tool: "Do the modified pages require login to view?"
-     - If YES, collect:
-       - Login URL (e.g., http://localhost:3000/login)
-       - Email/Username
-       - Password
-     - Confirm development server is running
-     - If NO, proceed without login
-   - **MANDATORY: Create screenshot directory:**
-     - Create directory: \\\`docs/screenshots/{feature-name}/\\\`
-     - Example: \\\`docs/screenshots/user-authentication/\\\`
-     - All screenshots will be saved in this directory
-   - **MANDATORY: Use MCP chrome-devtools for UI/UX verification:**
-     - Prerequisites verification:
-       - Confirm development server is running (from user response above)
-       - Identify all URLs to verify from design document
-     - **Step 1: Setup and Authentication (if needed)**
-       - \\\`mcp__chrome-devtools__list_pages\\\` - List available browser tabs
-       - \\\`mcp__chrome-devtools__navigate_page\\\` - Navigate to login page (if required)
-       - \\\`mcp__chrome-devtools__fill\\\` - Fill login credentials (if required)
-       - \\\`mcp__chrome-devtools__click\\\` - Click login button (if required)
-       - Verify successful login
-     - **Step 2: Page-by-Page Verification (MANDATORY - DO NOT SKIP)**
-       - For EACH modified page or component:
-         1. \\\`mcp__chrome-devtools__navigate_page\\\` - Navigate to the page
-         2. **\\\`mcp__chrome-devtools__take_snapshot\\\` - MANDATORY: Capture screenshot**
-            - Save to: \\\`docs/screenshots/{feature-name}/{page-name}.png\\\`
-            - Example: \\\`docs/screenshots/user-authentication/login-page.png\\\`
-         3. Compare screenshot with design document specifications
-         4. Check for visual inconsistencies (layout, colors, fonts, spacing)
-         5. Document findings with screenshot reference (use relative path)
-     - **Step 3: Interactive Element Testing**
-       - For forms: \\\`mcp__chrome-devtools__fill\\\` - Test with sample data
-       - For buttons/links: \\\`mcp__chrome-devtools__click\\\` - Test interactions
-       - **\\\`mcp__chrome-devtools__take_snapshot\\\` - MANDATORY: Capture after each interaction**
-         - Save to: \\\`docs/screenshots/{feature-name}/{page-name}-{action}.png\\\`
-         - Example: \\\`docs/screenshots/user-authentication/login-page-submitted.png\\\`
-       - Verify expected behaviors (validation, submission, navigation)
-     - **Step 4: Console and Performance Check**
-       - Check browser console for errors/warnings
-       - Note any performance issues
-     - **Step 5: Documentation (MANDATORY)**
-       - Create review section with ALL screenshots included
-       - Use relative paths: \\\`![Screenshot](../screenshots/{feature-name}/{page-name}.png)\\\`
-       - List findings for each page/component
-       - Compare actual vs expected behavior
-       - **CRITICAL: Review MUST include at least one screenshot per modified page**
-       - **Directory structure example:**
-         \\\`\\\`\\\`
-         docs/
-         ├── reviews/{feature-name}-review.md
-         └── screenshots/{feature-name}/
-             ├── login-page.png
-             ├── login-page-submitted.png
-             ├── dashboard.png
-             └── profile-page.png
-         \\\`\\\`\\\`
-4. If evaluators find issues OR UI verification fails, fix them
-5. Repeat until all evaluators approve (≥ 7.0/10.0) AND UI verification passes\`}
+### Phase 2: Design Gate
+→ See \`.claude/skills/edaf-orchestration/PHASE2-DESIGN.md\`
 
-### Phase 4: Deployment Gate (Optional)
-1. Launch ALL 5 deployment evaluators in parallel via Task tool:
-   - deployment-readiness-evaluator
-   - production-security-evaluator
-   - observability-evaluator
-   - performance-benchmark-evaluator
-   - rollback-plan-evaluator
-2. Review evaluation results
-3. If evaluators find issues, fix them
-4. Repeat until all evaluators approve (≥ 7.0/10.0)
+1. Launch \`designer\` agent (uses idea.md as input)
+2. Design document → \`.steering/{YYYY-MM-DD}-{feature-slug}/design.md\`
+3. Run 7 design evaluators in parallel
+4. Revise until all pass
+
+### Phase 3: Planning Gate
+→ See \`.claude/skills/edaf-orchestration/PHASE3-PLANNING.md\`
+
+1. Launch \`planner\` agent (uses design.md as input)
+2. Task plan → \`.steering/{YYYY-MM-DD}-{feature-slug}/tasks.md\`
+3. Run 7 planner evaluators in parallel
+4. Revise until all pass
+
+### Phase 4: Implementation
+→ See \`.claude/skills/edaf-orchestration/PHASE4-IMPLEMENTATION.md\`
+
+Launch workers in order (using tasks.md as guide):
+1. \`database-worker-v1-self-adapting\`
+2. \`backend-worker-v1-self-adapting\`
+3. \`frontend-worker-v1-self-adapting\`
+4. \`test-worker-v1-self-adapting\`
+
+Then run quality gate:
+- **Quality Gate Evaluator**: Ultra-strict quality check (Score 10.0 = PASS, else FAIL)
+- Checks BOTH lint (zero errors, zero warnings) AND tests (all passing)
+- Auto-fixes: Re-invokes workers with feedback if failing
+- Report → \`.steering/{YYYY-MM-DD}-{feature-slug}/reports/phase4-quality-gate.md\`
+
+### Phase 5: Code Review Gate
+→ See \`.claude/skills/edaf-orchestration/PHASE5-CODE.md\`
+
+1. Run 7 code evaluators in parallel
+2. Fix issues until all pass
+3. **If frontend modified**: Launch \`ui-verification-worker\`
+   - See \`.claude/skills/ui-verification/\` for patterns
+   - Screenshots → \`.steering/{YYYY-MM-DD}-{feature-slug}/screenshots/\`
+   - Report → \`.steering/{YYYY-MM-DD}-{feature-slug}/reports/phase5-ui-verification.md\`
+
+### Phase 6: Documentation Update
+→ See \`.claude/skills/edaf-orchestration/PHASE6-DOCUMENTATION.md\`
+
+1. Launch \`documentation-worker\` to update permanent docs
+2. Updates \`docs/\` based on implementation
+3. Run 5 documentation evaluators in parallel
+
+### Phase 7: Deployment Gate (Optional)
+→ See \`.claude/skills/edaf-orchestration/PHASE7-DEPLOYMENT.md\`
+
+1. Run 5 deployment evaluators in parallel
+2. Fix issues until all pass
 
 **CRITICAL RULES:**
 - NEVER skip phases
@@ -472,7 +416,7 @@ First, let me check what's already installed in your project.
 ```typescript
 const checks = {
   workers: fs.existsSync('.claude/agents/workers/database-worker-v1-self-adapting.md'),
-  evaluators: fs.existsSync('.claude/agents/evaluators/phase3-code/code-quality-evaluator-v1-self-adapting.md'),
+  evaluators: fs.existsSync('.claude/agents/evaluators/phase5-code/code-quality-evaluator-v1-self-adapting.md'),
   setupCommand: fs.existsSync('.claude/commands/setup.md'),
   config: fs.existsSync('.claude/edaf-config.yml'),
   claudeMd: fs.existsSync('.claude/CLAUDE.md'),
@@ -503,100 +447,7 @@ Then restart Claude Code and run `/setup` again.
 
 ---
 
-## Step 1.5: MCP Configuration / ステップ1.5: MCP設定
-
-**Action / アクション**: Check and configure MCP chrome-devtools:
-
-```typescript
-console.log('\n🔧 Checking MCP configuration... / MCP設定を確認中...')
-
-const { execSync } = require('child_process')
-
-// Detect OS and WSL2
-let isWSL2 = false
-let osType = 'unknown'
-
-try {
-  const uname = execSync('uname -s', { encoding: 'utf-8' }).trim()
-  if (uname === 'Darwin') {
-    osType = 'mac'
-    console.log('  ✅ Detected: macOS')
-  } else if (uname === 'Linux') {
-    // Check for WSL2
-    try {
-      const procVersion = fs.readFileSync('/proc/version', 'utf-8')
-      if (procVersion.toLowerCase().includes('microsoft') || procVersion.toLowerCase().includes('wsl')) {
-        osType = 'wsl2'
-        isWSL2 = true
-        console.log('  ⚠️  Detected: WSL2 (Windows Subsystem for Linux)')
-      } else {
-        osType = 'linux'
-        console.log('  ✅ Detected: Linux')
-      }
-    } catch {
-      osType = 'linux'
-      console.log('  ✅ Detected: Linux')
-    }
-  }
-} catch {
-  // Windows Git Bash or other
-  osType = 'windows'
-  console.log('  ✅ Detected: Windows')
-}
-
-// Check if chrome-devtools MCP is registered
-let mcpExists = false
-try {
-  const mcpJson = fs.existsSync('.mcp.json') ? JSON.parse(fs.readFileSync('.mcp.json', 'utf-8')) : null
-  mcpExists = mcpJson?.mcpServers?.['chrome-devtools'] !== undefined
-} catch {}
-console.log('  📋 chrome-devtools MCP:', mcpExists ? 'Registered / 登録済み' : 'Not registered / 未登録')
-
-// WSL2 warning
-if (isWSL2) {
-  console.log('\n' + '━'.repeat(60))
-  console.log('⚠️  WSL2 LIMITATION / WSL2の制限')
-  console.log('━'.repeat(60))
-  console.log('')
-  console.log('MCP chrome-devtools DOES NOT work in WSL2 environment.')
-  console.log('MCP chrome-devtools は WSL2 環境では動作しません。')
-  console.log('')
-  console.log('Reason / 理由:')
-  console.log('  - WSL2 cannot access Chrome browser on Windows')
-  console.log('  - Network isolation prevents communication')
-  console.log('')
-  console.log('UI verification will be SKIPPED in Phase 3.')
-  console.log('Phase 3 で UI 検証はスキップされます。')
-  console.log('━'.repeat(60))
-}
-
-// Configure MCP if not exists
-if (!mcpExists && !isWSL2) {
-  console.log('\n📝 Registering chrome-devtools MCP server...')
-  console.log('📝 chrome-devtools MCPサーバーを登録中...')
-
-  try {
-    execSync('bash .claude/scripts/setup-mcp.sh --project', { stdio: 'inherit' })
-    console.log('✅ MCP configuration complete / MCP設定が完了しました')
-  } catch (error) {
-    console.log('⚠️  Warning: Could not configure MCP / 警告: MCP設定に失敗しました')
-    console.log('   Run manually: bash .claude/scripts/setup-mcp.sh --project')
-    console.log('   Or use: claude mcp add chrome-devtools -- npx -y chrome-devtools-mcp@latest')
-    console.log('   手動で実行: bash .claude/scripts/setup-mcp.sh --project')
-  }
-} else if (mcpExists) {
-  console.log('\n✅ chrome-devtools MCP already registered / chrome-devtools MCP登録済み')
-  console.log('   To reconfigure: claude mcp remove chrome-devtools && bash .claude/scripts/setup-mcp.sh --project')
-  console.log('   再設定するには: claude mcp remove chrome-devtools && bash .claude/scripts/setup-mcp.sh --project')
-}
-
-// Store WSL2 flag for later use
-global.edafWSL2Mode = isWSL2
-```
-
----
-
-## Step 1.6: Configure Agent Files / ステップ1.6: エージェントファイルの設定
+## Step 1.5: Configure Agent Files / ステップ1.5: エージェントファイルの設定
 
 **Action / アクション**: Add YAML frontmatter to agent files for Claude Code recognition:
 
@@ -612,6 +463,55 @@ try {
   console.log('⚠️  Warning: Could not configure agents / 警告: エージェント設定に失敗しました')
   console.log('   This may happen if agents are already configured / エージェントが既に設定されている可能性があります')
 }
+```
+
+---
+
+## Step 1.6: Generate Permanent Documentation / ステップ1.6: 永続ドキュメントの生成
+
+**Action / アクション**: Generate permanent documentation in `docs/`:
+
+```typescript
+console.log('\n📚 Generating permanent documentation... / 永続ドキュメントを生成中...')
+
+const docResult = await Task({
+  subagent_type: 'documentation-worker',
+  model: 'sonnet',
+  description: 'Generate initial documentation',
+  prompt: `Generate permanent documentation for this project.
+
+**Task**: Analyze the codebase and create 6 permanent docs in docs/:
+
+1. product-requirements.md
+2. functional-design.md
+3. development-guidelines.md
+4. repository-structure.md
+5. architecture.md
+6. glossary.md
+
+**Instructions**:
+- Use Read and Glob tools to analyze the codebase
+- Detect language, framework, architecture patterns
+- Generate comprehensive but concise documentation
+- Use templates but adapt to project specifics
+- If information is unclear, make reasonable inferences based on code
+
+**Current Working Directory**: ${process.cwd()}
+`
+})
+
+console.log('✅ Permanent documentation generated / 永続ドキュメントを生成しました')
+console.log('')
+console.log('📁 Created in docs/:')
+console.log('  ├── product-requirements.md')
+console.log('  ├── functional-design.md')
+console.log('  ├── development-guidelines.md')
+console.log('  ├── repository-structure.md')
+console.log('  ├── architecture.md')
+console.log('  └── glossary.md')
+console.log('')
+console.log('💡 These docs will be automatically updated during Phase 5 of EDAF workflow.')
+console.log('💡 Phase 5 のEDAFワークフロー中に、これらのドキュメントは自動的に更新されます。')
 ```
 
 ---
@@ -951,8 +851,8 @@ Setup complete! Here's what you can do next:
 
 ### 1. Test Language Settings / 言語設定をテスト
 
-Try asking Claude Code in your preferred language:
-希望の言語でClaude Codeに試してみてください:
+Try Claude Code in Japanese or English:
+日本語または英語でClaude Codeに試してみてください:
 
 **Example / 例**:
 
@@ -967,11 +867,17 @@ Claude Codeは設定した言語設定に従って応答します。
 ### 2. View Documentation / ドキュメントを確認
 
 ```bash
+# View permanent documentation / 永続ドキュメントを確認
+ls docs/
+
 # View worker specifications / ワーカーの仕様を確認
-ls .claude/agents/
+ls .claude/agents/workers/
 
 # View evaluator specifications / エバリュエーターの仕様を確認
 ls .claude/agents/evaluators/
+
+# View EDAF phase workflows / EDAFフェーズワークフローを確認
+ls .claude/skills/edaf-orchestration/
 
 # Read a specific worker / 特定のワーカーを読む
 cat .claude/agents/workers/database-worker-v1-self-adapting.md
@@ -988,21 +894,588 @@ To change your language preference, simply run `/setup` again:
 
 ---
 
+## Step 6: Detect Lint Tools / ステップ6: リントツールの検出
+
+**Purpose / 目的**: Detect existing lint/format tools for Phase 4 quality gate
+プロジェクトの既存のリント・フォーマットツールを検出してPhase 4の品質ゲートで使用します
+
+```typescript
+// Run lint detection
+console.log('\n🔍 Detecting lint tools in project...')
+console.log('   プロジェクト内のリントツールを検出中...\n')
+
+const lintDetection = await bash('bash .claude/scripts/detect-linters.sh')
+
+console.log(lintDetection.output)
+
+if (lintDetection.exitCode === 0) {
+  console.log('✅ Lint detection complete / リント検出完了')
+  console.log('   Phase 4 will run automatic lint checks after code generation')
+  console.log('   Phase 4ではコード生成後に自動的にリントチェックが実行されます\n')
+} else {
+  console.log('⚠️  Lint detection encountered issues / リント検出で問題が発生しました\n')
+}
+```
+
+**What happens / 動作説明**:
+- Detects ESLint, Prettier, TypeScript, Ruff, Black, Flake8, mypy, golangci-lint, rustfmt, clippy, RuboCop, etc.
+- ESLint, Prettier, TypeScript, Ruff, Black, Flake8, mypy, golangci-lint, rustfmt, clippy, RuboCopなどを検出
+- Saves configuration to `.claude/edaf-config.yml`
+- `.claude/edaf-config.yml`に設定を保存
+- Phase 4 will automatically run these checks after code generation
+- Phase 4でコード生成後に自動的にこれらのチェックを実行
+
+**No lint tools found? / リントツールが見つからない場合**:
+- That's OK! Phase 4 will proceed without lint checks (with a warning)
+- 問題ありません！Phase 4はリントチェックなしで進行します（警告付き）
+- You can add lint tools later and re-run `/setup`
+- 後でリントツールを追加して `/setup` を再実行できます
+
+---
+
+## Step 7: Code Standards Learning / ステップ7: コード規約の学習
+
+**Purpose / 目的**: Learn project-specific coding standards from existing code and create enforceable skills
+既存コードからプロジェクト固有のコーディング規約を学習し、実行可能なスキルを作成します
+
+**When to use / いつ使用するか**: If your project has existing code with established patterns
+プロジェクトに確立されたパターンを持つ既存コードがある場合
+
+### Step 7.1: Detect Existing Code / 既存コードの検出
+
+```typescript
+console.log('\n📚 Detecting existing code for standards learning...')
+console.log('   規約学習用の既存コードを検出中...\n')
+
+// Detect code files
+const codePatterns = {
+  typescript: await glob('**/*.ts', { ignore: ['**/node_modules/**', '**/dist/**'] }),
+  react: await glob('**/*.tsx', { ignore: ['**/node_modules/**', '**/dist/**'] }),
+  python: await glob('**/*.py', { ignore: ['**/venv/**', '**/__pycache__/**'] }),
+  go: await glob('**/*.go', { ignore: ['**/vendor/**'] }),
+  rust: await glob('**/*.rs', { ignore: ['**/target/**'] }),
+  test: await glob('**/*.{test,spec}.{ts,tsx,js,jsx,py}', { ignore: ['**/node_modules/**'] })
+}
+
+const detectedLanguages = []
+const standardsToCreate = []
+
+// Analyze detected files
+if (codePatterns.typescript.length > 0) {
+  detectedLanguages.push('TypeScript')
+  standardsToCreate.push({
+    name: 'typescript-standards',
+    label: 'TypeScript Standards',
+    description: `TypeScript coding standards (${codePatterns.typescript.length} files)`
+  })
+}
+
+if (codePatterns.react.length > 0) {
+  detectedLanguages.push('React')
+  standardsToCreate.push({
+    name: 'react-standards',
+    label: 'React Component Standards',
+    description: `React/TSX patterns (${codePatterns.react.length} files)`
+  })
+}
+
+if (codePatterns.python.length > 0) {
+  detectedLanguages.push('Python')
+  standardsToCreate.push({
+    name: 'python-standards',
+    label: 'Python Standards',
+    description: `Python coding standards (${codePatterns.python.length} files)`
+  })
+
+  // Detect FastAPI
+  if (fs.existsSync('requirements.txt')) {
+    const requirements = fs.readFileSync('requirements.txt', 'utf-8')
+    if (requirements.includes('fastapi')) {
+      standardsToCreate.push({
+        name: 'fastapi-standards',
+        label: 'FastAPI Standards',
+        description: 'FastAPI API design patterns'
+      })
+    }
+  }
+}
+
+if (codePatterns.go.length > 0) {
+  detectedLanguages.push('Go')
+  standardsToCreate.push({
+    name: 'go-standards',
+    label: 'Go Standards',
+    description: `Go coding standards (${codePatterns.go.length} files)`
+  })
+}
+
+if (codePatterns.rust.length > 0) {
+  detectedLanguages.push('Rust')
+  standardsToCreate.push({
+    name: 'rust-standards',
+    label: 'Rust Standards',
+    description: `Rust coding standards (${codePatterns.rust.length} files)`
+  })
+}
+
+// Always add test and security standards if any code exists
+if (detectedLanguages.length > 0) {
+  if (codePatterns.test.length > 0) {
+    standardsToCreate.push({
+      name: 'test-standards',
+      label: 'Test Standards',
+      description: `Testing patterns (${codePatterns.test.length} test files)`
+    })
+  }
+
+  standardsToCreate.push({
+    name: 'security-standards',
+    label: 'Security Standards',
+    description: 'Security best practices and patterns'
+  })
+}
+
+console.log('📊 Detected code:')
+console.log('   検出されたコード:\n')
+for (const lang of detectedLanguages) {
+  console.log(`   ✅ ${lang}`)
+}
+
+if (standardsToCreate.length === 0) {
+  console.log('\n⚠️  No existing code detected. Skipping standards learning.')
+  console.log('   既存コードが検出されませんでした。規約学習をスキップします。\n')
+} else {
+  console.log(`\n💡 ${standardsToCreate.length} coding standards can be learned from your codebase.`)
+  console.log(`   コードベースから ${standardsToCreate.length} 個の規約を学習できます。\n`)
+}
+```
+
+### Step 7.2: Ask User Confirmation / ユーザー確認
+
+```typescript
+if (standardsToCreate.length > 0) {
+  const standardsResponse = await AskUserQuestion({
+    questions: [
+      {
+        question: "Do you want to learn coding standards from existing code? / 既存コードから規約を学習しますか？",
+        header: "Standards",
+        multiSelect: false,
+        options: [
+          {
+            label: "Yes, learn all standards (Recommended) / はい、すべての規約を学習（推奨）",
+            description: "Analyze existing code and create enforceable standards. Phase 4-6 will check compliance. / 既存コードを分析して実行可能な規約を作成。Phase 4-6でコンプライアンスをチェック。"
+          },
+          {
+            label: "Select specific standards / 特定の規約を選択",
+            description: "Choose which standards to create. / 作成する規約を選択。"
+          },
+          {
+            label: "Skip for now / 今はスキップ",
+            description: "You can run /setup again later to create standards. / 後で /setup を再実行して規約を作成できます。"
+          }
+        ]
+      }
+    ]
+  })
+
+  let selectedStandards = []
+
+  if (standardsResponse.answers['0'].includes('Yes, learn all')) {
+    selectedStandards = standardsToCreate
+  } else if (standardsResponse.answers['0'].includes('Select specific')) {
+    // Ask which standards to create
+    const selectionResponse = await AskUserQuestion({
+      questions: [
+        {
+          question: "Select standards to learn / 学習する規約を選択",
+          header: "Standards",
+          multiSelect: true,
+          options: standardsToCreate.map(std => ({
+            label: std.label,
+            description: std.description
+          }))
+        }
+      ]
+    })
+
+    // Parse selected standards
+    const selected = selectionResponse.answers['0']
+    selectedStandards = standardsToCreate.filter(std =>
+      selected.includes(std.label)
+    )
+  }
+
+  if (selectedStandards.length === 0) {
+    console.log('\n⏭️  Skipping standards learning.')
+    console.log('   規約学習をスキップします。\n')
+  } else {
+    console.log(`\n🎓 Learning ${selectedStandards.length} coding standard(s)...`)
+    console.log(`   ${selectedStandards.length} 個の規約を学習中...\n`)
+  }
+```
+
+### Step 7.3: Launch Standards Learning Agent / 規約学習エージェントの起動
+
+```typescript
+  // Create skills directory
+  if (!fs.existsSync('.claude/skills')) {
+    fs.mkdirSync('.claude/skills', { recursive: true })
+  }
+
+  for (const standard of selectedStandards) {
+    console.log(`\n📖 Learning ${standard.label}...`)
+    console.log(`   ${standard.label} を学習中...\n`)
+
+    // Launch standards learning agent
+    const learningResult = await Task({
+      subagent_type: 'general-purpose',
+      model: 'sonnet',
+      description: `Generate ${standard.name}`,
+      prompt: `You are a coding standards expert with deep knowledge of all programming languages and frameworks.
+
+**Task**: Generate comprehensive coding standards for ${standard.label}
+
+**Standard Name**: ${standard.name}
+**Output Path**: .claude/skills/${standard.name}/SKILL.md
+**Detected Files**: ${standard.description}
+
+---
+
+## Your Approach
+
+### Step 1: Detect Existing Code (if any)
+
+Use Glob tool to find relevant files for this standard:
+- For language standards (typescript, python, ruby, go, rust, etc.): Find source files (*.ts, *.py, *.rb, *.go, *.rs, etc.)
+- For framework standards (rails, react, vue, django, fastapi, etc.): Find framework-specific files
+- For test standards: Find test files (*.test.*, *.spec.*, *_test.*, test_*.*)
+- For security standards: Scan authentication, validation, database interaction code
+
+### Step 2: Analyze Code (if code exists)
+
+If code exists:
+1. Read 5-10 representative files using Read tool
+2. Identify actual patterns:
+   - Naming conventions (PascalCase? camelCase? snake_case?)
+   - File organization (directory structure, file naming)
+   - Import/export styles
+   - Error handling patterns
+   - Testing patterns (if applicable)
+   - Framework-specific patterns (if applicable)
+3. Extract real examples from the code
+4. Use AskUserQuestion to confirm ambiguous patterns
+
+### Step 3: Apply Best Practices (if no code OR to supplement)
+
+If no code exists, OR to supplement detected patterns:
+1. Use your LLM knowledge of ${standard.label} best practices
+2. Include industry-standard conventions (PEP 8 for Python, RuboCop for Ruby, ESLint for JavaScript, etc.)
+3. Provide concrete, actionable examples
+4. Include common anti-patterns to avoid
+
+### Step 4: Generate SKILL.md
+
+Create .claude/skills/${standard.name}/SKILL.md with this structure:
+
+**SKILL.md Template**:
+
+\`\`\`markdown
+---
+description: ${standard.label} for this project
+---
+
+# ${standard.label}
+
+**Purpose**: Enforce ${standard.label} during Phase 4 (Implementation), Phase 5 (Code Review), and Phase 6 (Documentation)
+
+**Generated**: ${new Date().toISOString().split('T')[0]}
+**Source**: [Analyzed from existing code | General best practices]
+
+---
+
+## When to Use This Skill
+
+This skill is **automatically invoked** during:
+
+- **Phase 4**: Workers check compliance while generating code
+- **Phase 5**: Code evaluators verify adherence to standards
+- **Phase 6**: Documentation worker ensures docs match standards
+
+---
+
+## Coding Standards
+
+### 1. Naming Conventions
+
+**Detected Patterns** (if code exists):
+- [Classes/Types: PascalCase (95% usage)]
+- [Functions/Methods: camelCase (98% usage)]
+- [Constants: SCREAMING_SNAKE_CASE (100% usage)]
+
+**Examples from Codebase** (use actual code if available):
+\`\`\`[language]
+// ✅ Good (from: path/to/file.ext)
+[Real code example]
+
+// ❌ Bad (anti-pattern)
+[Counter-example]
+\`\`\`
+
+**Rules**:
+- ✅ DO: [Specific, actionable rule based on detected patterns]
+- ❌ DON'T: [Specific anti-pattern to avoid]
+
+### 2. File Structure
+
+**Detected Directory Structure** (if code exists):
+\`\`\`
+[Show actual project structure]
+\`\`\`
+
+**Conventions**:
+- [File naming: snake_case.rb or PascalCase.tsx]
+- [Directory organization: feature-based or layer-based]
+
+### 3. Error Handling
+
+**Detected Patterns**:
+- [Try/catch usage, error types, logging patterns]
+
+**Examples**:
+\`\`\`[language]
+[Real error handling code from project]
+\`\`\`
+
+### 4. Code Style
+
+**Detected Patterns**:
+- [Indentation: 2 spaces or 4 spaces]
+- [Quotes: single or double]
+- [Semicolons: yes or no (for JS/TS)]
+- [Line length: max 80 or 100 or 120 characters]
+
+### 5. Framework-Specific Patterns (if applicable)
+
+**For ${standard.label}**:
+[Rails: MVC patterns, Active Record usage]
+[React: Component patterns, hooks usage]
+[FastAPI: Route patterns, dependency injection]
+[etc.]
+
+### 6. Testing Patterns (if test standard)
+
+**Detected Patterns**:
+- [Test framework: Jest, RSpec, pytest, etc.]
+- [Test structure: describe/it, test functions]
+- [Assertion style: expect, assert]
+- [Mocking patterns]
+
+### 7. Security Considerations (if security standard)
+
+**Critical Rules**:
+- Input validation
+- Authentication/Authorization
+- SQL injection prevention
+- XSS prevention
+- Secrets management
+
+---
+
+## Enforcement Checklist
+
+**Phase 4 Workers**:
+- [ ] Follow detected naming conventions
+- [ ] Match file structure patterns
+- [ ] Use standard error handling
+- [ ] Follow code style (indentation, quotes, etc.)
+- [ ] Apply framework-specific patterns (if applicable)
+- [ ] Follow testing patterns (if test code)
+- [ ] Apply security rules (always)
+
+**Phase 5 Evaluators**:
+- [ ] Verify naming convention compliance (check actual usage percentages)
+- [ ] Validate file structure matches project patterns
+- [ ] Check error handling consistency
+- [ ] Verify code style compliance
+- [ ] Confirm framework pattern usage
+- [ ] Validate test quality (if tests)
+- [ ] Check security vulnerabilities
+
+**Phase 6 Documentation**:
+- [ ] Use consistent terminology
+- [ ] Follow documentation style from existing docs
+- [ ] Include code examples matching project style
+- [ ] Document testing approach
+- [ ] Include security considerations
+
+---
+
+## Common Patterns (from codebase analysis)
+
+### Pattern 1: [Name]
+\`\`\`[language]
+[Real code pattern found in codebase]
+\`\`\`
+**Usage**: Found in [X] files
+**When to use**: [Explanation]
+
+### Pattern 2: [Name]
+\`\`\`[language]
+[Another real pattern]
+\`\`\`
+
+---
+
+## Anti-Patterns to Avoid
+
+### ❌ Anti-Pattern 1: [Name]
+\`\`\`[language]
+[Bad code example]
+\`\`\`
+**Why bad**: [Explanation]
+**Better approach**: [Good example]
+
+---
+
+## Configuration Files (if detected)
+
+- [\`.eslintrc.js\`: ESLint configuration detected]
+- [\`.rubocop.yml\`: RuboCop configuration detected]
+- [\`pyproject.toml\`: Ruff/Black configuration detected]
+- [etc.]
+
+**Note**: Generated code MUST comply with these tool configurations.
+
+---
+
+**Last Updated**: ${new Date().toISOString()}
+**Analyzed Files**: ${standard.description}
+**Customization**: This file was auto-generated. Edit to add project-specific rules.
+\`\`\`
+
+---
+
+## Critical Instructions
+
+**If existing code found**:
+1. Prioritize ACTUAL patterns over theoretical best practices
+2. Use REAL code examples (copy exact code with file paths)
+3. Calculate pattern usage percentages (e.g., "95% of classes use PascalCase")
+4. Ask user to confirm if multiple conflicting patterns found
+5. Include project-specific quirks and exceptions
+
+**If NO existing code found**:
+1. Use your LLM knowledge of ${standard.label} best practices
+2. Include industry-standard conventions
+3. Provide comprehensive, actionable examples
+4. Cover common scenarios and edge cases
+5. Include links to official style guides (if applicable)
+
+**Always**:
+- Be thorough but concise (aim for 150-300 lines)
+- Make rules actionable and verifiable
+- Include concrete examples with correct syntax
+- Organize by importance (most critical rules first)
+- Use checklist format for enforcement
+
+**Current Working Directory**: ${process.cwd()}
+`
+    })
+
+    console.log(`   ✅ ${standard.label} learned successfully`)
+  }
+
+  console.log('\n✅ All standards learned!')
+  console.log('   すべての規約を学習しました！\n')
+}
+```
+
+### Step 7.4: Update CLAUDE.md / CLAUDE.md の更新
+
+```typescript
+  // Update CLAUDE.md to enable standards checking
+  if (selectedStandards.length > 0) {
+    console.log('📝 Updating CLAUDE.md to enable standards checking...')
+    console.log('   規約チェックを有効化するためCLAUDE.mdを更新中...\n')
+
+    let claudeMd = fs.readFileSync('.claude/CLAUDE.md', 'utf-8')
+
+    // Add standards section before "## Instructions for Claude Code"
+    const standardsSection = `
+---
+
+## Project Coding Standards
+
+**Learned from existing codebase** on ${new Date().toISOString().split('T')[0]}
+
+Your project has ${selectedStandards.length} coding standard(s) defined in \`.claude/skills/\`:
+
+${selectedStandards.map(std => `- **${std.label}**: \`.claude/skills/${std.name}/SKILL.md\``).join('\n')}
+
+### When to Apply Standards
+
+**Phase 4 (Implementation)**:
+- Workers MUST follow all applicable standards when generating code
+- Check \`.claude/skills/\` for relevant standards before writing code
+- Match naming conventions, file structure, and patterns
+
+**Phase 5 (Code Review)**:
+- Code evaluators MUST verify compliance with standards
+- Reference \`.claude/skills/\` during evaluation
+- Flag violations in evaluation reports
+
+**Phase 6 (Documentation)**:
+- Documentation worker MUST follow doc standards
+- Use consistent terminology from glossary
+- Match existing documentation style
+
+### How to Reference Standards
+
+Before generating code in Phase 4-6:
+
+\`\`\`typescript
+// Read applicable standards
+${selectedStandards.map(std => `const ${std.name.replace('-', '_')} = await Read('.claude/skills/${std.name}/SKILL.md')`).join('\n')}
+
+// Apply standards to code generation
+// Follow the rules and examples in the standards
+\`\`\`
+
+**CRITICAL**: Standards are NOT optional. All generated code MUST comply.
+
+---
+`
+
+    // Insert before "## Instructions for Claude Code"
+    claudeMd = claudeMd.replace(
+      '## Instructions for Claude Code',
+      standardsSection + '## Instructions for Claude Code'
+    )
+
+    fs.writeFileSync('.claude/CLAUDE.md', claudeMd)
+
+    console.log('✅ CLAUDE.md updated with standards enforcement')
+    console.log('   CLAUDE.md に規約適用ルールを追加しました\n')
+  }
+}
+```
+
+---
+
 ## Summary / まとめ
 
 ✅ **Language preferences configured / 言語設定が完了しました**
 ✅ **CLAUDE.md generated / CLAUDE.md を生成しました**
 ✅ **Installation verified / インストール確認完了**
 ✅ **Project auto-detected / プロジェクト自動検出完了**
+✅ **Lint tools detected / リントツール検出完了**
+✅ **Coding standards learned / コード規約の学習完了**
 ✅ **Components ready to use / コンポーネント使用準備完了**
 
 **Your EDAF v1.0 setup is complete! / EDAF v1.0のセットアップが完了しました！**
 
-Start generating code with self-adapting workers, and let the evaluators automatically ensure quality.
-自己適応型ワーカーでコード生成を開始し、エバリュエーターに品質を自動的に保証させましょう。
-
-No templates, no maintenance, infinite scalability. 🚀
-テンプレート不要、メンテナンス不要、無限のスケーラビリティ。🚀
+Start implementing features using the 7-phase gate system for quality assurance.
+7フェーズゲートシステムを使用して、品質保証された機能実装を始めましょう。
 
 ---
 

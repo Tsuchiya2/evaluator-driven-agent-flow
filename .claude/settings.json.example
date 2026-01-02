@@ -1,86 +1,40 @@
 {
   "permissions": {
     "allow": [
-      "mcp__chrome-devtools__list_pages",
-      "mcp__chrome-devtools__navigate_page",
-      "mcp__chrome-devtools__take_snapshot",
-      "mcp__chrome-devtools__fill",
-      "mcp__chrome-devtools__click",
       "Bash(docker compose exec:*)",
       "Bash(docker-compose exec:*)"
     ],
     "deny": [
-      "Bash(git add*)",
-      "Bash(git commit*)",
-      "Bash(git push*)",
-      "Bash(rm -rf*)",
-      "Bash(git push --force*)"
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(rm -rf:*)",
+      "Bash(git push --force:*)"
     ],
     "ask": []
   },
-  "enableAllProjectMcpServers": true,
-  "enabledMcpjsonServers": [
-    "chrome-devtools"
-  ],
   "sandbox": {
     "enabled": true,
     "autoAllowBashIfSandboxed": true,
     "excludedCommands": ["git push", "rm -rf", "docker rm"]
   },
-  "statusLine": {
-    "type": "command",
-    "command": "bash \"$PWD/.claude/scripts/edaf-status.sh\""
-  },
   "hooks": {
-    "Notification": [
+    "PermissionRequest": [
       {
-        "matcher": "permission_prompt | idle_prompt | elicitation_dialog",
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"$PWD/.claude/scripts/notification.sh\" 'Input needed / 入力が必要です' WarblerSong"
+            "command": "$PWD/.claude/scripts/notification.sh 'Input needed' WarblerSong"
           }
         ]
       }
     ],
-    "PostToolUse": [
+    "Stop": [
       {
-        "matcher": "*",
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"$PWD/.claude/scripts/notification.sh\" 'Task completed / タスク終了' CatMeow"
-          }
-        ]
-      }
-    ],
-    "SubagentStop": [
-      {
-        "matcher": "*evaluator*",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash \"$PWD/.claude/scripts/check-evaluator-score.sh\""
-          }
-        ]
-      },
-      {
-        "matcher": "*worker*",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash \"$PWD/.claude/scripts/notification.sh\" 'Worker completed' WarblerSong"
-          }
-        ]
-      }
-    ],
-    "SessionStart": [
-      {
-        "matcher": "startup",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "echo \"$(date '+%Y-%m-%d %H:%M:%S') EDAF session started\" >> \"$PWD/.claude/.edaf-sessions.log\""
+            "command": "$PWD/.claude/scripts/notification.sh 'Task completed' CatMeow"
           }
         ]
       }

@@ -8,7 +8,7 @@
 
 ## Overview
 
-This skill provides the 4-Phase Gate System workflow for EDAF (Evaluator-Driven Agent Flow). It defines the complete workflow from design to deployment with quality gates at each phase.
+This skill provides the 7-Phase Gate System workflow for EDAF (Evaluator-Driven Agent Flow). It defines the complete workflow from requirements gathering to deployment with quality gates at each phase.
 
 ---
 
@@ -27,11 +27,13 @@ Use this skill when user says:
 | File | Purpose |
 |------|---------|
 | `SKILL.md` | This overview file |
-| `PHASE1-DESIGN.md` | Phase 1: Design Gate workflow |
-| `PHASE2-PLANNING.md` | Phase 2: Planning Gate workflow |
-| `PHASE25-IMPLEMENTATION.md` | Phase 2.5: Implementation workflow |
-| `PHASE3-CODE.md` | Phase 3: Code Review Gate workflow |
-| `PHASE4-DEPLOYMENT.md` | Phase 4: Deployment Gate workflow |
+| `PHASE1-REQUIREMENTS.md` | Phase 1: Requirements Gathering Gate workflow |
+| `PHASE2-DESIGN.md` | Phase 2: Design Gate workflow |
+| `PHASE3-PLANNING.md` | Phase 3: Planning Gate workflow |
+| `PHASE4-IMPLEMENTATION.md` | Phase 4: Implementation workflow with quality gate |
+| `PHASE5-CODE.md` | Phase 5: Code Review Gate workflow |
+| `PHASE6-DOCUMENTATION.md` | Phase 6: Documentation Update workflow |
+| `PHASE7-DEPLOYMENT.md` | Phase 7: Deployment Gate workflow (optional) |
 | `GATE-PATTERNS.md` | Common gate patterns and pass criteria |
 
 ---
@@ -41,26 +43,35 @@ Use this skill when user says:
 ### Phase Overview
 
 ```
-Phase 1: Design Gate
+Phase 1: Requirements Gathering Gate
+├── Requirements Gatherer (interactive 5W2H dialogue)
+└── 7 Requirements Evaluators approve (≥8.0/10.0)
+    ↓
+Phase 2: Design Gate
 ├── Designer creates design document
-└── 7 Design Evaluators approve (≥7.0/10.0)
+└── 7 Design Evaluators approve (≥8.0/10.0)
     ↓
-Phase 2: Planning Gate
+Phase 3: Planning Gate
 ├── Planner creates task plan
-└── 7 Planner Evaluators approve (≥7.0/10.0)
+└── 7 Planner Evaluators approve (≥8.0/10.0)
     ↓
-Phase 2.5: Implementation
+Phase 4: Implementation
 ├── Database Worker
 ├── Backend Worker
 ├── Frontend Worker
-└── Test Worker
+├── Test Worker
+└── Quality Gate Evaluator (Score 10.0 = PASS: lint + tests)
     ↓
-Phase 3: Code Review Gate
-├── 7 Code Evaluators approve (≥7.0/10.0)
+Phase 5: Code Review Gate
+├── 7 Code Evaluators approve (≥8.0/10.0)
 └── UI Verification (if frontend changed)
     ↓
-Phase 4: Deployment Gate (Optional)
-└── 5 Deployment Evaluators approve (≥7.0/10.0)
+Phase 6: Documentation Update
+├── Documentation Worker updates permanent docs
+└── 5 Documentation Evaluators approve (≥8.0/10.0)
+    ↓
+Phase 7: Deployment Gate (Optional)
+└── 5 Deployment Evaluators approve (≥8.0/10.0)
 ```
 
 ### Critical Rules
@@ -68,7 +79,9 @@ Phase 4: Deployment Gate (Optional)
 1. **NEVER skip phases**
 2. **ALWAYS launch evaluators in parallel**
 3. **WAIT for ALL evaluators to approve before proceeding**
-4. **Minimum passing score: 7.0/10.0**
+4. **Pass criteria:**
+   - Phases 1, 2, 3, 5, 6, 7: ≥8.0/10.0
+   - Phase 4 Quality Gate: 10.0/10.0 (zero errors, zero warnings, all tests passing)
 
 ---
 
@@ -98,7 +111,16 @@ await bash('.claude/scripts/update-edaf-phase.sh "Phase 2" "Starting planning"')
 
 ## Evaluator Reference
 
-### Phase 1: Design Evaluators (7)
+### Phase 1: Requirements Evaluators (7)
+- requirements-clarity-evaluator
+- requirements-completeness-evaluator
+- requirements-feasibility-evaluator
+- requirements-goal-alignment-evaluator
+- requirements-scope-evaluator
+- requirements-testability-evaluator
+- requirements-user-value-evaluator
+
+### Phase 2: Design Evaluators (7)
 - design-consistency-evaluator
 - design-extensibility-evaluator
 - design-goal-alignment-evaluator
@@ -107,7 +129,7 @@ await bash('.claude/scripts/update-edaf-phase.sh "Phase 2" "Starting planning"')
 - design-reliability-evaluator
 - design-reusability-evaluator
 
-### Phase 2: Planner Evaluators (7)
+### Phase 3: Planner Evaluators (7)
 - planner-clarity-evaluator
 - planner-deliverable-structure-evaluator
 - planner-dependency-evaluator
@@ -116,7 +138,10 @@ await bash('.claude/scripts/update-edaf-phase.sh "Phase 2" "Starting planning"')
 - planner-responsibility-alignment-evaluator
 - planner-reusability-evaluator
 
-### Phase 3: Code Evaluators (7)
+### Phase 4: Quality Gate Evaluator (1)
+- quality-gate-evaluator (checks both lint and tests, requires 10.0/10.0)
+
+### Phase 5: Code Evaluators (7)
 - code-quality-evaluator-v1-self-adapting
 - code-testing-evaluator-v1-self-adapting
 - code-security-evaluator-v1-self-adapting
@@ -125,7 +150,14 @@ await bash('.claude/scripts/update-edaf-phase.sh "Phase 2" "Starting planning"')
 - code-performance-evaluator-v1-self-adapting
 - code-implementation-alignment-evaluator-v1-self-adapting
 
-### Phase 4: Deployment Evaluators (5)
+### Phase 6: Documentation Evaluators (5)
+- documentation-completeness-evaluator
+- documentation-accuracy-evaluator
+- documentation-consistency-evaluator
+- documentation-clarity-evaluator
+- documentation-currency-evaluator
+
+### Phase 7: Deployment Evaluators (5)
 - deployment-readiness-evaluator
 - production-security-evaluator
 - observability-evaluator

@@ -15,6 +15,15 @@
 # CORE AGENTS
 # =============================================================================
 
+requirements-gatherer:
+  model: opus
+  reason: "Interactive requirements gathering requires deep understanding and questioning ability"
+  tasks:
+    - 5W2H dialogue facilitation
+    - Requirements clarification
+    - User story formulation
+    - Scope definition
+
 designer:
   model: opus
   reason: "Critical architectural decisions require highest reasoning capability"
@@ -34,7 +43,7 @@ planner:
     - Timeline planning
 
 # =============================================================================
-# WORKER AGENTS (Phase 2.5)
+# WORKER AGENTS (Phase 4: Implementation)
 # =============================================================================
 
 workers:
@@ -74,12 +83,98 @@ workers:
       - E2E tests
       - Test fixtures
 
+  documentation-worker:
+    model: sonnet
+    reason: "Documentation requires understanding implementation context"
+    tasks:
+      - Update product requirements
+      - Update functional design
+      - Update development guidelines
+      - Sync repository structure docs
+
+  ui-verification-worker:
+    model: sonnet
+    reason: "UI verification requires understanding user interactions"
+    tasks:
+      - Browser automation via MCP
+      - Screenshot capture
+      - Interactive element testing
+      - Console error detection
+
 # =============================================================================
-# PHASE 1: DESIGN EVALUATORS
+# PHASE 1: REQUIREMENTS EVALUATORS
 # =============================================================================
 
 evaluators:
   phase1:
+    requirements-clarity-evaluator:
+      model: haiku
+      reason: "Text clarity checking is straightforward pattern matching"
+      complexity: low
+      tasks:
+        - Vague term detection
+        - Ambiguity identification
+        - Specificity validation
+
+    requirements-completeness-evaluator:
+      model: haiku
+      reason: "Section presence is a simple checklist"
+      complexity: low
+      tasks:
+        - Required sections check
+        - Mandatory fields validation
+        - Template compliance
+
+    requirements-feasibility-evaluator:
+      model: sonnet
+      reason: "Technical and business feasibility requires analysis"
+      complexity: medium
+      tasks:
+        - Technical feasibility assessment
+        - Resource availability check
+        - Timeline reasonability
+
+    requirements-goal-alignment-evaluator:
+      model: sonnet
+      reason: "Goal-to-requirement mapping requires understanding both"
+      complexity: medium
+      tasks:
+        - Goal coverage verification
+        - Feature-goal traceability
+        - Priority alignment
+
+    requirements-scope-evaluator:
+      model: sonnet
+      reason: "Scope appropriateness requires experience-based judgment"
+      complexity: medium
+      tasks:
+        - MVP size validation (3-5 features ideal)
+        - Feature priority assessment
+        - Out-of-scope clarity
+
+    requirements-testability-evaluator:
+      model: haiku
+      reason: "Observable criteria checking is pattern-based"
+      complexity: low
+      tasks:
+        - Measurable criteria presence
+        - Observable behavior definition
+        - Acceptance criteria validation
+
+    requirements-user-value-evaluator:
+      model: sonnet
+      reason: "Value proposition assessment requires business understanding"
+      complexity: medium
+      tasks:
+        - User value clarity
+        - Business justification
+        - ROI consideration
+
+  # ===========================================================================
+  # PHASE 2: DESIGN EVALUATORS
+  # ===========================================================================
+
+  phase2:
     design-consistency-evaluator:
       model: haiku
       reason: "Pattern matching for naming conventions - fast check"
@@ -144,10 +239,10 @@ evaluators:
         - DRY principle check
 
   # ===========================================================================
-  # PHASE 2: PLANNING EVALUATORS
+  # PHASE 3: PLANNING EVALUATORS
   # ===========================================================================
 
-  phase2:
+  phase3:
     planner-clarity-evaluator:
       model: haiku
       reason: "Text clarity is a straightforward check"
@@ -212,10 +307,25 @@ evaluators:
         - Shared logic identification
 
   # ===========================================================================
-  # PHASE 3: CODE EVALUATORS
+  # PHASE 4: QUALITY GATE EVALUATOR
   # ===========================================================================
 
-  phase3:
+  phase4:
+    quality-gate-evaluator:
+      model: sonnet
+      reason: "Lint and test execution requires understanding tool output"
+      complexity: medium
+      tasks:
+        - Lint tool execution and analysis
+        - Test framework execution
+        - Binary pass/fail determination (10.0 or < 10.0)
+        - Worker feedback generation
+
+  # ===========================================================================
+  # PHASE 5: CODE EVALUATORS
+  # ===========================================================================
+
+  phase5:
     code-quality-evaluator-v1-self-adapting:
       model: sonnet
       reason: "Code pattern analysis requires understanding context"
@@ -284,10 +394,60 @@ evaluators:
         - Behavior verification
 
   # ===========================================================================
-  # PHASE 4: DEPLOYMENT EVALUATORS
+  # PHASE 6: DOCUMENTATION EVALUATORS
   # ===========================================================================
 
-  phase4:
+  phase6:
+    documentation-completeness-evaluator:
+      model: haiku
+      reason: "Section presence checking is straightforward"
+      complexity: low
+      tasks:
+        - Required sections validation
+        - File presence verification
+        - Coverage assessment
+
+    documentation-accuracy-evaluator:
+      model: sonnet
+      reason: "Code-to-docs comparison requires understanding both"
+      complexity: medium
+      tasks:
+        - Implementation alignment check
+        - API signature verification
+        - Example code validation
+
+    documentation-consistency-evaluator:
+      model: haiku
+      reason: "Terminology and formatting consistency is pattern-based"
+      complexity: low
+      tasks:
+        - Terminology consistency
+        - Formatting uniformity
+        - Cross-reference validation
+
+    documentation-clarity-evaluator:
+      model: haiku
+      reason: "Readability checking is straightforward"
+      complexity: low
+      tasks:
+        - Language clarity
+        - Structure coherence
+        - Example quality
+
+    documentation-currency-evaluator:
+      model: haiku
+      reason: "Freshness checking is timestamp-based"
+      complexity: low
+      tasks:
+        - Last updated verification
+        - Obsolete content detection
+        - Version alignment
+
+  # ===========================================================================
+  # PHASE 7: DEPLOYMENT EVALUATORS
+  # ===========================================================================
+
+  phase7:
     deployment-readiness-evaluator:
       model: haiku
       reason: "CI/CD checklist verification"
@@ -340,23 +500,31 @@ evaluators:
 # MODEL USAGE SUMMARY
 # =============================================================================
 #
-# Opus (3 agents - for critical decisions):
+# Total: 48 components (9 agents + 39 evaluators)
+#
+# Opus (4 agents - for critical decisions):
+#   - requirements-gatherer (requirements dialogue)
 #   - designer (architecture)
 #   - code-security-evaluator (security vulnerabilities)
 #   - production-security-evaluator (production security)
 #
-# Sonnet (15 agents - for standard analysis):
+# Sonnet (23 agents - for standard analysis):
 #   - planner
-#   - All 4 workers
+#   - All 6 workers (database, backend, frontend, test, documentation, ui-verification)
+#   - 4 requirements evaluators (feasibility, goal-alignment, scope, user-value)
 #   - 4 design evaluators (extensibility, goal-alignment, maintainability, reliability)
 #   - 2 planner evaluators (dependency, goal-alignment)
+#   - 1 quality-gate evaluator
 #   - 5 code evaluators (quality, testing, maintainability, performance, implementation)
+#   - 1 documentation evaluator (accuracy)
 #   - 1 deployment evaluator (performance-benchmark)
 #
-# Haiku (16 agents - for fast validation):
+# Haiku (21 agents - for fast validation):
+#   - 3 requirements evaluators (clarity, completeness, testability)
 #   - 3 design evaluators (consistency, observability, reusability)
 #   - 5 planner evaluators (clarity, deliverable, granularity, responsibility, reusability)
 #   - 1 code evaluator (documentation)
+#   - 4 documentation evaluators (completeness, consistency, clarity, currency)
 #   - 3 deployment evaluators (readiness, observability, rollback)
 #
 # =============================================================================

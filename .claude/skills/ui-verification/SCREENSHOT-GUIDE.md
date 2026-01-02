@@ -7,9 +7,9 @@
 ## Directory Structure
 
 ```
-docs/
-└── screenshots/
-    └── {feature-name}/
+.steering/
+└── {YYYY-MM-DD}-{feature-name}/
+    └── screenshots/
         ├── 00-login-page.png
         ├── 01-login-page-filled.png
         ├── 02-login-success.png
@@ -57,9 +57,9 @@ Use the same slug as design documents:
 
 | Feature | Slug | Directory |
 |---------|------|-----------|
-| User Authentication | `user-authentication` | `docs/screenshots/user-authentication/` |
-| Task Management | `task-management` | `docs/screenshots/task-management/` |
-| Payment Integration | `payment-integration` | `docs/screenshots/payment-integration/` |
+| User Authentication | `user-authentication` | `.steering/{YYYY-MM-DD}-user-authentication/screenshots/` |
+| Task Management | `task-management` | `.steering/{YYYY-MM-DD}-task-management/screenshots/` |
+| Payment Integration | `payment-integration` | `.steering/{YYYY-MM-DD}-payment-integration/screenshots/` |
 
 ---
 
@@ -123,7 +123,7 @@ For comprehensive verification:
 
 ### Relative Paths
 
-From `docs/reports/phase3-ui-verification-{feature}.md`:
+From `.steering/{YYYY-MM-DD}-{feature}/reports/phase4-ui-verification.md`:
 
 ```markdown
 ![Screenshot](../screenshots/{feature-name}/{screenshot-name}.png)
@@ -144,7 +144,7 @@ Include this at the end of verification reports:
 ```markdown
 ## Screenshot Index
 
-All screenshots saved to: `docs/screenshots/{feature-name}/`
+All screenshots saved to: `.steering/{YYYY-MM-DD}-{feature-name}/screenshots/`
 
 | # | Filename | Description |
 |---|----------|-------------|
@@ -172,13 +172,13 @@ After feature is merged and deployed:
 
 ```bash
 # Option 1: Keep for reference (recommended)
-# Screenshots remain in docs/screenshots/
+# Screenshots remain in .steering/{YYYY-MM-DD}-{feature}/screenshots/
 
 # Option 2: Archive to separate location
-mv docs/screenshots/{feature-name} archive/screenshots/
+mv .steering/{YYYY-MM-DD}-{feature-name}/screenshots archive/screenshots/
 
 # Option 3: Remove (if space is concern)
-rm -rf docs/screenshots/{feature-name}
+rm -rf .steering/{YYYY-MM-DD}-{feature-name}/screenshots
 ```
 
 ---
@@ -198,8 +198,8 @@ if [ -z "$FEATURE_NAME" ]; then
   exit 1
 fi
 
-mkdir -p "docs/screenshots/${FEATURE_NAME}"
-echo "✅ Created: docs/screenshots/${FEATURE_NAME}/"
+mkdir -p ".steering/${SESSION_DATE}-${FEATURE_NAME}/screenshots"
+echo "✅ Created: .steering/${SESSION_DATE}-${FEATURE_NAME}/screenshots/"
 ```
 
 ---

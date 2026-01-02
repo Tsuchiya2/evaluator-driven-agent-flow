@@ -11,11 +11,13 @@
 | Score | Rating | Action |
 |-------|--------|--------|
 | 9.0 - 10.0 | Excellent | Pass immediately |
-| 7.0 - 8.9 | Good | Pass |
-| 5.0 - 6.9 | Needs Work | Fail - requires revision |
+| 8.0 - 8.9 | Good | Pass |
+| 5.0 - 7.9 | Needs Work | Fail - requires revision |
 | 0.0 - 4.9 | Poor | Fail - major issues |
 
-**Minimum pass score: 7.0/10.0**
+**Pass criteria:**
+- Phases 1, 2, 3, 5, 6, 7: ≥8.0/10.0
+- Phase 4 Quality Gate: 10.0/10.0 (zero lint errors/warnings + all tests passing)
 
 ---
 
@@ -43,7 +45,7 @@ const runGate = async (
 
   // 3. Calculate results
   const scores = results.map(r => parseScore(r.output))
-  const passed = scores.filter(s => s >= 7.0).length
+  const passed = scores.filter(s => s >= 8.0).length
   const total = scores.length
   const allPassed = passed === total
 
@@ -95,7 +97,7 @@ Address all issues raised by evaluators.`
 
     // 3. Collect new feedback for next attempt
     feedback = gateResult.results
-      .filter(r => parseScore(r.output) < 7.0)
+      .filter(r => parseScore(r.output) < 8.0)
       .map(r => r.recommendations)
       .join('\n')
   }
@@ -133,8 +135,8 @@ const runEvaluatorsParallel = async (evaluators: string[], prompt: string) => {
 ```typescript
 // Handle case where some evaluators pass and some fail
 const handlePartialFailure = (results: EvaluatorResult[]) => {
-  const passed = results.filter(r => r.score >= 7.0)
-  const failed = results.filter(r => r.score < 7.0)
+  const passed = results.filter(r => r.score >= 8.0)
+  const failed = results.filter(r => r.score < 8.0)
 
   console.log(`✅ Passed: ${passed.length}`)
   for (const p of passed) {
@@ -161,26 +163,26 @@ const handlePartialFailure = (results: EvaluatorResult[]) => {
 
 ```bash
 # Starting phase
-bash .claude/scripts/update-edaf-phase.sh "Phase 1: Design" "Starting"
+bash .claude/scripts/update-edaf-phase.sh "Phase 1: Requirements" "Starting"
 
 # Running evaluators
-bash .claude/scripts/update-edaf-phase.sh "Phase 1: Design" "Running 7 evaluators"
+bash .claude/scripts/update-edaf-phase.sh "Phase 1: Requirements" "Running 7 evaluators"
 
 # Partial progress
-bash .claude/scripts/update-edaf-phase.sh "Phase 1: Design" "5/7 evaluators passed"
+bash .claude/scripts/update-edaf-phase.sh "Phase 1: Requirements" "5/7 evaluators passed"
 
 # Revision cycle
-bash .claude/scripts/update-edaf-phase.sh "Phase 1: Design" "Revising (attempt 2/3)"
+bash .claude/scripts/update-edaf-phase.sh "Phase 1: Requirements" "Revising (attempt 2/3)"
 
 # Complete
-bash .claude/scripts/update-edaf-phase.sh "Phase 1: Design" "Complete"
+bash .claude/scripts/update-edaf-phase.sh "Phase 1: Requirements" "Complete"
 ```
 
 ### Status File Format
 
 `.claude/.edaf-phase`:
 ```
-EDAF Phase 1: Design | 5/7 evaluators passed
+EDAF Phase 1: Requirements | 5/7 evaluators passed
 ```
 
 ---

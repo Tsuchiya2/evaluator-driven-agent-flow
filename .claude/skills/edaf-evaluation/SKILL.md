@@ -14,7 +14,9 @@ Use this skill when:
 
 ## Capabilities
 
-1. **Scoring Framework**: Consistent 10-point scale (0.0-10.0) with pass threshold of 7.0
+1. **Scoring Framework**: Consistent 10-point scale (0.0-10.0) with pass thresholds:
+   - Phases 1, 2, 3, 5, 6, 7: ≥8.0/10.0
+   - Phase 4 Quality Gate: 10.0/10.0 (zero tolerance for lint errors/warnings + all tests passing)
 2. **Evaluation Patterns**: Reusable criteria for different evaluation types
 3. **Report Generation**: Standardized markdown report templates
 4. **Issue Classification**: Categorization by severity (Critical, High, Medium, Low)

@@ -10,18 +10,21 @@ A framework-agnostic system for AI-powered code generation with automatic qualit
 
 ## 🎯 What is EDAF?
 
-EDAF is a complete **4-Phase Software Development Framework** that:
+EDAF is a complete **7-Phase Software Development Framework** that:
 
-1. **Phase 1**: Creates and evaluates design documents (1 Designer + 7 Evaluators)
-2. **Phase 2**: Plans implementation tasks (1 Planner + 7 Evaluators)
-3. **Phase 2.5**: Generates code using 5 specialized Worker Agents
-4. **Phase 3**: Reviews code quality (7 Code Evaluators) + **UI/UX verification via MCP chrome-devtools**
-5. **Phase 4**: Validates deployment readiness (5 Deployment Evaluators)
-6. **Works with ANY language/framework** through self-adaptation
-7. **🌐 Supports English & Japanese** with flexible language preferences
-8. **🔍 Automatic visual verification** for frontend changes using browser automation
+1. **Phase 1**: Gathers and evaluates requirements (1 Requirements Gatherer + 7 Evaluators)
+2. **Phase 2**: Creates and evaluates design documents (1 Designer + 7 Evaluators)
+3. **Phase 3**: Plans implementation tasks (1 Planner + 7 Evaluators)
+4. **Phase 4**: Generates code using 4 specialized Worker Agents + Quality Gate (lint + tests)
+5. **Phase 5**: Reviews code quality (7 Code Evaluators) + **UI/UX verification via Claude in Chrome**
+6. **Phase 6**: Updates permanent documentation (1 Documentation Worker + 5 Evaluators)
+7. **Phase 7**: Validates deployment readiness (5 Deployment Evaluators)
+8. **Works with ANY language/framework** through self-adaptation
+9. **🌐 Supports English & Japanese** with flexible language preferences
+10. **🔍 Automatic visual verification** for frontend changes using browser automation
+11. **📚 Permanent documentation** automatically maintained in sync with code
 
-**Total:** 7 Agents + 26 Evaluators = 33 components for complete development automation
+**Total:** 9 Agents + 39 Evaluators = 48 components for complete development automation
 
 ---
 
@@ -29,25 +32,34 @@ EDAF is a complete **4-Phase Software Development Framework** that:
 
 ```mermaid
 graph LR
-    Start([💡 User Request]) --> Phase1[📐 Phase 1<br/>Design]
-    Phase1 --> Phase2[📋 Phase 2<br/>Planning]
-    Phase2 --> Phase3[⚙️ Phase 3<br/>Implementation]
-    Phase3 --> Phase4[✅ Phase 4<br/>Deployment]
-    Phase4 --> End([🚀 Production])
+    Start([💡 User Request]) --> Phase1[💬 Phase 1<br/>Requirements]
+    Phase1 --> Phase2[📐 Phase 2<br/>Design]
+    Phase2 --> Phase3[📋 Phase 3<br/>Planning]
+    Phase3 --> Phase4[⚙️ Phase 4<br/>Implementation]
+    Phase4 --> Phase5[📊 Phase 5<br/>Code Review]
+    Phase5 --> Phase6[📚 Phase 6<br/>Documentation]
+    Phase6 --> Phase7[✅ Phase 7<br/>Deployment]
+    Phase7 --> End([🚀 Production])
 
     style Start fill:#e3f2fd,stroke:#1976d2,stroke-width:2px
-    style Phase1 fill:#fff3e0,stroke:#f57c00,stroke-width:3px
-    style Phase2 fill:#f3e5f5,stroke:#7b1fa2,stroke-width:3px
-    style Phase3 fill:#e8f5e9,stroke:#388e3c,stroke-width:3px
-    style Phase4 fill:#fce4ec,stroke:#c2185b,stroke-width:3px
+    style Phase1 fill:#e0f2f1,stroke:#00897b,stroke-width:3px
+    style Phase2 fill:#fff3e0,stroke:#f57c00,stroke-width:3px
+    style Phase3 fill:#f3e5f5,stroke:#7b1fa2,stroke-width:3px
+    style Phase4 fill:#e8f5e9,stroke:#388e3c,stroke-width:3px
+    style Phase5 fill:#fce4ec,stroke:#c2185b,stroke-width:3px
+    style Phase6 fill:#fff9c4,stroke:#f9a825,stroke-width:3px
+    style Phase7 fill:#e1bee7,stroke:#6a1b9a,stroke-width:3px
     style End fill:#c8e6c9,stroke:#2e7d32,stroke-width:2px
 ```
 
 **Each phase includes:**
-- **Phase 1**: Designer Agent + 7 Design Evaluators
-- **Phase 2**: Planner Agent + 7 Planning Evaluators
-- **Phase 3**: 5 Workers + 7 Code Evaluators + UI/UX Verification
-- **Phase 4**: 5 Deployment Evaluators
+- **Phase 1**: Requirements Gatherer Agent + 7 Requirements Evaluators
+- **Phase 2**: Designer Agent + 7 Design Evaluators
+- **Phase 3**: Planner Agent + 7 Planning Evaluators
+- **Phase 4**: 4 Workers + 1 Quality Gate Evaluator (lint + tests)
+- **Phase 5**: 7 Code Evaluators + UI/UX Verification
+- **Phase 6**: Documentation Worker + 5 Documentation Evaluators
+- **Phase 7**: 5 Deployment Evaluators
 
 ---
 
@@ -67,25 +79,36 @@ graph LR
 
 ## 🏗️ EDAF Architecture
 
-### Phase 1: Design Gate
+### Phase 1: Requirements Gathering Gate
+- **1 Requirements Gatherer Agent** - Interactive dialogue using 5W2H framework to clarify requirements
+- **7 Requirements Evaluators** - Evaluate clarity, completeness, feasibility, goal-alignment, scope, testability, and user-value
+
+### Phase 2: Design Gate
 - **1 Designer Agent** - Creates comprehensive design documents
 - **7 Design Evaluators** - Evaluate consistency, extensibility, goal-alignment, maintainability, observability, reliability, and reusability
 
-### Phase 2: Planning Gate
+### Phase 3: Planning Gate
 - **1 Planner Agent** - Breaks down design into actionable tasks
 - **7 Planning Evaluators** - Evaluate clarity, deliverable structure, dependencies, goal-alignment, granularity, responsibility alignment, and reusability
 
-### Phase 3: Implementation & Code Review
-- **5 Worker Agents** (Self-Adapting)
+### Phase 4: Implementation
+- **4 Worker Agents** (Self-Adapting)
   - Database Worker - Any ORM (Sequelize, TypeORM, Prisma, Django ORM, SQLAlchemy, etc.)
   - Backend Worker - Any framework (Express, FastAPI, Spring Boot, Django, Flask, etc.)
   - Frontend Worker - Any frontend (React, Vue, Angular, Svelte, Solid, etc.)
   - Test Worker - Any testing framework (Jest, pytest, JUnit, Go test, RSpec, etc.)
-  - UI Verification Worker - Automatic visual verification via MCP chrome-devtools
 
+- **1 Quality Gate Evaluator** - Ultra-strict quality gate (zero lint errors/warnings + all tests passing)
+
+### Phase 5: Code Review Gate
 - **7 Code Evaluators** - Evaluate quality, testing, security, documentation, maintainability, performance, and implementation alignment
+- **UI Verification Worker** - Automatic visual verification via Claude in Chrome (if frontend changed)
 
-### Phase 4: Deployment Gate
+### Phase 6: Documentation Update
+- **Documentation Worker** - Updates permanent documentation in `docs/` based on implementation
+- **5 Documentation Evaluators** - Evaluate completeness, accuracy, consistency, clarity, and currency
+
+### Phase 7: Deployment Gate
 - **5 Deployment Evaluators** - Evaluate deployment readiness, production security, observability, performance benchmarks, and rollback procedures
 
 **→ For detailed specifications, see `.claude/agents/` (including subdirectories for workers and evaluators)**
@@ -108,9 +131,9 @@ graph LR
 | **macOS** | ✅ Full | ✅ Automatic |
 | **Windows** | ✅ Full | ✅ Automatic |
 | **Linux** | ✅ Full | ✅ Automatic |
-| **WSL2** | ⚠️ Limited | ❌ Skipped |
+| **WSL2** | ✅ Full | ✅ Automatic |
 
-> **WSL2 Note:** MCP chrome-devtools cannot access Windows Chrome from WSL2. UI verification is automatically skipped, and manual verification is recommended.
+> **WSL2 Note:** Claude in Chrome works on all platforms including WSL2! No special setup required.
 
 ### Installation (6 steps!)
 
@@ -144,9 +167,9 @@ rm -rf evaluator-driven-agent-flow
 That's it! The installation script will:
 - ✅ Install 2 Core Agents to `.claude/agents/`
 - ✅ Install 5 Worker Agents to `.claude/agents/workers/`
-- ✅ Install 26 Evaluators to `.claude/agents/evaluators/` (organized by phase)
+- ✅ Install 31 Evaluators to `.claude/agents/evaluators/` (organized by phase)
 - ✅ Install `/setup` command to `.claude/commands/`
-- ✅ Configure MCP chrome-devtools (auto-detects npx/bunx path)
+- ✅ No MCP setup required - uses Claude in Chrome extension
 - ✅ Copy configuration template (optional)
 - ✅ Copy documentation (optional)
 
@@ -159,7 +182,7 @@ The interactive setup wizard will guide you through:
 1. **Language Preferences 🌐** - Choose documentation and output language (EN/JA)
 2. **Docker Detection 🐳** - Automatically detects and configures Docker environments
 3. **Sound Notifications 🔔** - Configure task completion alerts
-4. **MCP chrome-devtools 🌐** - Set up UI/UX verification ([Guide](docs/UI-VERIFICATION-GUIDE.md))
+4. **Claude in Chrome 🌐** - Install extension for UI/UX verification ([Guide](.claude/skills/ui-verification/USER-GUIDE.md))
 5. **Auto-Detection** - Detects your language, framework, ORM, and tools
 6. **Component Testing** - Verifies workers and evaluators are ready
 
@@ -173,25 +196,27 @@ The interactive setup wizard will guide you through:
 
 After running `/setup`, you can use EDAF in two ways:
 
-### Method 1: Full 4-Phase Gate System (Recommended)
+### Method 1: Full 7-Phase Gate System (Recommended)
 
-Use this when you want complete quality assurance with design, planning, implementation, and review:
+Use this when you want complete quality assurance with requirements gathering, design, planning, implementation, review, documentation, and deployment readiness:
 
 ```bash
 # Inside Claude Code
-"エージェントフローに沿ってユーザー認証機能を実装してください"
+"Use EDAF workflow to implement user authentication feature"
 # or
-"Implement user authentication feature using EDAF"
+"エージェントフローを使ってユーザー認証機能を実装してください"
 ```
 
 **What happens:**
-1. **Phase 1**: Designer creates design document → 7 design evaluators review it
-2. **Phase 2**: Planner creates task breakdown → 7 planner evaluators review it
-3. **Phase 2.5**: Workers implement code (database, backend, frontend, tests)
-4. **Phase 3**: 7 code evaluators review implementation + **UI/UX verification via chrome-devtools (if frontend changed)**
-5. **Phase 4** (optional): 5 deployment evaluators check production readiness
+1. **Phase 1**: Requirements gatherer collects requirements → 7 requirements evaluators review them
+2. **Phase 2**: Designer creates design document → 7 design evaluators review it
+3. **Phase 3**: Planner creates task breakdown → 7 planner evaluators review it
+4. **Phase 4**: Workers implement code (database, backend, frontend, tests) → Quality gate evaluator (lint + tests)
+5. **Phase 5**: 7 code evaluators review implementation + **UI/UX verification via Claude in Chrome (if frontend changed)**
+6. **Phase 6**: Documentation worker updates permanent docs in `docs/` → 5 documentation evaluators review
+7. **Phase 7** (optional): 5 deployment evaluators check production readiness
 
-**Result:** High-quality, well-designed, thoroughly tested code with visual verification and automatic notifications at each phase.
+**Result:** High-quality, well-designed, thoroughly tested code with synchronized documentation, visual verification, and automatic notifications at each phase.
 
 ### Method 2: Workers Only (Quick Implementation)
 
@@ -305,8 +330,8 @@ Each agent uses an optimal model based on task criticality:
 | Model | Agents (Count) | Use Case |
 |-------|----------------|----------|
 | `opus` | Designer, Security Evaluators (3) | Critical decisions, security analysis |
-| `sonnet` | Planner, Workers, Most Evaluators (15) | Standard code generation and analysis |
-| `haiku` | Simple Evaluators (16) | Pattern matching, checklist verification |
+| `sonnet` | Planner, Workers, Most Evaluators (17) | Standard code generation and analysis |
+| `haiku` | Simple Evaluators (19) | Pattern matching, checklist verification |
 
 **Critical agents using Opus:**
 - **Designer**: Architectural decisions affect entire system
@@ -314,18 +339,6 @@ Each agent uses an optimal model based on task criticality:
 - **production-security-evaluator**: Production security is non-negotiable
 
 See `.claude/agent-models.yml` for full configuration.
-
-### Status Line Integration
-
-Monitor EDAF progress in Claude Code's status line:
-
-```bash
-# Update phase status
-bash .claude/scripts/update-edaf-phase.sh "Phase 3: Code Review" "5/7 evaluators"
-
-# View current status
-bash .claude/scripts/edaf-status.sh
-```
 
 ### Evaluation Skills
 
@@ -341,9 +354,8 @@ EDAF uses Claude Code hooks for automation:
 
 | Hook | Trigger | Action |
 |------|---------|--------|
-| `SubagentStop` | Evaluator/Worker completes | Play notification, log completion |
-| `SessionStart` | Session begins | Log session start |
-| `Notification` | User input needed | Play alert sound |
+| `PermissionRequest` | User input needed | Play alert sound |
+| `Stop` | Task completed | Play completion sound |
 
 ### Sandbox Mode
 
@@ -380,12 +392,15 @@ EDAF evaluates 7 key aspects of your code: **Quality**, **Testing**, **Security*
   - `frontend-worker-v1-self-adapting.md`
   - `test-worker-v1-self-adapting.md`
   - `ui-verification-worker.md`
+  - `documentation-worker.md`
 
 - **Evaluators**: `.claude/agents/evaluators/`
   - `phase1-design/` - 7 Design Evaluators
   - `phase2-planner/` - 7 Planner Evaluators
-  - `phase3-code/` - 7 Code Evaluators
-  - `phase4-deployment/` - 5 Deployment Evaluators
+  - `phase3-lint/` - 1 Lint Evaluator
+  - `phase4-code/` - 7 Code Evaluators
+  - `phase5-documentation/` - 5 Documentation Evaluators
+  - `phase6-deployment/` - 5 Deployment Evaluators
 
 - **Skills**: `.claude/skills/`
   - `edaf-orchestration/` - Phase workflow patterns (7 files)
@@ -404,7 +419,6 @@ EDAF evaluates 7 key aspects of your code: **Quality**, **Testing**, **Security*
   - `edaf-status.sh` - Status line integration
   - `update-edaf-phase.sh` - Update workflow phase
   - `check-evaluator-score.sh` - Validate evaluator scores
-  - `setup-mcp.sh` - Configure MCP chrome-devtools
   - `verify-ui.sh` - Automated UI verification
   - `add-frontmatter.sh` - Add YAML frontmatter to docs
 
@@ -467,4 +481,4 @@ For issues, questions, or feedback:
 
 **Status**: ✅ Production Ready
 **Maintained**: Yes
-**Last Updated**: 2025-12-21
+**Last Updated**: 2026-01-02
