@@ -133,7 +133,20 @@ fi
 # Ruby
 # ============================================
 
-if file_exists ".rubocop.yml" || file_exists "Gemfile"; then
+if file_exists "Gemfile"; then
+    echo "💎 Found Gemfile - checking Ruby linters..."
+
+    # Check if rubocop is in Gemfile
+    if grep -q 'rubocop' Gemfile 2>/dev/null; then
+        if command_exists bundle; then
+            DETECTED_TOOLS+=("rubocop:bundle exec rubocop")
+            echo "  ✅ RuboCop detected (via Bundler)"
+        elif command_exists rubocop; then
+            DETECTED_TOOLS+=("rubocop:rubocop")
+            echo "  ✅ RuboCop detected"
+        fi
+    fi
+elif file_exists ".rubocop.yml"; then
     if command_exists rubocop; then
         DETECTED_TOOLS+=("rubocop:rubocop")
         echo "  ✅ RuboCop detected"

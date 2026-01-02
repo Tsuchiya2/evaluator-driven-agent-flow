@@ -18,10 +18,6 @@
     "autoAllowBashIfSandboxed": true,
     "excludedCommands": ["git push", "rm -rf", "docker rm"]
   },
-  "statusLine": {
-    "type": "command",
-    "command": "bash \"$PWD/.claude/scripts/edaf-status.sh\""
-  },
   "hooks": {
     "PermissionRequest": [
       {
@@ -45,31 +41,11 @@
     ],
     "SubagentStop": [
       {
-        "matcher": "*evaluator*",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash \"$PWD/.claude/scripts/check-evaluator-score.sh\""
-          }
-        ]
-      },
-      {
         "matcher": "*worker*",
         "hooks": [
           {
             "type": "command",
             "command": "bash \"$PWD/.claude/scripts/notification.sh\" 'Worker completed' WarblerSong"
-          }
-        ]
-      }
-    ],
-    "SessionStart": [
-      {
-        "matcher": "startup",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "echo \"$(date '+%Y-%m-%d %H:%M:%S') EDAF session started\" >> \"$PWD/.claude/.edaf-sessions.log\""
           }
         ]
       }
