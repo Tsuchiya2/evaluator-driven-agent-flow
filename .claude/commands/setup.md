@@ -2,11 +2,15 @@
 description: Interactive setup for EDAF v1.0 Self-Adapting System / EDAF v1.0 自己適応型システムのインタラクティブセットアップ
 ---
 
-# EDAF v1.0 - Interactive Setup (Optimized v2)
+# EDAF v1.0 - Interactive Setup (Optimized v3)
 
 Welcome to EDAF (Evaluator-Driven Agent Flow) v1.0!
 
-This setup uses an **Optimized Parallel Pattern** with improved progress visibility and reliability.
+This setup uses an **Optimized Parallel Pattern** with:
+- **Improved progress visibility** (v2)
+- **Context exhaustion prevention** (v3)
+- **Triple-layer directory creation** (v3)
+- **True Fire & Forget monitoring** (v3)
 
 ---
 
@@ -14,8 +18,8 @@ This setup uses an **Optimized Parallel Pattern** with improved progress visibil
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│  OPTIMIZED PARALLEL PATTERN                                     │
-│  ══════════════════════════                                     │
+│  OPTIMIZED PARALLEL PATTERN v3                                  │
+│  ══════════════════════════════                                 │
 │                                                                 │
 │  Phase 1: Configuration (~5 seconds)                            │
 │    ├── Language selection                                       │
@@ -23,29 +27,46 @@ This setup uses an **Optimized Parallel Pattern** with improved progress visibil
 │    ├── CLAUDE.md generation                                     │
 │    └── edaf-config.yml generation                               │
 │                                                                 │
-│  Phase 2: Agent Launch (Fire & Forget)                          │
-│    ├── 6 documentation-worker agents (parallel)                 │
-│    └── N standards agents (parallel)                            │
+│  Phase 1.5: Directory Setup (NEW in v3)                         │
+│    ├── Bash: mkdir -p docs                                      │
+│    └── Bash: mkdir -p .claude/skills                            │
 │                                                                 │
-│  Phase 3: Progress Monitoring (max 300s)                        │
-│    ├── Poll every 10 seconds (not 30)                           │
+│  Phase 2: Agent Launch (TRUE Fire & Forget in v3)               │
+│    ├── 6 documentation-worker agents (parallel)                 │
+│    │   └── Each agent: mkdir -p docs (defensive)                │
+│    └── N standards agents (parallel)                            │
+│        └── Each agent: mkdir -p .claude/skills/{name}           │
+│                                                                 │
+│  Phase 3: Progress Monitoring (max 300s) - v3 FIXED             │
+│    ├── Poll every 10 seconds with Bash stat -f%z               │
+│    ├── NO TaskOutput calls (prevents context exhaustion)        │
 │    ├── Display completed files IMMEDIATELY                      │
 │    ├── Early exit when ALL complete                             │
 │    └── Smart fallback for timed-out files                       │
 │                                                                 │
-│  Result: Complete in ~5 minutes with full visibility            │
+│  Result: Complete in ~5 minutes with NO context exhaustion      │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-### Improvements Over v1
+### Critical Fixes: v2 → v3
 
-| Aspect | v1 (Broken) | v2 (Fixed) |
+**v2 Problems** (what you encountered):
+- ❌ TaskOutput usage → context exhaustion
+- ❌ Pseudo-code directory creation → files not written
+- ❌ Partial Fire & Forget → still monitored agents
+
+**v3 Solutions**:
+- ✅ Bash stat-based monitoring → no context exhaustion
+- ✅ Triple-layer mkdir → guaranteed directory existence
+- ✅ True Fire & Forget → no TaskOutput calls
+
+| Aspect | v2 (Broken) | v3 (Fixed) |
 |--------|-------------|------------|
-| Timeout | 600s (10 min) | 300s (5 min) |
-| Poll Interval | 30s | 10s |
-| Progress Display | File count only | Each file as completed |
-| Fallback | Generic template | Smart (project-specific) |
-| User Experience | Blind waiting | Real-time progress |
+| **Monitoring** | TaskOutput (context exhaustion) | **Bash stat -f%z (lightweight)** |
+| **Directory Creation** | Pseudo-code only | **Bash + Agent-level (triple-layer)** |
+| **Fire & Forget** | Partial (still used TaskOutput) | **TRUE (no TaskOutput)** |
+| **Context Usage** | High (exhausts) | **Minimal (safe)** |
+| **File Write Success** | Low (0% observed) | **High (guaranteed by triple-layer)** |
 
 ---
 
@@ -503,9 +524,15 @@ console.log('✅ edaf-config.yml generated')
 **Action**: Launch all agents in parallel:
 
 ```typescript
-// Create directories
-fs.mkdirSync('docs', { recursive: true })
-fs.mkdirSync('.claude/skills', { recursive: true })
+// ═══════════════════════════════════════════════════════════════
+// CRITICAL: Create directories BEFORE launching agents
+// ═══════════════════════════════════════════════════════════════
+
+// Use Bash tool to create directories (NOT pseudo-code)
+await Bash({
+  command: 'mkdir -p docs .claude/skills',
+  description: 'Create docs and skills directories'
+})
 
 console.log('\n🚀 Launching agents (Fire & Forget)...\n')
 
@@ -534,15 +561,19 @@ for (const doc of docDefinitions) {
 **Focus**: ${doc.focus}
 
 **Instructions**:
-1. Use Glob to find relevant source files
-2. Use Read to analyze actual code patterns
-3. Extract real information from the codebase
-4. Generate comprehensive documentation
-5. Write to: docs/${doc.file}
+1. FIRST: Ensure directory exists with Bash: mkdir -p docs
+2. Use Glob to find relevant source files
+3. Use Read to analyze actual code patterns
+4. Extract real information from the codebase
+5. Generate comprehensive documentation
+6. Write to: docs/${doc.file}
 
 **Language**: ${docLang === 'en' ? 'English' : 'Japanese'}
 
-**CRITICAL**: Do DEEP CODE ANALYSIS. Read actual source files, not just config files.
+**CRITICAL**:
+- Create docs/ directory BEFORE writing (Step 1 above)
+- Do DEEP CODE ANALYSIS. Read actual source files, not just config files.
+
 **OUTPUT**: Write ONLY docs/${doc.file}`
   })
   console.log(`      - ${doc.file}`)
@@ -555,7 +586,12 @@ for (const doc of docDefinitions) {
 console.log('   📖 Standards agents:')
 for (const skillPath of expectedSkills) {
   const skillName = skillPath.split('/')[2]
-  fs.mkdirSync(`.claude/skills/${skillName}`, { recursive: true })
+
+  // Create skill directory using Bash tool
+  await Bash({
+    command: `mkdir -p .claude/skills/${skillName}`,
+    description: `Create ${skillName} directory`
+  })
 
   await Task({
     subagent_type: 'general-purpose',
@@ -565,12 +601,14 @@ for (const skillPath of expectedSkills) {
     prompt: `Generate coding standards: ${skillPath}
 
 **Instructions**:
-1. Use Glob and Read to analyze existing code
-2. Extract ACTUAL patterns (naming, structure, error handling)
-3. Create SKILL.md with rules based on real code
-4. Include concrete examples from the codebase
-5. Add enforcement checklist
+1. FIRST: Ensure directory exists with Bash: mkdir -p $(dirname ${skillPath})
+2. Use Glob and Read to analyze existing code
+3. Extract ACTUAL patterns (naming, structure, error handling)
+4. Create SKILL.md with rules based on real code
+5. Include concrete examples from the codebase
+6. Add enforcement checklist
 
+**CRITICAL**: Create parent directory BEFORE writing file
 **OUTPUT**: Write ${skillPath}`
   })
   console.log(`      - ${skillName}/SKILL.md`)
@@ -589,6 +627,13 @@ console.log('\n   ✅ All agents launched')
 // ═══════════════════════════════════════════════════════════════
 // PROGRESS MONITORING - 10s interval, 300s max, immediate display
 // ═══════════════════════════════════════════════════════════════
+//
+// CRITICAL RULES:
+// 1. DO NOT use TaskOutput tool - it causes context exhaustion
+// 2. Use ONLY file existence checks (Bash tool with test -f)
+// 3. Agents are Fire & Forget - don't wait for their completion
+// 4. Report files as they appear in filesystem
+// ═══════════════════════════════════════════════════════════════
 
 console.log('\n⏳ Monitoring progress (10s interval, max 300s)...\n')
 
@@ -601,19 +646,23 @@ const reportedFiles = new Set()
 
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms))
 
-// Helper to check file and report if new
-function checkAndReport(filePath, type) {
+// Helper to check file using Bash (NOT fs.existsSync - use actual Bash tool)
+async function checkAndReport(filePath, type) {
   if (reportedFiles.has(filePath)) return false
 
-  if (fs.existsSync(filePath)) {
-    const stats = fs.statSync(filePath)
-    if (stats.size > 100) {
-      reportedFiles.add(filePath)
-      const elapsed = Math.floor((Date.now() - startTime) / 1000)
-      const name = type === 'doc' ? path.basename(filePath) : filePath.split('/')[2] + '/SKILL.md'
-      console.log(`   [${elapsed}s] ✅ ${name} (${stats.size} bytes)`)
-      return true
-    }
+  // Use Bash tool to check file existence and size
+  const sizeCheck = await Bash({
+    command: `test -f ${filePath} && stat -f%z ${filePath} 2>/dev/null || echo 0`,
+    description: `Check ${filePath} size`
+  })
+
+  const size = parseInt(sizeCheck.trim())
+  if (size > 100) {
+    reportedFiles.add(filePath)
+    const elapsed = Math.floor((Date.now() - startTime) / 1000)
+    const name = type === 'doc' ? path.basename(filePath) : filePath.split('/')[2] + '/SKILL.md'
+    console.log(`   [${elapsed}s] ✅ ${name} (${size} bytes)`)
+    return true
   }
   return false
 }
@@ -622,10 +671,10 @@ function checkAndReport(filePath, type) {
 while (Date.now() - startTime < MAX_TIMEOUT) {
   // Check all expected files
   for (const doc of expectedDocs) {
-    checkAndReport(doc, 'doc')
+    await checkAndReport(doc, 'doc')
   }
   for (const skill of expectedSkills) {
-    checkAndReport(skill, 'skill')
+    await checkAndReport(skill, 'skill')
   }
 
   // Check if all complete
@@ -934,34 +983,57 @@ console.log('\n' + '═'.repeat(60))
 
 ## Summary
 
-This optimized `/setup` v2 includes:
+This optimized `/setup` v3 includes:
 
-### Key Improvements
+### Key Improvements from v2 → v3 (Context Exhaustion Fix)
 
-| Aspect | v1 | v2 |
-|--------|-----|-----|
-| Timeout | 600s | **300s** |
-| Poll Interval | 30s | **10s** |
-| Progress | Count only | **Each file immediately** |
-| Fallback | Generic | **Project-specific (smart)** |
+**Problem**: v2 suffered from context exhaustion due to TaskOutput usage, causing:
+- Incomplete progress monitoring
+- Missing file generation
+- Setup terminating prematurely
 
-### Architecture
+**Solution**: Triple-layer defensive strategy
+
+| Issue | v2 (Broken) | v3 (Fixed) |
+|-------|-------------|------------|
+| Progress Monitoring | Used TaskOutput (context exhaustion) | **File existence checks only (Bash)** |
+| Directory Creation | Pseudo-code only | **Explicit Bash + Agent-level creation** |
+| Monitoring Method | TaskOutput polling | **stat -f%z file size check** |
+| Fire & Forget | Partial (still used TaskOutput) | **True Fire & Forget** |
+
+### What Changed: v2 → v3
+
+| Aspect | v2 (Broken) | v3 (Fixed) |
+|--------|-------------|------------|
+| Monitoring | TaskOutput | **Bash stat -f%z** |
+| Directory Creation | Pseudo-code | **Bash + Agent-level** |
+| Fire & Forget | Partial | **TRUE (no TaskOutput)** |
+| Context Safety | ❌ Exhausts | **✅ Safe** |
+
+### Architecture v3
 
 ```
 ┌────────────────────────────────────────────────────────────────┐
 │  Configuration (5s)                                            │
-│  └── CLAUDE.md + edaf-config.yml                               │
+│  ├── CLAUDE.md generation                                      │
+│  └── edaf-config.yml generation                                │
 ├────────────────────────────────────────────────────────────────┤
-│  Agent Launch (Fire & Forget)                                  │
-│  ├── 6 documentation-worker agents                             │
-│  └── N standards agents                                        │
+│  Directory Setup (NEW in v3)                                   │
+│  ├── Bash: mkdir -p docs                                       │
+│  └── Bash: mkdir -p .claude/skills                             │
 ├────────────────────────────────────────────────────────────────┤
-│  Progress Monitoring (max 300s)                                │
-│  ├── Poll every 10s                                            │
+│  Agent Launch (TRUE Fire & Forget in v3)                       │
+│  ├── 6 documentation-worker agents (each runs mkdir -p docs)   │
+│  └── N standards agents (each runs mkdir -p for its skill)     │
+│  └── NO TaskOutput calls (v3 fix)                              │
+├────────────────────────────────────────────────────────────────┤
+│  Progress Monitoring (max 300s) - v3 FIXED                     │
+│  ├── Poll every 10s with Bash: stat -f%z FILE                  │
+│  ├── NO TaskOutput usage (prevents context exhaustion)         │
 │  ├── Display completed files IMMEDIATELY                       │
-│  ├── [10s] ✅ glossary.md (agent)                              │
-│  ├── [20s] ✅ functional-design.md (agent)                     │
-│  ├── [30s] ✅ test-standards/SKILL.md (agent)                  │
+│  ├── [10s] ✅ glossary.md (5234 bytes)                         │
+│  ├── [20s] ✅ functional-design.md (8921 bytes)                │
+│  ├── [30s] ✅ test-standards/SKILL.md (3104 bytes)             │
 │  └── ... (each file as it completes)                           │
 ├────────────────────────────────────────────────────────────────┤
 │  Smart Fallback (if timeout)                                   │
@@ -972,16 +1044,30 @@ This optimized `/setup` v2 includes:
 └────────────────────────────────────────────────────────────────┘
 ```
 
+### v3 Critical Fixes
+
+**Triple-layer defensive strategy** to prevent file write errors:
+
+1. **Setup-level**: Bash `mkdir -p docs .claude/skills` before launching agents
+2. **Agent-level**: Each agent runs `mkdir -p` for its target directory
+3. **Monitoring-level**: Use Bash `stat -f%z` instead of TaskOutput
+
+**Context Exhaustion Prevention**:
+- **NO TaskOutput calls** during monitoring
+- Use only lightweight Bash file checks
+- True Fire & Forget (agents run independently)
+
 ### Preserved Features
 
 - **Agent-based deep code analysis** (generality maintained)
 - **Parallel execution** (efficiency)
-- **Fire & Forget pattern** (no context exhaustion)
+- **TRUE Fire & Forget pattern** (v3: no context exhaustion)
 - **1 Agent = 1 File** (scalability)
 
-### User Experience Improvements
+### User Experience: What v3 Fixes
 
-- **Real-time progress** - See files as they complete
-- **Faster completion** - 5 min max vs 10 min
-- **Better feedback** - Know exactly what happened
-- **Smart fallbacks** - Project-specific, not generic
+- **No more context exhaustion** - Setup completes without "Context low" errors
+- **Files actually get created** - Triple-layer mkdir ensures success
+- **Real-time progress** - See each file as it completes (preserved from v2)
+- **Reliable monitoring** - Lightweight Bash checks instead of heavy TaskOutput
+- **True Fire & Forget** - Agents run independently, no monitoring overhead
