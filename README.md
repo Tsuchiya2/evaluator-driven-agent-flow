@@ -176,42 +176,30 @@ That's it! The installation script will:
 
 **IMPORTANT**: The `/setup` command configures EDAF in `.claude/CLAUDE.md`. Without this, Claude Code will NOT use the agent flow properly!
 
-#### Optimized Parallel Pattern (v2)
+#### What `/setup` Does (v3)
 
-The `/setup` command uses an **Optimized Parallel Pattern** with real-time progress visibility:
+The `/setup` command runs an **optimized parallel setup** that:
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│  OPTIMIZED PARALLEL PATTERN                                     │
-│  ══════════════════════════                                     │
-│                                                                 │
-│  Phase 1: Configuration (~5 seconds)                            │
-│    └── Language + Docker + CLAUDE.md + edaf-config.yml          │
-│                                                                 │
-│  Phase 2: Agent Launch (Fire & Forget, parallel)                │
-│    ├── 6 documentation-worker agents                            │
-│    └── N standards agents (based on detected language)          │
-│                                                                 │
-│  Phase 3: Progress Monitoring (max 300s)                        │
-│    ├── Poll every 10 seconds                                    │
-│    ├── Display completed files IMMEDIATELY as they finish       │
-│    │   [10s] ✅ glossary.md (5,234 bytes)                       │
-│    │   [25s] ✅ functional-design.md (12,456 bytes)             │
-│    │   [40s] ✅ test-standards/SKILL.md (8,901 bytes)           │
-│    ├── Early exit when ALL complete                             │
-│    └── Smart fallback for timed-out files (project-specific)    │
-│                                                                 │
-│  Result: Complete in ~5 minutes with full visibility            │
-└─────────────────────────────────────────────────────────────────┘
-```
+1. **Interactive Configuration** (~5 seconds)
+   - Select language preference (English/Japanese)
+   - Configure Docker execution (if Docker Compose detected)
+   - Generate `.claude/CLAUDE.md` and `.claude/edaf-config.yml`
 
-| Feature | v1 | v2 (Current) |
-|---------|-----|--------------|
-| **Timeout** | 600s (10 min) | 300s (5 min) |
-| **Poll Interval** | 30s | 10s |
-| **Progress** | File count only | Each file immediately |
-| **Fallback** | Generic template | Smart (project-specific) |
-| **Agent Analysis** | ✅ Deep code analysis | ✅ Deep code analysis |
+2. **Parallel Documentation Generation** (Fire & Forget)
+   - Launch 6 documentation agents (parallel)
+   - Launch N coding standards agents (based on detected language)
+   - Each agent performs deep code analysis
+
+3. **Real-time Progress Monitoring** (max 5 minutes)
+   - See files as they complete: `[10s] ✅ glossary.md (5,234 bytes)`
+   - Smart fallbacks for any timeouts (project-specific, not generic)
+   - Lightweight monitoring (no performance issues)
+
+**Generated Files**:
+- `docs/` - 6 permanent documentation files (product requirements, design, guidelines, structure, architecture, glossary)
+- `.claude/skills/` - Coding standards extracted from your actual codebase
+- `.claude/CLAUDE.md` - EDAF configuration (English or Japanese)
+- `.claude/edaf-config.yml` - Project settings
 
 **Supported languages/frameworks:** TypeScript, JavaScript, Python, Java, Go, Rust, Ruby, PHP, and their popular frameworks.
 
