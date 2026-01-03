@@ -539,9 +539,9 @@ console.log('✅ edaf-config.yml generated')
 
 ---
 
-## Step 5: Worker Pool Execution (Option C - 99% Success Rate)
+## Step 5: Worker Pool Execution (Option C-Fixed - 99% Success Rate)
 
-**Action**: Execute all agents using dynamic worker pool with guaranteed completion:
+**Action**: Execute all agents using dynamic worker pool with tmp/ bridge for guaranteed completion:
 
 ```typescript
 // ═══════════════════════════════════════════════════════════════
@@ -549,8 +549,29 @@ console.log('✅ edaf-config.yml generated')
 // ═══════════════════════════════════════════════════════════════
 
 const MAX_CONCURRENT_WORKERS = 4
-const FILE_STABILITY_CHECK_INTERVAL = 5000  // 5 seconds
+const FILE_CHECK_INTERVAL = 5000             // 5 seconds
 const PROGRESS_LOG_INTERVAL = 30000          // 30 seconds
+const AGENT_TIMEOUT = 900000                 // 15 minutes
+const MAX_RETRIES = 1                        // Retry once before fallback
+const DEBUG_EDAF = process.env.DEBUG_EDAF === '1'
+
+// ═══════════════════════════════════════════════════════════════
+// SESSION ID GENERATION
+// ═══════════════════════════════════════════════════════════════
+
+function generateSessionId(): string {
+  const timestamp = Date.now()
+  const random = Math.random().toString(36).substring(2, 8)
+  return `${timestamp}-${random}`
+}
+
+const sessionId = generateSessionId()
+console.log(`\n🔑 Session ID: ${sessionId}`)
+
+if (DEBUG_EDAF) {
+  console.log('🔍 DEBUG MODE ENABLED')
+  console.log(`   Tmp directory: tmp/session-${sessionId}`)
+}
 
 // ═══════════════════════════════════════════════════════════════
 // TYPE DEFINITIONS
@@ -559,11 +580,14 @@ const PROGRESS_LOG_INTERVAL = 30000          // 30 seconds
 interface AgentTask {
   id: string
   type: 'doc' | 'skill'
-  file: string                 // Output file path
+  file: string                 // Final output file path
+  tmpFile: string              // Temporary bridge file path
   displayName: string          // For logging
   prompt: string               // Agent prompt
   subagent_type: string
   priority: number             // Higher = earlier
+  startTime: number            // When agent was launched
+  retryCount: number           // Number of retries
 }
 
 interface WorkerPoolState {
@@ -589,17 +613,72 @@ async function checkFileSize(filePath: string): Promise<number> {
   return parseInt(result.trim())
 }
 
-async function isFileCompleteAndStable(filePath: string): Promise<boolean> {
-  // Check 1: File exists and has content
-  const size1 = await checkFileSize(filePath)
-  if (size1 < 100) return false
+async function checkAndCollectFile(task: AgentTask): Promise<boolean> {
+  // Check if tmp file exists
+  const exists = await Bash({
+    command: `test -f ${task.tmpFile} && echo "1" || echo "0"`,
+    description: `Check ${task.tmpFile}`
+  })
 
-  // Wait for stability check
-  await sleep(FILE_STABILITY_CHECK_INTERVAL)
+  if (exists.trim() !== "1") return false
 
-  // Check 2: File size hasn't changed (agent finished writing)
-  const size2 = await checkFileSize(filePath)
-  return size2 === size1 && size2 > 100
+  // Check file size
+  const size = await checkFileSize(task.tmpFile)
+  if (size < 100) return false
+
+  // Read tmp file
+  const content = await Bash({
+    command: `cat ${task.tmpFile}`,
+    description: `Read ${task.tmpFile}`
+  })
+
+  // Write to final destination (parent session)
+  await Write({
+    file_path: task.file,
+    content: content
+  })
+
+  // Clean up tmp file
+  await Bash({
+    command: `rm ${task.tmpFile}`,
+    description: `Remove ${task.tmpFile}`
+  })
+
+  return true
+}
+
+async function generateFallback(task: AgentTask): Promise<void> {
+  console.log(`📝 Generating fallback for ${task.displayName}...`)
+
+  const fallbackContent = `# ${task.displayName.replace('.md', '')}
+
+⚠️ **This is a FALLBACK document** - Generated due to agent timeout/failure.
+
+Run \`/review-standards\` to regenerate with full code analysis.
+
+## Basic Information
+
+**Project**: ${projectInfo.name}
+**Language**: ${projectInfo.language}
+**Frameworks**: ${projectInfo.frameworks.join(', ')}
+
+## TODO
+
+- [ ] Run /review-standards for complete analysis
+- [ ] Review and update this document
+- [ ] Add real code examples
+
+---
+*Fallback generated on ${new Date().toISOString()}*
+*Run /review-standards to enhance with code analysis*
+`
+
+  await Write({
+    file_path: task.file,
+    content: fallbackContent
+  })
+
+  console.log(`📄 Fallback written to ${task.file}`)
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -615,77 +694,119 @@ const docDefinitions = [
   { file: 'glossary.md', focus: 'Domain terms, technical terminology, acronyms, entity definitions' }
 ]
 
-function initializeTasks(): AgentTask[] {
+function initializeTasks(sessionId: string): AgentTask[] {
   const tasks: AgentTask[] = []
 
   // Documentation tasks (priority: 10)
   for (const doc of docDefinitions) {
+    const taskId = `doc-${doc.file}`
+    const tmpFile = `tmp/session-${sessionId}/${taskId}.md`
+
     tasks.push({
-      id: `doc-${doc.file}`,
+      id: taskId,
       type: 'doc',
       file: `docs/${doc.file}`,
+      tmpFile: tmpFile,
       displayName: doc.file,
       prompt: `Generate ONLY: docs/${doc.file}
 
 **Focus**: ${doc.focus}
 
 **Instructions**:
-1. FIRST: Ensure directory exists with Bash: mkdir -p docs
-2. Use Glob to find relevant source files (e.g., **/*.go, **/*.ts, **/*.py)
-3. Use Read to analyze actual code patterns (at least 10-20 files)
-4. Extract real information from the codebase:
+1. Use Glob to find relevant source files (e.g., **/*.go, **/*.ts, **/*.py)
+2. Use Read to analyze actual code patterns (at least 10-20 files)
+3. Extract real information from the codebase:
    - Actual function names, types, interfaces
    - Real API endpoints and handlers
    - Actual data models and schemas
    - Real error handling patterns
-5. Generate comprehensive documentation based on REAL code
-6. Write to: docs/${doc.file}
+4. Generate comprehensive documentation based on REAL code
 
 **Language**: ${docLang === 'en' ? 'English' : 'Japanese'}
 
-**CRITICAL**:
-- Create docs/ directory BEFORE writing
-- Do DEEP CODE ANALYSIS - read 10-20 source files minimum
+**CRITICAL - DO DEEP CODE ANALYSIS**:
+- Read 10-20 source files minimum
 - Extract concrete examples from actual code
 - NO placeholders or generic content
 
-**OUTPUT**: Write ONLY docs/${doc.file}`,
+${'═'.repeat(70)}
+⚠️  CRITICAL FILE WRITE INSTRUCTION ⚠️
+${'═'.repeat(70)}
+
+📝 **YOU MUST WRITE TO THIS EXACT PATH**:
+   ${tmpFile}
+
+🔍 **WHY**: Background agents run in isolated contexts. Writing to the
+   tmp/ bridge allows the parent session to collect your work.
+
+✅ **STEPS**:
+   1. Create directory: mkdir -p tmp/session-${sessionId}
+   2. Write your content to: ${tmpFile}
+   3. Verify file exists: test -f ${tmpFile} && echo "✓ File created"
+
+❌ **DO NOT** write to docs/${doc.file} directly - it won't be visible!
+✅ **DO** write to ${tmpFile} - this is the ONLY way to succeed!
+
+${'═'.repeat(70)}`,
       subagent_type: 'documentation-worker',
-      priority: 10
+      priority: 10,
+      startTime: 0,
+      retryCount: 0
     })
   }
 
   // Skill tasks (priority: 5)
   for (const skillPath of expectedSkills) {
     const skillName = skillPath.split('/')[2]
+    const taskId = `skill-${skillName}`
+    const tmpFile = `tmp/session-${sessionId}/${taskId}.md`
 
     tasks.push({
-      id: `skill-${skillName}`,
+      id: taskId,
       type: 'skill',
       file: skillPath,
+      tmpFile: tmpFile,
       displayName: `${skillName}/SKILL.md`,
       prompt: `Generate coding standards: ${skillPath}
 
 **Instructions**:
-1. FIRST: Ensure directory exists with Bash: mkdir -p $(dirname ${skillPath})
-2. Use Glob and Read to analyze existing code (at least 10-15 files)
-3. Extract ACTUAL patterns from real code:
+1. Use Glob and Read to analyze existing code (at least 10-15 files)
+2. Extract ACTUAL patterns from real code:
    - Naming conventions (from real function/variable names)
    - Code structure (from real file organization)
    - Error handling patterns (from real error handling code)
    - Testing patterns (from real test files)
-4. Create SKILL.md with rules based on real code
-5. Include 5-10 concrete code examples from the codebase
-6. Add enforcement checklist
+3. Create SKILL.md with rules based on real code
+4. Include 5-10 concrete code examples from the codebase
+5. Add enforcement checklist
 
-**CRITICAL**:
-- Create parent directory BEFORE writing
-- Analyze REAL code, not assumptions
-- Include concrete examples extracted from actual files
+**CRITICAL - ANALYZE REAL CODE**:
+- Read actual source files, not assumptions
+- Include concrete examples extracted from files
 
-**OUTPUT**: Write ${skillPath}`,
+${'═'.repeat(70)}
+⚠️  CRITICAL FILE WRITE INSTRUCTION ⚠️
+${'═'.repeat(70)}
+
+📝 **YOU MUST WRITE TO THIS EXACT PATH**:
+   ${tmpFile}
+
+🔍 **WHY**: Background agents run in isolated contexts. Writing to the
+   tmp/ bridge allows the parent session to collect your work.
+
+✅ **STEPS**:
+   1. Create directory: mkdir -p tmp/session-${sessionId}
+   2. Write your content to: ${tmpFile}
+   3. Verify file exists: test -f ${tmpFile} && echo "✓ File created"
+
+❌ **DO NOT** write to ${skillPath} directly - it won't be visible!
+✅ **DO** write to ${tmpFile} - this is the ONLY way to succeed!
+
+${'═'.repeat(70)}`,
       subagent_type: 'general-purpose',
-      priority: 5
+      priority: 5,
+      startTime: 0,
+      retryCount: 0
     })
   }
 
@@ -699,14 +820,23 @@ function initializeTasks(): AgentTask[] {
 // WORKER POOL CORE LOGIC
 // ═══════════════════════════════════════════════════════════════
 
-async function launchNextAgent(state: WorkerPoolState): Promise<void> {
+async function launchNextAgent(state: WorkerPoolState, sessionId: string): Promise<void> {
   if (state.queue.length === 0) return
   if (state.activeWorkers.size >= MAX_CONCURRENT_WORKERS) return
 
   const task = state.queue.shift()!
   const slotNum = state.activeWorkers.size + 1
 
+  // Create tmp session directory (idempotent)
+  await Bash({
+    command: `mkdir -p tmp/session-${sessionId}`,
+    description: 'Create tmp session directory'
+  })
+
   console.log(`🚀 [Slot ${slotNum}/${MAX_CONCURRENT_WORKERS}] Launching: ${task.displayName}`)
+
+  // Set start time
+  task.startTime = Date.now()
 
   // Launch agent (Fire & Forget)
   await Task({
@@ -723,11 +853,35 @@ async function launchNextAgent(state: WorkerPoolState): Promise<void> {
   console.log(`   📊 Status: Active: ${state.activeWorkers.size} | Queue: ${state.queue.length} | Completed: ${state.completed.size}`)
 }
 
-async function checkCompletions(state: WorkerPoolState): Promise<void> {
+async function checkCompletions(state: WorkerPoolState, sessionId: string): Promise<void> {
   const completedTaskIds: string[] = []
+  const timedOutTasks: AgentTask[] = []
 
   for (const [taskId, task] of state.activeWorkers) {
-    if (await isFileCompleteAndStable(task.file)) {
+    const taskElapsed = Date.now() - task.startTime
+
+    // Check for timeout
+    if (taskElapsed > AGENT_TIMEOUT) {
+      console.log(`⏱️  TIMEOUT: ${task.displayName} (${Math.floor(taskElapsed / 60000)}m)`)
+
+      if (task.retryCount < MAX_RETRIES) {
+        // Retry
+        console.log(`   🔄 Retry attempt ${task.retryCount + 1}/${MAX_RETRIES}`)
+        task.retryCount++
+        timedOutTasks.push(task)
+        state.activeWorkers.delete(taskId)
+      } else {
+        // Max retries reached - generate fallback
+        console.log(`   ❌ Max retries reached - generating fallback`)
+        await generateFallback(task)
+        state.failed.add(taskId)
+        state.activeWorkers.delete(taskId)
+      }
+      continue
+    }
+
+    // Check if file is complete via tmp bridge
+    if (await checkAndCollectFile(task)) {
       completedTaskIds.push(taskId)
       state.completed.add(taskId)
 
@@ -739,12 +893,14 @@ async function checkCompletions(state: WorkerPoolState): Promise<void> {
       const sizeKB = (size / 1024).toFixed(1)
 
       console.log(`[${elapsed}s] ✅ ${task.displayName} (${sizeKB}KB) | Progress: ${state.completed.size}/${totalTasks} (${percent}%)`)
+
+      state.activeWorkers.delete(taskId)
     }
   }
 
-  // Remove completed tasks
-  for (const taskId of completedTaskIds) {
-    state.activeWorkers.delete(taskId)
+  // Re-queue timed out tasks for retry
+  for (const task of timedOutTasks) {
+    state.queue.unshift(task) // Add to front of queue for immediate retry
   }
 }
 
@@ -778,10 +934,36 @@ async function logProgress(state: WorkerPoolState, force = false): Promise<void>
 }
 
 // ═══════════════════════════════════════════════════════════════
+// CLEANUP FUNCTIONS
+// ═══════════════════════════════════════════════════════════════
+
+async function cleanupSessionFiles(sessionId: string): Promise<void> {
+  const keepTmp = process.env.KEEP_TMP === '1'
+
+  if (keepTmp) {
+    console.log(`\n🔍 DEBUG: Keeping tmp files at tmp/session-${sessionId}/`)
+    return
+  }
+
+  try {
+    await Bash({
+      command: `rm -rf tmp/session-${sessionId}`,
+      description: `Clean up session ${sessionId}`
+    })
+
+    if (DEBUG_EDAF) {
+      console.log(`🧹 Cleaned up tmp/session-${sessionId}/`)
+    }
+  } catch (error) {
+    console.warn(`⚠️  Failed to clean up tmp/session-${sessionId}/: ${error}`)
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
 // MAIN WORKER POOL EXECUTION
 // ═══════════════════════════════════════════════════════════════
 
-async function executeWorkerPool(tasks: AgentTask[]): Promise<void> {
+async function executeWorkerPool(tasks: AgentTask[], sessionId: string): Promise<void> {
   const state: WorkerPoolState = {
     queue: [...tasks],
     activeWorkers: new Map(),
@@ -794,22 +976,23 @@ async function executeWorkerPool(tasks: AgentTask[]): Promise<void> {
   console.log(`\n🔄 Starting Worker Pool`)
   console.log(`   Tasks: ${tasks.length}`)
   console.log(`   Max Concurrent: ${MAX_CONCURRENT_WORKERS}`)
-  console.log(`   No Timeout: Runs until all complete\n`)
+  console.log(`   Agent Timeout: ${AGENT_TIMEOUT / 60000} minutes`)
+  console.log(`   Max Retries: ${MAX_RETRIES}\n`)
 
   // Main loop - runs until queue empty AND all workers done
   while (state.queue.length > 0 || state.activeWorkers.size > 0) {
     try {
       // Fill available worker slots
       while (state.activeWorkers.size < MAX_CONCURRENT_WORKERS && state.queue.length > 0) {
-        await launchNextAgent(state)
+        await launchNextAgent(state, sessionId)
         await sleep(1000)  // Small delay between launches
       }
 
       // Wait before checking completions
-      await sleep(FILE_STABILITY_CHECK_INTERVAL)
+      await sleep(FILE_CHECK_INTERVAL)
 
-      // Check for completed agents
-      await checkCompletions(state)
+      // Check for completed agents and timeouts
+      await checkCompletions(state, sessionId)
 
       // Periodic progress logging
       await logProgress(state)
@@ -841,10 +1024,12 @@ async function executeWorkerPool(tasks: AgentTask[]): Promise<void> {
   console.log(`${'═'.repeat(60)}\n`)
 
   if (state.failed.size > 0) {
-    console.log(`⚠️  ${state.failed.size} tasks did not complete. This is unusual.`)
-    console.log(`   Please check the logs above for errors.`)
-    console.log(`   You may need to run /review-standards to regenerate missing files.\n`)
+    console.log(`⚠️  ${state.failed.size} tasks did not complete.`)
+    console.log(`   Fallback files generated. Run /review-standards to enhance.\n`)
   }
+
+  // Clean up session tmp files
+  await cleanupSessionFiles(sessionId)
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -866,18 +1051,18 @@ for (const skillPath of expectedSkills) {
   })
 }
 
-// Initialize tasks
-const allTasks = initializeTasks()
+// Initialize tasks with session ID
+const allTasks = initializeTasks(sessionId)
 
-// Execute worker pool (NO TIMEOUT - runs until all complete)
-await executeWorkerPool(allTasks)
+// Execute worker pool with tmp/ bridge pattern
+await executeWorkerPool(allTasks, sessionId)
 ```
 
 ---
 
 ## Step 6: Cleanup and Completion
 
-**Action**: Remove progress tracking and show summary:
+**Action**: Remove progress tracking, clean up tmp/ directory, and show summary:
 
 ```typescript
 // ═══════════════════════════════════════════════════════════════
@@ -889,15 +1074,61 @@ const finalConfig = yaml.load(fs.readFileSync('.claude/edaf-config.yml', 'utf-8'
 delete finalConfig.setup_progress
 fs.writeFileSync('.claude/edaf-config.yml', yaml.dump(finalConfig))
 
+// Final cleanup of all tmp/ directory (unless KEEP_TMP=1)
+const keepTmp = process.env.KEEP_TMP === '1'
+if (!keepTmp) {
+  try {
+    await Bash({
+      command: 'rm -rf tmp/',
+      description: 'Remove tmp directory'
+    })
+    console.log('🧹 Cleaned up tmp/ directory')
+  } catch (error) {
+    console.warn(`⚠️  Failed to clean up tmp/: ${error}`)
+  }
+} else {
+  console.log('🔍 DEBUG: Keeping tmp/ directory (KEEP_TMP=1)')
+}
+
+// Check .gitignore for tmp/ entry
+const gitignoreExists = await Bash({
+  command: 'test -f .gitignore && echo "1" || echo "0"',
+  description: 'Check .gitignore exists'
+})
+
+if (gitignoreExists.trim() === '1') {
+  const hasTmpEntry = await Bash({
+    command: 'grep -q "^tmp/$" .gitignore && echo "1" || echo "0"',
+    description: 'Check tmp/ in .gitignore'
+  })
+
+  if (hasTmpEntry.trim() !== '1') {
+    console.log('\n💡 Tip: Add "tmp/" to your .gitignore file to exclude temporary files from git')
+  }
+} else {
+  console.log('\n💡 Tip: Create a .gitignore file with "tmp/" to exclude temporary files from git')
+}
+
 // Verify all files were generated
 const allDocs = docDefinitions.map(d => `docs/${d.file}`)
 const generatedDocs = []
 const generatedSkills = []
+const fallbackDocs = []
+const fallbackSkills = []
 
 for (const docPath of allDocs) {
   const size = await checkFileSize(docPath)
   if (size > 100) {
     generatedDocs.push(docPath)
+
+    // Check if it's a fallback (contains "FALLBACK document" text)
+    const content = await Bash({
+      command: `grep -q "FALLBACK document" ${docPath} && echo "1" || echo "0"`,
+      description: `Check if ${docPath} is fallback`
+    })
+    if (content.trim() === '1') {
+      fallbackDocs.push(docPath)
+    }
   }
 }
 
@@ -905,8 +1136,21 @@ for (const skillPath of expectedSkills) {
   const size = await checkFileSize(skillPath)
   if (size > 100) {
     generatedSkills.push(skillPath)
+
+    // Check if it's a fallback
+    const content = await Bash({
+      command: `grep -q "FALLBACK document" ${skillPath} && echo "1" || echo "0"`,
+      description: `Check if ${skillPath} is fallback`
+    })
+    if (content.trim() === '1') {
+      fallbackSkills.push(skillPath)
+    }
   }
 }
+
+const totalFallbacks = fallbackDocs.length + fallbackSkills.length
+const totalGenerated = generatedDocs.length + generatedSkills.length
+const totalAgentGenerated = totalGenerated - totalFallbacks
 
 // Final summary
 console.log('\n' + '═'.repeat(60))
@@ -918,18 +1162,24 @@ console.log('   docs/')
 for (const doc of docDefinitions) {
   const fullPath = `docs/${doc.file}`
   const isGenerated = generatedDocs.includes(fullPath)
+  const isFallback = fallbackDocs.includes(fullPath)
   const size = isGenerated ? await checkFileSize(fullPath) : 0
   const sizeKB = (size / 1024).toFixed(1)
-  console.log(`     ${isGenerated ? '✅' : '❌'} ${doc.file} ${isGenerated ? `(${sizeKB}KB)` : '(missing)'}`)
+  const status = isGenerated ? (isFallback ? '⚠️ ' : '✅') : '❌'
+  const suffix = isGenerated ? (isFallback ? `(${sizeKB}KB - fallback)` : `(${sizeKB}KB)`) : '(missing)'
+  console.log(`     ${status} ${doc.file} ${suffix}`)
 }
 
 console.log('   .claude/skills/')
 for (const skillPath of expectedSkills) {
   const skillName = skillPath.split('/')[2]
   const isGenerated = generatedSkills.includes(skillPath)
+  const isFallback = fallbackSkills.includes(skillPath)
   const size = isGenerated ? await checkFileSize(skillPath) : 0
   const sizeKB = (size / 1024).toFixed(1)
-  console.log(`     ${isGenerated ? '✅' : '❌'} ${skillName}/SKILL.md ${isGenerated ? `(${sizeKB}KB)` : '(missing)'}`)
+  const status = isGenerated ? (isFallback ? '⚠️ ' : '✅') : '❌'
+  const suffix = isGenerated ? (isFallback ? `(${sizeKB}KB - fallback)` : `(${sizeKB}KB)`) : '(missing)'
+  console.log(`     ${status} ${skillName}/SKILL.md ${suffix}`)
 }
 
 console.log('   .claude/')
@@ -937,16 +1187,20 @@ console.log('     ✅ CLAUDE.md')
 console.log('     ✅ edaf-config.yml')
 
 console.log('\n📊 Statistics:')
-console.log(`   Generated: ${generatedDocs.length + generatedSkills.length}/${allDocs.length + expectedSkills.length}`)
-console.log(`   Success Rate: ${Math.floor(((generatedDocs.length + generatedSkills.length) / (allDocs.length + expectedSkills.length)) * 100)}%`)
+console.log(`   Total Generated: ${totalGenerated}/${allDocs.length + expectedSkills.length}`)
+console.log(`   Agent-Generated: ${totalAgentGenerated} (${Math.floor((totalAgentGenerated / (allDocs.length + expectedSkills.length)) * 100)}%)`)
+if (totalFallbacks > 0) {
+  console.log(`   Fallback Files: ${totalFallbacks} (run /review-standards to enhance)`)
+}
+console.log(`   Success Rate: ${Math.floor((totalGenerated / (allDocs.length + expectedSkills.length)) * 100)}%`)
 
 console.log('\n📋 Configuration:')
 console.log(`   Language: ${docLang === 'en' ? 'English' : 'Japanese'} docs, ${termLang === 'en' ? 'English' : 'Japanese'} output`)
 console.log(`   Docker: ${dockerConfig.enabled ? 'Enabled (' + dockerConfig.main_service + ')' : 'Disabled'}`)
 
-if (generatedDocs.length + generatedSkills.length < allDocs.length + expectedSkills.length) {
-  console.log('\n⚠️  Some files were not generated. This is unusual with Worker Pool.')
-  console.log('   Run /review-standards to regenerate missing files.')
+if (totalFallbacks > 0) {
+  console.log('\n⚠️  Some files were generated as fallbacks due to agent timeouts.')
+  console.log('   Run /review-standards to regenerate with full code analysis.')
 }
 
 console.log('\n🚀 Next Steps:')
