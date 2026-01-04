@@ -404,6 +404,28 @@ production_security_evaluation:
 - **BE THOROUGH** - Search entire codebase for production security issues
 - **SAVE REPORT** - Always write markdown report
 
+## Output Format (CRITICAL - Context Efficiency)
+
+**IMPORTANT**: To prevent context exhaustion, you MUST follow this output format strictly.
+
+### Step 1: Write Detailed Report to File
+Write full evaluation report to: `.steering/{date}-{feature}/reports/phase7-production-security.md`
+
+### Step 2: Return ONLY Lightweight Summary
+After writing the report, output ONLY this YAML block (nothing else):
+
+```yaml
+EVAL_RESULT:
+  evaluator: "production-security-evaluator"
+  status: "PASS"  # or "FAIL"
+  score: 8.5
+  report: ".steering/{date}-{feature}/reports/phase7-production-security.md"
+  summary: "No stack traces exposed, secure logging, HTTPS enforced"
+  issues_count: 1
+```
+
+**DO NOT** output the full report content to stdout. Only the YAML block above.
+
 ## Success criteria
 
 - Error handling evaluated (no stack traces exposed, environment-based errors, no sensitive data in errors)

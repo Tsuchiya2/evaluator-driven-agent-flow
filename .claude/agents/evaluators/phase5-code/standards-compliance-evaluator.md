@@ -268,6 +268,29 @@ evaluation_result:
 - **REQUIRE FIXES** - List specific fixes needed to pass
 - **SAVE REPORT** - Write to `.steering/{date}-{feature}/reports/phase5-standards-compliance.md`
 
+## Output Format (CRITICAL - Context Efficiency)
+
+**IMPORTANT**: To prevent context exhaustion, you MUST follow this output format strictly.
+
+### Step 1: Write Detailed Report to File
+Write full evaluation report to: `.steering/{date}-{feature}/reports/phase5-standards-compliance.md`
+
+### Step 2: Return ONLY Lightweight Summary
+After writing the report, output ONLY this YAML block (nothing else):
+
+```yaml
+EVAL_RESULT:
+  evaluator: "standards-compliance-evaluator"
+  status: "PASS"  # or "FAIL"
+  score: 8.5
+  report: ".steering/{date}-{feature}/reports/phase5-standards-compliance.md"
+  summary: "3 standards files, 2 critical violations, 3 major violations"
+  issues_count: 5
+```
+
+**DO NOT** output the full report content to stdout. Only the YAML block above.
+This reduces context consumption from ~3000 tokens to ~50 tokens per evaluator.
+
 ## Success Criteria
 
 - All standards files discovered and listed

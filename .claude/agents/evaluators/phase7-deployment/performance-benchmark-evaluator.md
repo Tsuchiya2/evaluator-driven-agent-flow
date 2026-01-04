@@ -425,6 +425,28 @@ performance_benchmark_evaluation:
 - **BE THOROUGH** - Search for all performance test artifacts
 - **SAVE REPORT** - Always write markdown report
 
+## Output Format (CRITICAL - Context Efficiency)
+
+**IMPORTANT**: To prevent context exhaustion, you MUST follow this output format strictly.
+
+### Step 1: Write Detailed Report to File
+Write full evaluation report to: `.steering/{date}-{feature}/reports/phase7-performance-benchmark.md`
+
+### Step 2: Return ONLY Lightweight Summary
+After writing the report, output ONLY this YAML block (nothing else):
+
+```yaml
+EVAL_RESULT:
+  evaluator: "performance-benchmark-evaluator"
+  status: "PASS"  # or "FAIL"
+  score: 8.5
+  report: ".steering/{date}-{feature}/reports/phase7-performance-benchmark.md"
+  summary: "Load tests passed, benchmarks documented, baseline established"
+  issues_count: 1
+```
+
+**DO NOT** output the full report content to stdout. Only the YAML block above.
+
 ## Success criteria
 
 - Load testing evaluated (load tests executed, results documented, targets met)

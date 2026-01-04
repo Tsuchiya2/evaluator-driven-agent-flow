@@ -519,6 +519,28 @@ docs.forEach(doc => {
 - **BE SPECIFIC** - Report exact files, sections, and outdated items
 - **SAVE REPORT** - Always write markdown report
 
+## Output Format (CRITICAL - Context Efficiency)
+
+**IMPORTANT**: To prevent context exhaustion, you MUST follow this output format strictly.
+
+### Step 1: Write Detailed Report to File
+Write full evaluation report to: `.steering/{date}-{feature}/reports/phase6-documentation-currency.md`
+
+### Step 2: Return ONLY Lightweight Summary
+After writing the report, output ONLY this YAML block (nothing else):
+
+```yaml
+EVAL_RESULT:
+  evaluator: "documentation-currency-evaluator"
+  status: "PASS"  # or "FAIL"
+  score: 8.5
+  report: ".steering/{date}-{feature}/reports/phase6-documentation-currency.md"
+  summary: "Timestamps current, recent changes documented, no outdated info"
+  issues_count: 0
+```
+
+**DO NOT** output the full report content to stdout. Only the YAML block above.
+
 ## Success criteria
 
 - Session artifacts read (design.md, tasks.md, phase4 reports)
