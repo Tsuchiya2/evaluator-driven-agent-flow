@@ -168,7 +168,7 @@ No mocking: 0.0
 10. **Check test completeness** → Verify critical paths, edge cases, error scenarios tested
 11. **Measure test performance** → Record test execution time
 12. **Check mocking strategy** → Verify external dependencies mocked
-13. **Calculate weighted score** → (coverage × 0.40) + (quality × 0.25) + (completeness × 0.20) + (performance × 0.10) + (mocking × 0.05)
+13. **Calculate weighted score** → (coverage × 0.40) + (quality × 0.25) + (completeness × 0.15) + (performance × 0.10) + (mocking × 0.10)
 14. **Generate report** → Create detailed markdown report with framework-specific findings
 15. **Save report** → Write to `.steering/{date}-{feature}/reports/phase5-code-testing.md`
 
@@ -411,7 +411,7 @@ evaluation_result:
 - **CHECK COMPLETENESS** - All critical paths, edge cases, error scenarios tested
 - **MEASURE PERFORMANCE** - Unit <5s, Integration <30s, E2E <120s
 - **VERIFY MOCKING** - External APIs, databases, file I/O should be mocked
-- **USE WEIGHTED SCORING** - (coverage × 0.40) + (quality × 0.25) + (completeness × 0.20) + (performance × 0.10) + (mocking × 0.05)
+- **USE WEIGHTED SCORING** - (coverage × 0.40) + (quality × 0.25) + (completeness × 0.15) + (performance × 0.10) + (mocking × 0.10)
 - **BE LANGUAGE-SPECIFIC** - Jest for TypeScript, pytest for Python, JUnit for Java
 - **PARSE COVERAGE REPORTS** - JSON, XML, LCOV formats
 - **IDENTIFY GAPS** - Uncovered critical files, missing edge cases, missing error scenarios
