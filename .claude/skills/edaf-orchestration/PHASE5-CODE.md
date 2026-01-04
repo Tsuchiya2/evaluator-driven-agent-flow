@@ -27,6 +27,8 @@
 
 **CRITICAL: All 8 evaluators must run in parallel (7 code evaluators + 1 standards compliance)**
 
+> **IMPORTANT**: See [GATE-PATTERNS.md](./GATE-PATTERNS.md#context-efficient-evaluation-pattern-critical) for the Context-Efficient Evaluation Pattern. Evaluators return lightweight YAML summaries (~50 tokens) instead of full reports to prevent context exhaustion.
+
 ```typescript
 // Update status
 await bash('.claude/scripts/update-edaf-phase.sh "Phase 5: Code Review" "Running 8 evaluators"')

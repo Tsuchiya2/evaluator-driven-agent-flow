@@ -432,6 +432,28 @@ rollback_plan_evaluation:
 - **BE THOROUGH** - Search entire codebase for rollback preparation
 - **SAVE REPORT** - Always write markdown report
 
+## Output Format (CRITICAL - Context Efficiency)
+
+**IMPORTANT**: To prevent context exhaustion, you MUST follow this output format strictly.
+
+### Step 1: Write Detailed Report to File
+Write full evaluation report to: `.steering/{date}-{feature}/reports/phase7-rollback-plan.md`
+
+### Step 2: Return ONLY Lightweight Summary
+After writing the report, output ONLY this YAML block (nothing else):
+
+```yaml
+EVAL_RESULT:
+  evaluator: "rollback-plan-evaluator"
+  status: "PASS"  # or "FAIL"
+  score: 8.5
+  report: ".steering/{date}-{feature}/reports/phase7-rollback-plan.md"
+  summary: "Rollback documented, migrations reversible, backups configured"
+  issues_count: 1
+```
+
+**DO NOT** output the full report content to stdout. Only the YAML block above.
+
 ## Success criteria
 
 - Rollback documentation evaluated (rollback procedure, triggers, testing plan)

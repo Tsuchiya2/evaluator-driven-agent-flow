@@ -4,6 +4,70 @@
 
 ---
 
+## Context-Efficient Evaluation Pattern (CRITICAL)
+
+### Problem
+When running multiple evaluators in parallel, their full outputs consume excessive context:
+- 9 evaluators × 3,000 tokens = 27,000 tokens per evaluation cycle
+- This causes context exhaustion and `/compact` failures
+
+### Solution: Lightweight Summary Return Pattern
+
+**Evaluators MUST**:
+1. Write detailed reports to **files** (existing behavior)
+2. Return only a **lightweight summary** to the parent agent (NEW)
+
+### Lightweight Summary Format
+
+```yaml
+# Evaluator returns ONLY this to parent (50-100 tokens max)
+EVAL_RESULT:
+  evaluator: "{evaluator-name}"
+  status: "PASS" | "FAIL"
+  score: 8.5
+  report: ".steering/{date}-{feature}/reports/{report-name}.md"
+  summary: "One-line summary of findings (max 100 chars)"
+  issues_count: 3  # Optional: number of issues found
+```
+
+### Parent Agent Flow
+
+```typescript
+// 1. Launch all evaluators in parallel
+const results = await Promise.all(
+  evaluators.map(e => Task({
+    subagent_type: e,
+    prompt: `Evaluate: ${documentPath}...`
+  }))
+)
+
+// 2. Parse lightweight summaries (results are ~50 tokens each)
+const summaries = results.map(r => parseEvalResult(r))
+
+// 3. Check overall status
+const allPassed = summaries.every(s => s.status === 'PASS')
+const passCount = summaries.filter(s => s.status === 'PASS').length
+
+// 4. For FAILED evaluators only, read detailed reports
+if (!allPassed) {
+  const failedReports = summaries
+    .filter(s => s.status === 'FAIL')
+    .map(s => Read(s.report))  // Only read failed reports
+
+  // Use failed reports for revision guidance
+}
+```
+
+### Context Consumption Comparison
+
+| Pattern | Per Evaluator | 9 Evaluators |
+|---------|--------------|--------------|
+| Old (full output) | ~3,000 tokens | ~27,000 tokens |
+| New (lightweight) | ~50 tokens | ~450 tokens |
+| **Savings** | **98%** | **98%** |
+
+---
+
 ## Pass Criteria
 
 ### Scoring Scale

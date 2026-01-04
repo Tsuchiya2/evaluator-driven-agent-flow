@@ -375,6 +375,29 @@ evaluation_result:
 - **INCLUDE FIX COMMANDS** - `npm install express@4.18.2`
 - **SAVE REPORT** - Always write markdown report
 
+## Output Format (CRITICAL - Context Efficiency)
+
+**IMPORTANT**: To prevent context exhaustion, you MUST follow this output format strictly.
+
+### Step 1: Write Detailed Report to File
+Write full evaluation report to: `.steering/{date}-{feature}/reports/phase5-code-security.md`
+
+### Step 2: Return ONLY Lightweight Summary
+After writing the report, output ONLY this YAML block (nothing else):
+
+```yaml
+EVAL_RESULT:
+  evaluator: "code-security-evaluator-v1-self-adapting"
+  status: "PASS"  # or "FAIL"
+  score: 8.5
+  report: ".steering/{date}-{feature}/reports/phase5-code-security.md"
+  summary: "1 high vulnerability found, 2 dependency CVEs, no secrets leaked"
+  issues_count: 3
+```
+
+**DO NOT** output the full report content to stdout. Only the YAML block above.
+This reduces context consumption from ~3000 tokens to ~50 tokens per evaluator.
+
 ## Success criteria
 
 - Language auto-detected

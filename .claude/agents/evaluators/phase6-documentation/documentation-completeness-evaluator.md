@@ -383,6 +383,28 @@ terms.forEach(term => {
 - **BE SPECIFIC** - Report exact files and sections missing
 - **SAVE REPORT** - Always write markdown report
 
+## Output Format (CRITICAL - Context Efficiency)
+
+**IMPORTANT**: To prevent context exhaustion, you MUST follow this output format strictly.
+
+### Step 1: Write Detailed Report to File
+Write full evaluation report to: `.steering/{date}-{feature}/reports/phase6-documentation-completeness.md`
+
+### Step 2: Return ONLY Lightweight Summary
+After writing the report, output ONLY this YAML block (nothing else):
+
+```yaml
+EVAL_RESULT:
+  evaluator: "documentation-completeness-evaluator"
+  status: "PASS"  # or "FAIL"
+  score: 8.5
+  report: ".steering/{date}-{feature}/reports/phase6-documentation-completeness.md"
+  summary: "All sections present, glossary updated, no placeholders"
+  issues_count: 0
+```
+
+**DO NOT** output the full report content to stdout. Only the YAML block above.
+
 ## Success criteria
 
 - Session directory identified (most recent .steering/ folder)

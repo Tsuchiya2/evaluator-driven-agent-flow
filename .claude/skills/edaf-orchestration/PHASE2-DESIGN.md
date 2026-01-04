@@ -68,6 +68,8 @@ if (!designExists) {
 
 **CRITICAL: All 7 evaluators must run in parallel**
 
+> **IMPORTANT**: See [GATE-PATTERNS.md](./GATE-PATTERNS.md#context-efficient-evaluation-pattern-critical) for the Context-Efficient Evaluation Pattern. Evaluators return lightweight YAML summaries (~50 tokens) instead of full reports to prevent context exhaustion.
+
 ```typescript
 // Update status
 await bash('.claude/scripts/update-edaf-phase.sh "Phase 2: Design" "Running 7 evaluators"')

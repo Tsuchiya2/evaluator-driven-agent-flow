@@ -161,6 +161,8 @@ console.log('✅ Documentation worker completed')
 
 Run 5 documentation evaluators in parallel to validate documentation quality:
 
+> **IMPORTANT**: See [GATE-PATTERNS.md](./GATE-PATTERNS.md#context-efficient-evaluation-pattern-critical) for the Context-Efficient Evaluation Pattern. Evaluators return lightweight YAML summaries (~50 tokens) instead of full reports to prevent context exhaustion.
+
 ```typescript
 console.log('\n📊 Running 5 documentation evaluators in parallel...')
 

@@ -135,6 +135,28 @@ All sections filled, no "TBD", "...", "{placeholder}", or empty sections.
 - **CHECK ALL CRITERIA** - Score all 5 criteria, don't skip
 - **SAVE REPORT** - Always write markdown report
 
+## Output Format (CRITICAL - Context Efficiency)
+
+**IMPORTANT**: To prevent context exhaustion, you MUST follow this output format strictly.
+
+### Step 1: Write Detailed Report to File
+Write full evaluation report to: `.steering/{date}-{feature}/reports/phase1-requirements-clarity.md`
+
+### Step 2: Return ONLY Lightweight Summary
+After writing the report, output ONLY this YAML block (nothing else):
+
+```yaml
+EVAL_RESULT:
+  evaluator: "requirements-clarity-evaluator"
+  status: "PASS"  # or "FAIL"
+  score: 8.5
+  report: ".steering/{date}-{feature}/reports/phase1-requirements-clarity.md"
+  summary: "All requirements specific, 2 minor ambiguities found"
+  issues_count: 2
+```
+
+**DO NOT** output the full report content to stdout. Only the YAML block above.
+
 ## Success criteria
 
 - All 5 criteria scored accurately

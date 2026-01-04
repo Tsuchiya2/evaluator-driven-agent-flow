@@ -270,6 +270,28 @@ evaluation_result:
 - **PROVIDE EXTRACTION** - Show how to extract ValidationUtils, create IRepository
 - **SAVE REPORT** - Always write markdown report
 
+## Output Format (CRITICAL - Context Efficiency)
+
+**IMPORTANT**: To prevent context exhaustion, you MUST follow this output format strictly.
+
+### Step 1: Write Detailed Report to File
+Write full evaluation report to: `.steering/{date}-{feature}/reports/phase3-planner-reusability.md`
+
+### Step 2: Return ONLY Lightweight Summary
+After writing the report, output ONLY this YAML block (nothing else):
+
+```yaml
+EVAL_RESULT:
+  evaluator: "planner-reusability-evaluator"
+  status: "PASS"  # or "FAIL"
+  score: 8.5
+  report: ".steering/{date}-{feature}/reports/phase3-planner-reusability.md"
+  summary: "Components extracted, interfaces abstracted, domain independent"
+  issues_count: 1
+```
+
+**DO NOT** output the full report content to stdout. Only the YAML block above.
+
 ## Success criteria
 
 - All 5 criteria scored (0-10 scale)

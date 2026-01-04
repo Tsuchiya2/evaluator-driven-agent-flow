@@ -363,6 +363,28 @@ evaluation_result:
 - **BE SPECIFIC** - Report exact file paths, line numbers, and code snippets for mismatches
 - **SAVE REPORT** - Always write markdown report
 
+## Output Format (CRITICAL - Context Efficiency)
+
+**IMPORTANT**: To prevent context exhaustion, you MUST follow this output format strictly.
+
+### Step 1: Write Detailed Report to File
+Write full evaluation report to: `.steering/{date}-{feature}/reports/phase6-documentation-accuracy.md`
+
+### Step 2: Return ONLY Lightweight Summary
+After writing the report, output ONLY this YAML block (nothing else):
+
+```yaml
+EVAL_RESULT:
+  evaluator: "documentation-accuracy-evaluator"
+  status: "PASS"  # or "FAIL"
+  score: 8.5
+  report: ".steering/{date}-{feature}/reports/phase6-documentation-accuracy.md"
+  summary: "Code structure verified, APIs match, data models accurate"
+  issues_count: 1
+```
+
+**DO NOT** output the full report content to stdout. Only the YAML block above.
+
 ## Success criteria
 
 - All permanent docs read (functional-design.md, architecture.md, development-guidelines.md, repository-structure.md)
