@@ -1,7 +1,10 @@
 # Phase 5: Code Review Gate
 
-**Purpose**: Verify code quality, security, and completeness
-**Gate Criteria**: All 7 code evaluators must score ≥ 8.0/10.0 + UI verification (if frontend changed)
+**Purpose**: Verify code quality, security, completeness, and project standards compliance
+**Gate Criteria**: All 8 evaluators must score ≥ 8.0/10.0 + UI verification (if frontend changed)
+
+> **IMPORTANT**: The `standards-compliance-evaluator` is an **INDEPENDENT GATE** that cannot be bypassed.
+> Even if all 7 code evaluators pass, Phase 5 fails if standards compliance fails.
 
 ---
 
@@ -22,11 +25,11 @@
 
 ### Step 1: Launch All Code Evaluators (PARALLEL)
 
-**CRITICAL: All 7 evaluators must run in parallel**
+**CRITICAL: All 8 evaluators must run in parallel (7 code evaluators + 1 standards compliance)**
 
 ```typescript
 // Update status
-await bash('.claude/scripts/update-edaf-phase.sh "Phase 5: Code Review" "Running 7 evaluators"')
+await bash('.claude/scripts/update-edaf-phase.sh "Phase 5: Code Review" "Running 8 evaluators"')
 
 // Launch all evaluators in parallel
 const evaluators = [
@@ -36,7 +39,8 @@ const evaluators = [
   'code-documentation-evaluator-v1-self-adapting',
   'code-maintainability-evaluator-v1-self-adapting',
   'code-performance-evaluator-v1-self-adapting',
-  'code-implementation-alignment-evaluator-v1-self-adapting'
+  'code-implementation-alignment-evaluator-v1-self-adapting',
+  'standards-compliance-evaluator'  // INDEPENDENT GATE - must pass separately
 ]
 
 const evaluationPromises = evaluators.map(evaluator =>
@@ -68,7 +72,12 @@ const scores = results.map(r => parseScore(r))
 const allPassed = scores.every(s => s >= 8.0)
 const passCount = scores.filter(s => s >= 8.0).length
 
-await bash(`.claude/scripts/update-edaf-phase.sh "Phase 4: Code Review" "${passCount}/7 evaluators passed"`)
+// IMPORTANT: standards-compliance-evaluator is an INDEPENDENT GATE
+// Even if 7/8 pass, if standards fails, Phase 5 fails
+const standardsResult = results.find(r => r.evaluator === 'standards-compliance-evaluator')
+const standardsPassed = parseScore(standardsResult) >= 8.0
+
+await bash(`.claude/scripts/update-edaf-phase.sh "Phase 5: Code Review" "${passCount}/8 evaluators passed"`)
 ```
 
 ### Step 3: Fix Issues (if needed)
@@ -163,6 +172,17 @@ bash .claude/scripts/verify-ui.sh {feature-slug}
 | maintainability | Complexity | Cyclomatic complexity, SOLID |
 | performance | Efficiency | N+1 queries, memory, algorithms |
 | implementation-alignment | Requirements | Matches design, all features |
+| **standards-compliance** | **Project Standards** | **Skills rules, evidence required** |
+
+### Standards Compliance Evaluator (Independent Gate)
+
+The `standards-compliance-evaluator` is different from other evaluators:
+
+- **Single Responsibility**: Only checks project standards from `.claude/skills/*-standards/SKILL.md`
+- **Independent Gate**: Must pass regardless of other evaluators (cannot be compensated by high scores elsewhere)
+- **Evidence Required**: Must quote rules verbatim, show check methods, list violations with file:line
+- **Scoring**: Base 10.0, deductions for Critical (-1.0), Major (-0.5), Minor (-0.2) violations
+- **Pass Threshold**: ≥ 8.0/10 (same as other evaluators)
 
 ---
 
@@ -198,10 +218,11 @@ bash .claude/scripts/verify-ui.sh {feature-slug}
 After Phase 5 completion:
 
 1. **Reviewed & Fixed Code**: All issues resolved
-   - Code quality verified (≥ 8.0/10 from all evaluators)
+   - Code quality verified (≥ 8.0/10 from all 8 evaluators)
+   - Standards compliance verified (independent gate passed)
    - Security validated, documentation complete
    - Implementation aligns with design
-2. **Evaluation Reports**: From each code evaluator
+2. **Evaluation Reports**: From each code evaluator (8 reports total)
 3. **UI Verification Report** (if frontend changed): `.steering/{YYYY-MM-DD}-{feature-slug}/reports/phase5-ui-verification.md`
 4. **Screenshots** (if frontend changed): `.steering/{YYYY-MM-DD}-{feature-slug}/screenshots/`
 

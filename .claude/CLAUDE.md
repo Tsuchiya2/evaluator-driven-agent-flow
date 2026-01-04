@@ -28,7 +28,7 @@ Do not edit manually - run `/setup` again to change preferences.
 | 2. Design | designer | 7 | All ≥ 8.0/10 |
 | 3. Planning | planner | 7 | All ≥ 8.0/10 |
 | 4. Implementation | 4 workers | 1 quality-gate | 10.0 (lint+tests) |
-| 5. Code Review | - | 7 + UI | All ≥ 8.0/10 |
+| 5. Code Review | - | 8 + UI | All ≥ 8.0/10 |
 | 6. Documentation | documentation-worker | 5 | All ≥ 8.0/10 |
 | 7. Deployment | - | 5 | All ≥ 8.0/10 |
 
@@ -94,8 +94,10 @@ Do not edit manually - run `/setup` again to change preferences.
 
 **Component Count**:
 - 9 Agents (requirements-gatherer, designer, planner, 4 workers, documentation-worker, ui-verification-worker)
-- 39 Evaluators (7 per phase for phases 1-3,5,6; 1 for phase 4; 5 for phase 7)
-- Total: 48 components
+- 40 Evaluators (7 per phase for phases 1-3,6; 8 for phase 5; 1 for phase 4; 5 for phase 7)
+- Total: 49 components
+
+> **Phase 5 Note**: Includes `standards-compliance-evaluator` as an **independent gate** for project coding standards.
 
 ---
 

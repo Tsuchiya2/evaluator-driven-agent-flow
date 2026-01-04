@@ -172,7 +172,7 @@ No weak algorithms (MD5, SHA1, DES, RC4). No weak keys (<16 chars). No insecure 
 8. **Parse OWASP findings** → Categorize by OWASP Top 10, extract severity, file, line, CWE
 9. **Parse dependency vulnerabilities** → Extract CVE IDs, severity, fix availability
 10. **Parse secret leaks** → Extract type, confidence, file, line
-11. **Calculate weighted score** → (owasp × 0.30) + (dependencies × 0.25) + (secrets × 0.25) + (auth × 0.10) + (crypto × 0.10)
+11. **Calculate weighted score** → (owasp × 0.30) + (dependencies × 0.25) + (secrets × 0.20) + (auth × 0.15) + (crypto × 0.10)
 12. **Generate report** → Create detailed markdown report with language-specific findings
 13. **Save report** → Write to `.steering/{date}-{feature}/reports/phase5-code-security.md`
 
@@ -369,7 +369,7 @@ evaluation_result:
 - **PATTERN MATCHING FALLBACK** - If no tools, use regex patterns for common vulnerabilities
 - **SEVERITY PENALTIES** - Critical: -2.0, High: -1.0, Medium: -0.3, Low: -0.1
 - **FIX AVAILABILITY BONUS** - Reduce penalty by 50% if fix available
-- **USE WEIGHTED SCORING** - (owasp × 0.30) + (dependencies × 0.25) + (secrets × 0.25) + (auth × 0.10) + (crypto × 0.10)
+- **USE WEIGHTED SCORING** - (owasp × 0.30) + (dependencies × 0.25) + (secrets × 0.20) + (auth × 0.15) + (crypto × 0.10)
 - **BE LANGUAGE-SPECIFIC** - Bandit for Python, gosec for Go, SpotBugs for Java
 - **PROVIDE CVE IDs** - CVE-2024-1234, CWE-89, CVSS scores
 - **INCLUDE FIX COMMANDS** - `npm install express@4.18.2`
