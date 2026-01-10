@@ -1,4 +1,5 @@
 ---
+name: review-standards
 description: Review and update project coding standards based on recent code changes / 最近のコード変更に基づいてプロジェクトのコーディング規約をレビュー・更新
 ---
 

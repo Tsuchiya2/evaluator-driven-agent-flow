@@ -16,7 +16,7 @@ EDAF is a complete **7-Phase Software Development Framework** that:
 2. **Phase 2**: Creates and evaluates design documents (1 Designer + 7 Evaluators)
 3. **Phase 3**: Plans implementation tasks (1 Planner + 7 Evaluators)
 4. **Phase 4**: Generates code using 4 specialized Worker Agents + Quality Gate (lint + tests)
-5. **Phase 5**: Reviews code quality (7 Code Evaluators) + **UI/UX verification via Claude in Chrome**
+5. **Phase 5**: Reviews code quality (8 Code Evaluators) + **UI/UX verification via Claude in Chrome**
 6. **Phase 6**: Updates permanent documentation (1 Documentation Worker + 5 Evaluators)
 7. **Phase 7**: Validates deployment readiness (5 Deployment Evaluators)
 8. **Works with ANY language/framework** through self-adaptation
@@ -24,7 +24,7 @@ EDAF is a complete **7-Phase Software Development Framework** that:
 10. **🔍 Automatic visual verification** for frontend changes using browser automation
 11. **📚 Permanent documentation** automatically maintained in sync with code
 
-**Total:** 9 Agents + 39 Evaluators = 48 components for complete development automation
+**Total:** 9 Agents + 40 Evaluators = 49 components for complete development automation
 
 ---
 
@@ -57,7 +57,7 @@ graph LR
 - **Phase 2**: Designer Agent + 7 Design Evaluators
 - **Phase 3**: Planner Agent + 7 Planning Evaluators
 - **Phase 4**: 4 Workers + 1 Quality Gate Evaluator (lint + tests)
-- **Phase 5**: 7 Code Evaluators + UI/UX Verification
+- **Phase 5**: 8 Code Evaluators + UI/UX Verification
 - **Phase 6**: Documentation Worker + 5 Documentation Evaluators
 - **Phase 7**: 5 Deployment Evaluators
 
@@ -100,7 +100,7 @@ graph LR
 - **1 Quality Gate Evaluator** - Ultra-strict quality gate (zero lint errors/warnings + all tests passing)
 
 ### Phase 5: Code Review Gate
-- **7 Code Evaluators** - Evaluate quality, testing, security, documentation, maintainability, performance, and implementation alignment
+- **8 Code Evaluators** - Evaluate quality, testing, security, documentation, maintainability, performance, and implementation alignment
 - **UI Verification Worker** - Automatic visual verification via Claude in Chrome (if frontend changed)
 
 ### Phase 6: Documentation Update
@@ -167,7 +167,7 @@ That's it! The installation script will:
 - ✅ Install 2 Core Agents to `.claude/agents/`
 - ✅ Install 5 Worker Agents to `.claude/agents/workers/`
 - ✅ Install 31 Evaluators to `.claude/agents/evaluators/` (organized by phase)
-- ✅ Install `/setup` command to `.claude/commands/`
+- ✅ Install `/setup` skill to `.claude/skills/setup/`
 - ✅ No MCP setup required - uses Claude in Chrome extension
 - ✅ Copy configuration template (optional)
 - ✅ Copy documentation (optional)
@@ -410,24 +410,22 @@ EDAF evaluates 7 key aspects of your code: **Quality**, **Testing**, **Security*
   - `documentation-worker.md`
 
 - **Evaluators**: `.claude/agents/evaluators/`
-  - `phase1-design/` - 7 Design Evaluators
-  - `phase2-planner/` - 7 Planner Evaluators
-  - `phase3-lint/` - 1 Lint Evaluator
-  - `phase4-code/` - 7 Code Evaluators
-  - `phase5-documentation/` - 5 Documentation Evaluators
-  - `phase6-deployment/` - 5 Deployment Evaluators
+  - `phase1-requirements/` - 7 Requirements Evaluators
+  - `phase2-design/` - 7 Design Evaluators
+  - `phase3-planner/` - 7 Planner Evaluators
+  - `phase4-quality-gate/` - 1 Quality Gate Evaluator
+  - `phase5-code/` - 8 Code Evaluators
+  - `phase6-documentation/` - 5 Documentation Evaluators
+  - `phase7-deployment/` - 5 Deployment Evaluators
 
 - **Skills**: `.claude/skills/`
   - `edaf-orchestration/` - Phase workflow patterns (7 files)
   - `edaf-evaluation/` - Scoring framework and patterns (4 files)
   - `ui-verification/` - Browser automation patterns (4 files)
 
-- **Commands**: `.claude/commands/`
-  - `/setup` - Interactive configuration wizard
-  - `/edaf-status` - Show current phase and progress
-  - `/edaf-evaluate` - Run evaluators for a phase
-  - `/edaf-verify-ui` - Run UI verification
-  - `/edaf-report` - Display evaluation reports
+- **Skills (User Commands)**: `.claude/skills/`
+  - `setup/` - Interactive configuration wizard (`/setup`)
+  - `review-standards/` - Update coding standards (`/review-standards`)
 
 - **Scripts**: `.claude/scripts/`
   - `notification.sh` - Play notification sounds

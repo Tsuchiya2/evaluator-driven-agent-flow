@@ -1,4 +1,5 @@
 ---
+name: setup
 description: Interactive setup for EDAF v1.0 Self-Adapting System / EDAF v1.0 自己適応型システムのインタラクティブセットアップ
 ---
 
@@ -188,13 +189,13 @@ console.log(`\n✅ Language: ${docLang === 'en' ? 'English' : 'Japanese'} docs, 
 const checks = {
   workers: fs.existsSync('.claude/agents/workers/database-worker-v1-self-adapting.md'),
   evaluators: fs.existsSync('.claude/agents/evaluators/phase5-code/code-quality-evaluator-v1-self-adapting.md'),
-  setupCommand: fs.existsSync('.claude/commands/setup.md')
+  setupSkill: fs.existsSync('.claude/skills/setup/SKILL.md')
 }
 
 console.log('\n📋 Installation Status:')
 console.log(`   Workers: ${checks.workers ? '✅' : '❌'}`)
 console.log(`   Evaluators: ${checks.evaluators ? '✅' : '❌'}`)
-console.log(`   /setup: ${checks.setupCommand ? '✅' : '❌'}`)
+console.log(`   /setup: ${checks.setupSkill ? '✅' : '❌'}`)
 
 if (!checks.workers || !checks.evaluators) {
   console.log('\n⚠️  Missing components. Run: bash evaluator-driven-agent-flow/scripts/install.sh')
@@ -385,7 +386,7 @@ Do not edit manually - run \`/setup\` again to change preferences.
 | 2. Design | designer | 7 | All ≥ 8.0/10 |
 | 3. Planning | planner | 7 | All ≥ 8.0/10 |
 | 4. Implementation | 4 workers | 1 quality-gate | 10.0 (lint+tests) |
-| 5. Code Review | - | 7 + UI | All ≥ 8.0/10 |
+| 5. Code Review | - | 8 + UI | All ≥ 8.0/10 |
 | 6. Documentation | documentation-worker | 5 | All ≥ 8.0/10 |
 | 7. Deployment | - | 5 | All ≥ 8.0/10 |
 
@@ -445,14 +446,15 @@ Do not edit manually - run \`/setup\` again to change preferences.
 **Locations**:
 - **Agents**: \`.claude/agents/*.md\` + \`.claude/agents/workers/*.md\`
 - **Evaluators**: \`.claude/agents/evaluators/phase{1-7}-*/*.md\`
-- **Skills**: \`.claude/skills/*/SKILL.md\` (coding standards, workflows)
-- **Commands**: \`.claude/commands/*.md\` (e.g., \`/review-standards\`)
+- **Skills**: \`.claude/skills/*/SKILL.md\` (coding standards, workflows, commands)
 - **Config**: \`.claude/edaf-config.yml\`, \`.claude/agent-models.yml\`
 
 **Component Count**:
 - 9 Agents (requirements-gatherer, designer, planner, 4 workers, documentation-worker, ui-verification-worker)
-- 39 Evaluators (7 per phase for phases 1-3,5,6; 1 for phase 4; 5 for phase 7)
-- Total: 48 components
+- 40 Evaluators (7 per phase for phases 1-3,6; 8 for phase 5; 1 for phase 4; 5 for phase 7)
+- Total: 49 components
+
+> **Phase 5 Note**: Includes \`standards-compliance-evaluator\` as an **independent gate** for project coding standards.
 
 ---
 
