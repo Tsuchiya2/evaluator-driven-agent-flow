@@ -393,6 +393,17 @@ evaluators:
         - API contract compliance
         - Behavior verification
 
+    standards-compliance-evaluator:
+      model: sonnet
+      reason: "Project-specific standards require understanding context"
+      complexity: medium
+      priority: independent-gate
+      tasks:
+        - Project standards discovery
+        - Code pattern matching
+        - Convention compliance verification
+        - Standards-specific feedback generation
+
   # ===========================================================================
   # PHASE 6: DOCUMENTATION EVALUATORS
   # ===========================================================================
@@ -500,7 +511,7 @@ evaluators:
 # MODEL USAGE SUMMARY
 # =============================================================================
 #
-# Total: 48 components (9 agents + 39 evaluators)
+# Total: 49 components (9 agents + 40 evaluators)
 #
 # Opus (4 agents - for critical decisions):
 #   - requirements-gatherer (requirements dialogue)
@@ -508,14 +519,14 @@ evaluators:
 #   - code-security-evaluator (security vulnerabilities)
 #   - production-security-evaluator (production security)
 #
-# Sonnet (23 agents - for standard analysis):
+# Sonnet (24 agents - for standard analysis):
 #   - planner
 #   - All 6 workers (database, backend, frontend, test, documentation, ui-verification)
 #   - 4 requirements evaluators (feasibility, goal-alignment, scope, user-value)
 #   - 4 design evaluators (extensibility, goal-alignment, maintainability, reliability)
 #   - 2 planner evaluators (dependency, goal-alignment)
 #   - 1 quality-gate evaluator
-#   - 5 code evaluators (quality, testing, maintainability, performance, implementation)
+#   - 6 code evaluators (quality, testing, maintainability, performance, implementation, standards-compliance)
 #   - 1 documentation evaluator (accuracy)
 #   - 1 deployment evaluator (performance-benchmark)
 #

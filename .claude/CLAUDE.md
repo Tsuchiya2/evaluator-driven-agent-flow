@@ -88,8 +88,7 @@ Do not edit manually - run `/setup` again to change preferences.
 **Locations**:
 - **Agents**: `.claude/agents/*.md` + `.claude/agents/workers/*.md`
 - **Evaluators**: `.claude/agents/evaluators/phase{1-7}-*/*.md`
-- **Skills**: `.claude/skills/*/SKILL.md` (coding standards, workflows)
-- **Commands**: `.claude/commands/*.md` (e.g., `/review-standards`)
+- **Skills**: `.claude/skills/*/SKILL.md` (coding standards, workflows, user-invocable commands like `/setup`, `/review-standards`)
 - **Config**: `.claude/edaf-config.yml`, `.claude/agent-models.yml`
 
 **Component Count**:

@@ -60,7 +60,8 @@ mkdir -p .claude/agents/evaluators/phase4-quality-gate
 mkdir -p .claude/agents/evaluators/phase5-code
 mkdir -p .claude/agents/evaluators/phase6-documentation
 mkdir -p .claude/agents/evaluators/phase7-deployment
-mkdir -p .claude/commands
+mkdir -p .claude/skills/setup
+mkdir -p .claude/skills/review-standards
 mkdir -p .claude/scripts
 mkdir -p .claude/sounds
 
@@ -86,7 +87,7 @@ if [ -d "$EDAF_DIR/.claude/agents" ]; then
     cp $EDAF_DIR/.claude/agents/evaluators/phase7-deployment/*.md .claude/agents/evaluators/phase7-deployment/ 2>/dev/null || true
   fi
 
-  echo -e "${GREEN}  ✅ Installed 48 Components (9 Agents + 39 Evaluators) / 48個のコンポーネント（9エージェント + 39エバリュエーター）をインストールしました${NC}"
+  echo -e "${GREEN}  ✅ Installed 49 Components (9 Agents + 40 Evaluators) / 49個のコンポーネント（9エージェント + 40エバリュエーター）をインストールしました${NC}"
   echo -e "${GREEN}     - Core Agents: 3 (Requirements Gatherer + Designer + Planner) / コアエージェント: 3個${NC}"
   echo -e "${GREEN}     - Workers: 4 (Database, Backend, Frontend, Test) / ワーカー: 4個${NC}"
   echo -e "${GREEN}     - Documentation Worker: 1 / ドキュメントワーカー: 1個${NC}"
@@ -95,7 +96,7 @@ if [ -d "$EDAF_DIR/.claude/agents" ]; then
   echo -e "${GREEN}     - Phase 2: 7 Design Evaluators / フェーズ2: 7つのデザインエバリュエーター${NC}"
   echo -e "${GREEN}     - Phase 3: 7 Planner Evaluators / フェーズ3: 7つのプランナーエバリュエーター${NC}"
   echo -e "${GREEN}     - Phase 4: 1 Quality Gate Evaluator / フェーズ4: 1つの品質ゲートエバリュエーター${NC}"
-  echo -e "${GREEN}     - Phase 5: 7 Code Evaluators / フェーズ5: 7つのコードエバリュエーター${NC}"
+  echo -e "${GREEN}     - Phase 5: 8 Code Evaluators / フェーズ5: 8つのコードエバリュエーター${NC}"
   echo -e "${GREEN}     - Phase 6: 5 Documentation Evaluators / フェーズ6: 5つのドキュメントエバリュエーター${NC}"
   echo -e "${GREEN}     - Phase 7: 5 Deployment Evaluators / フェーズ7: 5つのデプロイエバリュエーター${NC}"
 else
@@ -103,13 +104,13 @@ else
   exit 1
 fi
 
-# 6. Copy /setup command
-echo -e "${BLUE}📋 Installing /setup command... / /setupコマンドをインストール中...${NC}"
-if [ -f "$EDAF_DIR/.claude/commands/setup.md" ]; then
-  cp $EDAF_DIR/.claude/commands/setup.md .claude/commands/setup.md
-  echo -e "${GREEN}  ✅ /setup command installed / /setupコマンドをインストールしました${NC}"
+# 6. Copy /setup skill
+echo -e "${BLUE}📋 Installing /setup skill... / /setupスキルをインストール中...${NC}"
+if [ -d "$EDAF_DIR/.claude/skills/setup" ]; then
+  cp -r $EDAF_DIR/.claude/skills/setup/* .claude/skills/setup/
+  echo -e "${GREEN}  ✅ /setup skill installed / /setupスキルをインストールしました${NC}"
 else
-  echo -e "${YELLOW}  ⚠️  Warning: setup.md not found (skipped) / 警告: setup.mdが見つかりません（スキップ）${NC}"
+  echo -e "${YELLOW}  ⚠️  Warning: setup skill not found (skipped) / 警告: setupスキルが見つかりません（スキップ）${NC}"
 fi
 
 # 7. Copy scripts (notification + frontmatter injection)
@@ -174,10 +175,10 @@ if [ -f "$EDAF_DIR/.claude/agent-models.yml" ]; then
   echo -e "${GREEN}  ✅ agent-models.yml installed (model assignments for agents) / agent-models.ymlをインストールしました（エージェントのモデル割り当て）${NC}"
 fi
 
-# Copy review-standards command
-if [ -f "$EDAF_DIR/.claude/commands/review-standards.md" ]; then
-  cp $EDAF_DIR/.claude/commands/review-standards.md .claude/commands/review-standards.md
-  echo -e "${GREEN}  ✅ /review-standards command installed / /review-standardsコマンドをインストールしました${NC}"
+# Copy review-standards skill
+if [ -d "$EDAF_DIR/.claude/skills/review-standards" ]; then
+  cp -r $EDAF_DIR/.claude/skills/review-standards/* .claude/skills/review-standards/
+  echo -e "${GREEN}  ✅ /review-standards skill installed / /review-standardsスキルをインストールしました${NC}"
 fi
 
 # 9. Create docs directories for UI verification
@@ -193,7 +194,7 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 echo -e "${GREEN}🎉 What was installed / インストールされたもの${NC}"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
-echo "📁 .claude/agents/ (48 components total)"
+echo "📁 .claude/agents/ (49 components total)"
 echo "  ├── requirements-gatherer.md (Phase 1)"
 echo "  ├── designer.md (Phase 2)"
 echo "  ├── planner.md (Phase 3)"
@@ -260,8 +261,9 @@ echo "          ├── observability-evaluator.md"
 echo "          ├── performance-benchmark-evaluator.md"
 echo "          └── rollback-plan-evaluator.md"
 echo ""
-echo "📁 .claude/commands/"
-echo "  └── setup.md (Interactive setup wizard / インタラクティブセットアップウィザード)"
+echo "📁 .claude/skills/"
+echo "  ├── setup/SKILL.md (Interactive setup wizard / インタラクティブセットアップウィザード)"
+echo "  └── review-standards/SKILL.md (Coding standards reviewer / コーディング規約レビュアー)"
 echo ""
 echo "📁 .claude/scripts/"
 echo "  └── notification.sh (Sound notification system / 音声通知システム)"
