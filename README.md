@@ -1,380 +1,163 @@
-# EDAF (Evaluator-Driven Agent Flow) - Self-Adapting System
+# EDAF (Evaluator-Driven Agent Flow) - 自己適応型AIコード生成システム
 
 ![Version](https://img.shields.io/badge/version-1.0-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Status](https://img.shields.io/badge/status-production%20ready-brightgreen)
 
-A framework-agnostic system for AI-powered code generation with automatic quality gates.
+## プロジェクト概要
+
+**EDAF**は、AIによるコード生成の品質を自動的に評価・保証する**7フェーズ開発フレームワーク**です。
+
+### 解決する課題
+
+AIコード生成ツール（GitHub Copilot、ChatGPT等）は便利ですが、以下の課題があります：
+
+- 生成されたコードの品質が不安定
+- セキュリティ脆弱性のチェックが不十分
+- プロジェクトの既存コードスタイルとの整合性がない
+- 設計・要件との乖離
+
+**EDAF**はこれらの課題を、**9つの専門エージェント**と**40の評価者**による多層的な品質ゲートで解決します。
 
 ---
 
-## 🎯 What is EDAF?
+## 主な機能・特徴
 
-EDAF is a complete **7-Phase Software Development Framework** that:
-
-1. **Phase 1**: Gathers and evaluates requirements (1 Requirements Gatherer + 7 Evaluators)
-2. **Phase 2**: Creates and evaluates design documents (1 Designer + 7 Evaluators)
-3. **Phase 3**: Plans implementation tasks (1 Planner + 7 Evaluators)
-4. **Phase 4**: Generates code using 4 specialized Worker Agents + Quality Gate (lint + tests)
-5. **Phase 5**: Reviews code quality (8 Code Evaluators) + **UI/UX verification via Claude in Chrome**
-6. **Phase 6**: Updates permanent documentation (1 Documentation Worker + 5 Evaluators)
-7. **Phase 7**: Validates deployment readiness (5 Deployment Evaluators)
-8. **Works with ANY language/framework** through self-adaptation
-9. **🌐 Supports English & Japanese** with flexible language preferences
-10. **🔍 Automatic visual verification** for frontend changes using browser automation
-11. **📚 Permanent documentation** automatically maintained in sync with code
-
-**Total:** 9 Agents + 40 Evaluators = 49 components for complete development automation
-
----
-
-## 🔄 EDAF Flow Diagram
+### 1. 7フェーズ品質ゲートシステム
 
 ```mermaid
 graph LR
-    Start([💡 User Request]) --> Phase1[💬 Phase 1<br/>Requirements]
-    Phase1 --> Phase2[📐 Phase 2<br/>Design]
-    Phase2 --> Phase3[📋 Phase 3<br/>Planning]
-    Phase3 --> Phase4[⚙️ Phase 4<br/>Implementation]
-    Phase4 --> Phase5[📊 Phase 5<br/>Code Review]
-    Phase5 --> Phase6[📚 Phase 6<br/>Documentation]
-    Phase6 --> Phase7[✅ Phase 7<br/>Deployment]
-    Phase7 --> End([🚀 Production])
-
-    style Start fill:#e3f2fd,stroke:#1976d2,stroke-width:2px
-    style Phase1 fill:#e0f2f1,stroke:#00897b,stroke-width:3px
-    style Phase2 fill:#fff3e0,stroke:#f57c00,stroke-width:3px
-    style Phase3 fill:#f3e5f5,stroke:#7b1fa2,stroke-width:3px
-    style Phase4 fill:#e8f5e9,stroke:#388e3c,stroke-width:3px
-    style Phase5 fill:#fce4ec,stroke:#c2185b,stroke-width:3px
-    style Phase6 fill:#fff9c4,stroke:#f9a825,stroke-width:3px
-    style Phase7 fill:#e1bee7,stroke:#6a1b9a,stroke-width:3px
-    style End fill:#c8e6c9,stroke:#2e7d32,stroke-width:2px
+    Start([ユーザー要求]) --> Phase1[Phase 1<br/>要件定義]
+    Phase1 --> Phase2[Phase 2<br/>設計]
+    Phase2 --> Phase3[Phase 3<br/>計画]
+    Phase3 --> Phase4[Phase 4<br/>実装]
+    Phase4 --> Phase5[Phase 5<br/>コードレビュー]
+    Phase5 --> Phase6[Phase 6<br/>ドキュメント]
+    Phase6 --> Phase7[Phase 7<br/>デプロイ検証]
+    Phase7 --> End([本番環境])
 ```
 
-**Each phase includes:**
-- **Phase 1**: Requirements Gatherer Agent + 7 Requirements Evaluators
-- **Phase 2**: Designer Agent + 7 Design Evaluators
-- **Phase 3**: Planner Agent + 7 Planning Evaluators
-- **Phase 4**: 4 Workers + 1 Quality Gate Evaluator (lint + tests)
-- **Phase 5**: 8 Code Evaluators + UI/UX Verification
-- **Phase 6**: Documentation Worker + 5 Documentation Evaluators
-- **Phase 7**: 5 Deployment Evaluators
-
----
-
-### Key Innovations
-
-#### 1. Flexible Language Support 🌐
-
-**3 Language Options:**
-- 🇬🇧 English docs + English output
-- 🇯🇵 Japanese docs + Japanese output
-- 🌐 English docs + Japanese output (learning mode)
-
-**How it works:** Claude Code reads `.claude/CLAUDE.md` and automatically responds in your preferred language. No code changes needed!
-
----
-
-## 🏗️ EDAF Architecture
-
-### Phase 1: Requirements Gathering Gate
-- **1 Requirements Gatherer Agent** - Interactive dialogue using 5W2H framework to clarify requirements
-- **7 Requirements Evaluators** - Evaluate clarity, completeness, feasibility, goal-alignment, scope, testability, and user-value
-
-### Phase 2: Design Gate
-- **1 Designer Agent** - Creates comprehensive design documents
-- **7 Design Evaluators** - Evaluate consistency, extensibility, goal-alignment, maintainability, observability, reliability, and reusability
-
-### Phase 3: Planning Gate
-- **1 Planner Agent** - Breaks down design into actionable tasks
-- **7 Planning Evaluators** - Evaluate clarity, deliverable structure, dependencies, goal-alignment, granularity, responsibility alignment, and reusability
-
-### Phase 4: Implementation
-- **4 Worker Agents** (Self-Adapting)
-  - Database Worker - Any ORM (Sequelize, TypeORM, Prisma, Django ORM, SQLAlchemy, etc.)
-  - Backend Worker - Any framework (Express, FastAPI, Spring Boot, Django, Flask, etc.)
-  - Frontend Worker - Any frontend (React, Vue, Angular, Svelte, Solid, etc.)
-  - Test Worker - Any testing framework (Jest, pytest, JUnit, Go test, RSpec, etc.)
-
-- **1 Quality Gate Evaluator** - Ultra-strict quality gate (zero lint errors/warnings + all tests passing)
-
-### Phase 5: Code Review Gate
-- **8 Code Evaluators** - Evaluate quality, testing, security, documentation, maintainability, performance, and implementation alignment
-- **UI Verification Worker** - Automatic visual verification via Claude in Chrome (if frontend changed)
-
-### Phase 6: Documentation Update
-- **Documentation Worker** - Updates permanent documentation in `docs/` based on implementation
-- **5 Documentation Evaluators** - Evaluate completeness, accuracy, consistency, clarity, and currency
-
-### Phase 7: Deployment Gate
-- **5 Deployment Evaluators** - Evaluate deployment readiness, production security, observability, performance benchmarks, and rollback procedures
-
-**→ For detailed specifications, see `.claude/agents/` (including subdirectories for workers and evaluators)**
-
----
-
-## 🚀 Quick Start
-
-### Prerequisites
-
-- Claude Code CLI installed
-- Git repository initialized
-- Project with code to evaluate
-- Node.js (any version manager: nvm, nodenv, asdf, volta, mise, or Homebrew)
-
-### Environment Support
-
-| Environment | Status | UI Verification |
-|-------------|--------|-----------------|
-| **macOS** | ✅ Full | ✅ Automatic |
-| **Windows** | ✅ Full | ✅ Automatic |
-| **Linux** | ✅ Full | ✅ Automatic |
-| **WSL2** | ✅ Full | ✅ Automatic |
-
-> **WSL2 Note:** Claude in Chrome works on all platforms including WSL2! No special setup required.
-
-### Installation (6 steps!)
-
-```bash
-# 1. Clone to your project directory
-cd /path/to/your/project
-git clone https://github.com/Tsuchiya2/evaluator-driven-agent-flow.git
-
-# 2. Run installation script
-bash evaluator-driven-agent-flow/scripts/install.sh
-
-# 3. Restart Claude Code (IMPORTANT!)
-# Exit if Claude Code is already running, then restart:
-claude           # Start Claude Code
-
-# 4. Run interactive setup
-/setup           # Inside Claude Code - interactive setup wizard
-
-# 5. Restart Claude Code again (IMPORTANT!)
-# Exit and restart to load CLAUDE.md generated by /setup:
-claude           # Start Claude Code
-
-# 6. (Optional) Remove installation directory
-rm -rf evaluator-driven-agent-flow
-```
-
-**⚠️ IMPORTANT**:
-- You MUST restart Claude Code after running `install.sh` for the `/setup` command to be recognized. Claude Code only loads slash commands on startup.
-- You MUST restart Claude Code again after running `/setup` for the generated `.claude/CLAUDE.md` configuration to take effect. Claude Code only loads CLAUDE.md on startup.
-
-That's it! The installation script will:
-- ✅ Install 2 Core Agents to `.claude/agents/`
-- ✅ Install 5 Worker Agents to `.claude/agents/workers/`
-- ✅ Install 31 Evaluators to `.claude/agents/evaluators/` (organized by phase)
-- ✅ Install `/setup` skill to `.claude/skills/setup/`
-- ✅ No MCP setup required - uses Claude in Chrome extension
-- ✅ Copy configuration template (optional)
-- ✅ Copy documentation (optional)
-
-### Interactive Setup with `/setup` ⚠️ CRITICAL!
-
-**IMPORTANT**: The `/setup` command configures EDAF in `.claude/CLAUDE.md`. Without this, Claude Code will NOT use the agent flow properly!
-
-#### What `/setup` Does (v3)
-
-The `/setup` command runs an **optimized parallel setup** that:
-
-1. **Interactive Configuration** (~5 seconds)
-   - Select language preference (English/Japanese)
-   - Configure Docker execution (if Docker Compose detected)
-   - Generate `.claude/CLAUDE.md` and `.claude/edaf-config.yml`
-
-2. **Parallel Documentation Generation** (Fire & Forget)
-   - Launch 6 documentation agents (parallel)
-   - Launch N coding standards agents (based on detected language)
-   - Each agent performs deep code analysis
-
-3. **Real-time Progress Monitoring** (max 5 minutes)
-   - See files as they complete: `[10s] ✅ glossary.md (5,234 bytes)`
-   - Smart fallbacks for any timeouts (project-specific, not generic)
-   - Lightweight monitoring (no performance issues)
-
-**Generated Files**:
-- `docs/` - 6 permanent documentation files (product requirements, design, guidelines, structure, architecture, glossary)
-- `.claude/skills/` - Coding standards extracted from your actual codebase
-- `.claude/CLAUDE.md` - EDAF configuration (English or Japanese)
-- `.claude/edaf-config.yml` - Project settings
-
-**Supported languages/frameworks:** TypeScript, JavaScript, Python, Java, Go, Rust, Ruby, PHP, and their popular frameworks.
-
-**To change settings:** Simply run `/setup` again!
-
----
-
-## 🚀 How to Use EDAF
-
-After running `/setup`, you can use EDAF in two ways:
-
-### Method 1: Full 7-Phase Gate System (Recommended)
-
-Use this when you want complete quality assurance with requirements gathering, design, planning, implementation, review, documentation, and deployment readiness:
-
-```bash
-# Inside Claude Code
-"Use EDAF workflow to implement user authentication feature"
-# or
-"エージェントフローを使ってユーザー認証機能を実装してください"
-```
-
-**What happens:**
-1. **Phase 1**: Requirements gatherer collects requirements → 7 requirements evaluators review them
-2. **Phase 2**: Designer creates design document → 7 design evaluators review it
-3. **Phase 3**: Planner creates task breakdown → 7 planner evaluators review it
-4. **Phase 4**: Workers implement code (database, backend, frontend, tests) → Quality gate evaluator (lint + tests)
-5. **Phase 5**: 7 code evaluators review implementation + **UI/UX verification via Claude in Chrome (if frontend changed)**
-6. **Phase 6**: Documentation worker updates permanent docs in `docs/` → 5 documentation evaluators review
-7. **Phase 7** (optional): 5 deployment evaluators check production readiness
-
-**Result:** High-quality, well-designed, thoroughly tested code with synchronized documentation, visual verification, and automatic notifications at each phase.
-
-### Method 2: Workers Only (Quick Implementation)
-
-Use this when you already have a clear design and just need code generation:
-
-```bash
-# Inside Claude Code
-"database-workerを使ってUserモデルを作成してください"
-# or
-"Use backend-worker to create user authentication API"
-```
-
-**What happens:**
-- Specific worker generates code based on your requirements
-- Self-adapts to your language/framework
-- No evaluators run (faster, but less quality assurance)
-
-**When to use each method:**
-- **Full EDAF**: New features, complex changes, production code
-- **Workers Only**: Quick prototypes, minor updates, experimental code
-
-### Example Trigger Phrases
-
-**Workers:**
-- Database Worker: `"Create a User model with email and password"`
-- Backend Worker: `"Generate REST API for User CRUD"`
-- Frontend Worker: `"Build a login form component"`
-- Test Worker: `"Write unit tests for UserService"`
-
-**Evaluators:**
-- `"Evaluate code quality of src/services/user.ts"`
-- `"Check security vulnerabilities in authentication"`
-
----
-
-## 📊 Supported Technologies
-
-### Languages (11)
-
-✅ TypeScript
-✅ JavaScript
-✅ Python
-✅ Java
-✅ Go
-✅ Rust
-✅ Ruby
-✅ PHP
-✅ C#
-✅ Kotlin
-✅ Swift
-
-### Frameworks (50+)
-
-**Backend**: Express, FastAPI, Spring Boot, Gin, Django, Flask, NestJS, Fastify, Koa, Rails, Laravel, ASP.NET
-
-**Frontend**: React, Vue, Angular, Svelte, Solid, Next.js, Nuxt, SvelteKit
-
-**ORM**: Sequelize, TypeORM, Prisma, Django ORM, SQLAlchemy, Hibernate, GORM, Diesel, ActiveRecord, Eloquent
-
-**Testing**: Jest, Vitest, pytest, JUnit, Go test, Rust test, RSpec, PHPUnit, Mocha, Playwright, Cypress
-
----
-
-## 🔧 How Self-Adaptation Works
-
-EDAF automatically adapts to your project using a **3-Layer Detection System**:
+| フェーズ | 内容 | エージェント | 評価者数 |
+|---------|------|-------------|---------|
+| Phase 1 | 要件定義 | Requirements Gatherer | 7 |
+| Phase 2 | 設計 | Designer | 7 |
+| Phase 3 | タスク計画 | Planner | 7 |
+| Phase 4 | 実装 | 4 Workers | 1 (Quality Gate) |
+| Phase 5 | コードレビュー | - | 8 + UI検証 |
+| Phase 6 | ドキュメント | Documentation Worker | 5 |
+| Phase 7 | デプロイ検証 | - | 5 |
+
+**合計: 9エージェント + 40評価者 = 49コンポーネント**
+
+### 2. 自己適応型アーキテクチャ
+
+プロジェクトの技術スタックを**自動検出**し、適切なツール・パターンを選択します。
 
 ```
-Layer 1: Automatic Detection
-  ├─ Read package.json/requirements.txt/go.mod/etc.
-  ├─ Detect language, framework, ORM, tools
-  └─ Find existing code patterns
+Layer 1: 自動検出
+  ├─ package.json / requirements.txt / go.mod 等を読み取り
+  ├─ 言語・フレームワーク・ORM・ツールを検出
+  └─ 既存のコードパターンを分析
      ↓
-Layer 2: Configuration File (if needed)
-  ├─ Read .claude/edaf-config.yml
-  └─ Use explicit configuration
+Layer 2: 設定ファイル（必要に応じて）
+  └─ .claude/edaf-config.yml から明示的な設定を読み込み
      ↓
-Layer 3: User Questions (fallback)
-  └─ Ask via interactive prompts
+Layer 3: ユーザー対話（フォールバック）
+  └─ 検出できない場合は対話的に確認
 ```
 
-**Result:** No templates needed - works with any language/framework.
+### 3. 多言語・マルチフレームワーク対応
+
+**対応言語（11言語）:**
+TypeScript, JavaScript, Python, Java, Go, Rust, Ruby, PHP, C#, Kotlin, Swift
+
+**対応フレームワーク（50以上）:**
+- **バックエンド**: Express, FastAPI, Spring Boot, Gin, Django, Flask, NestJS, Rails, Laravel, ASP.NET
+- **フロントエンド**: React, Vue, Angular, Svelte, Solid, Next.js, Nuxt, SvelteKit
+- **ORM**: Sequelize, TypeORM, Prisma, Django ORM, SQLAlchemy, Hibernate, GORM, ActiveRecord
+- **テスト**: Jest, Vitest, pytest, JUnit, Go test, RSpec, PHPUnit, Playwright, Cypress
+
+### 4. 自動UI/UX検証
+
+フロントエンド変更時、**Claude in Chrome**を使用してブラウザ上で自動的にUI検証を実行します。
+
+### 5. 日本語・英語対応
+
+ドキュメントとターミナル出力の言語を柔軟に設定可能：
+- 英語ドキュメント + 英語出力
+- 日本語ドキュメント + 日本語出力
+- 英語ドキュメント + 日本語出力（学習モード）
 
 ---
 
-## 📋 Configuration (Optional)
+## 技術的なアーキテクチャ
 
-EDAF auto-detects your project settings via `/setup`. For manual configuration, see `.claude/edaf-config.example.yml`.
+### エージェント構成
+
+```
+.claude/agents/
+├── requirements-gatherer.md       # 要件収集エージェント
+├── designer.md                    # 設計エージェント（Opus使用）
+├── planner.md                     # 計画エージェント
+├── workers/
+│   ├── database-worker-v1-self-adapting.md   # DB実装
+│   ├── backend-worker-v1-self-adapting.md    # API実装
+│   ├── frontend-worker-v1-self-adapting.md   # UI実装
+│   ├── test-worker-v1-self-adapting.md       # テスト実装
+│   ├── documentation-worker.md               # ドキュメント更新
+│   └── ui-verification-worker.md             # UI検証
+└── evaluators/
+    ├── phase1-requirements/  # 要件評価（7種）
+    ├── phase2-design/        # 設計評価（7種）
+    ├── phase3-planner/       # 計画評価（7種）
+    ├── phase4-quality-gate/  # 品質ゲート（1種）
+    ├── phase5-code/          # コード評価（8種）
+    ├── phase6-documentation/ # ドキュメント評価（5種）
+    └── phase7-deployment/    # デプロイ評価（5種）
+```
+
+### モデル選択戦略
+
+タスクの重要度に応じて最適なモデルを選択：
+
+| モデル | 用途 | 使用エージェント |
+|--------|------|-----------------|
+| **Opus** | 重要な設計判断、セキュリティ分析 | Designer, セキュリティ評価者 |
+| **Sonnet** | 標準的なコード生成・分析 | Planner, Workers, 主要評価者 |
+| **Haiku** | パターンマッチング、チェックリスト | シンプルな評価者 |
+
+### 評価フレームワーク
+
+各評価者は10点満点でスコアリング：
+- **8.0以上**: 合格（次フェーズへ進行）
+- **8.0未満**: 不合格（フィードバックに基づき修正・再評価）
+
+評価観点：
+- **コード品質**: 型安全性、Lintエラー、複雑度
+- **テスト**: カバレッジ、テスト品質、モック戦略
+- **セキュリティ**: OWASP Top 10、依存関係脆弱性、認証・認可
+- **保守性**: 結合度、責務分離、技術的負債
+- **パフォーマンス**: アルゴリズム効率、N+1問題、メモリ使用量
 
 ---
 
-## 🚀 Advanced Features (Claude Code 2.0.69+)
+## 実装の工夫点
 
-### Resumable Sessions
+### 1. 並列評価によるパフォーマンス最適化
 
-Long-running evaluations can be paused and resumed:
+複数の評価者を並列実行し、評価時間を短縮：
 
 ```typescript
-// First run - agent returns agentId
-Task({ subagent_type: "designer", prompt: "Create design for user auth" })
-// Returns: agentId: "a5abb63"
-
-// Later - resume the same session
-Task({ subagent_type: "designer", resume: "a5abb63", prompt: "Update based on feedback" })
+// 7つの評価者を並列実行
+Task({ subagent_type: "requirements-clarity-evaluator", ... })
+Task({ subagent_type: "requirements-completeness-evaluator", ... })
+Task({ subagent_type: "requirements-feasibility-evaluator", ... })
+// ... 他4つも同時実行
 ```
 
-### Model Selection (Opus 4.5 Support)
+### 2. サンドボックス実行
 
-Each agent uses an optimal model based on task criticality:
-
-| Model | Agents (Count) | Use Case |
-|-------|----------------|----------|
-| `opus` | Designer, Security Evaluators (3) | Critical decisions, security analysis |
-| `sonnet` | Planner, Workers, Most Evaluators (17) | Standard code generation and analysis |
-| `haiku` | Simple Evaluators (19) | Pattern matching, checklist verification |
-
-**Critical agents using Opus:**
-- **Designer**: Architectural decisions affect entire system
-- **code-security-evaluator**: Security vulnerabilities have severe consequences
-- **production-security-evaluator**: Production security is non-negotiable
-
-See `.claude/agent-models.yml` for full configuration.
-
-### Evaluation Skills
-
-Reusable evaluation patterns in `.claude/skills/edaf-evaluation/`:
-
-- `SCORING.md` - 10-point scoring framework
-- `PATTERNS.md` - Common issues and anti-patterns
-- `REPORT-TEMPLATE.md` - Standard report format
-
-### Automated Hooks
-
-EDAF uses Claude Code hooks for automation:
-
-| Hook | Trigger | Action |
-|------|---------|--------|
-| `PermissionRequest` | User input needed | Play alert sound |
-| `Stop` | Task completed | Play completion sound |
-
-### Sandbox Mode
-
-Evaluators run in a sandboxed environment for safety:
+評価者は安全なサンドボックス環境で実行し、破壊的な操作を防止：
 
 ```json
 {
@@ -385,113 +168,119 @@ Evaluators run in a sandboxed environment for safety:
 }
 ```
 
----
+### 3. フィードバックループ
 
-## 🔍 What Gets Evaluated
+評価に失敗した場合、具体的なフィードバックに基づいて修正し、全評価者を再実行：
 
-EDAF evaluates 7 key aspects of your code: **Quality**, **Testing**, **Security**, **Documentation**, **Maintainability**, **Performance**, and **Implementation Alignment**.
-
-**→ For detailed evaluation criteria, see the evaluator specifications in `.claude/agents/evaluators/`**
-
----
-
-## 📚 Documentation
-
-- **Core Agents**: `.claude/agents/`
-  - `designer.md` (Phase 1)
-  - `planner.md` (Phase 2)
-
-- **Worker Agents**: `.claude/agents/workers/`
-  - `database-worker-v1-self-adapting.md`
-  - `backend-worker-v1-self-adapting.md`
-  - `frontend-worker-v1-self-adapting.md`
-  - `test-worker-v1-self-adapting.md`
-  - `ui-verification-worker.md`
-  - `documentation-worker.md`
-
-- **Evaluators**: `.claude/agents/evaluators/`
-  - `phase1-requirements/` - 7 Requirements Evaluators
-  - `phase2-design/` - 7 Design Evaluators
-  - `phase3-planner/` - 7 Planner Evaluators
-  - `phase4-quality-gate/` - 1 Quality Gate Evaluator
-  - `phase5-code/` - 8 Code Evaluators
-  - `phase6-documentation/` - 5 Documentation Evaluators
-  - `phase7-deployment/` - 5 Deployment Evaluators
-
-- **Skills**: `.claude/skills/`
-  - `edaf-orchestration/` - Phase workflow patterns (7 files)
-  - `edaf-evaluation/` - Scoring framework and patterns (4 files)
-  - `ui-verification/` - Browser automation patterns (4 files)
-
-- **Skills (User Commands)**: `.claude/skills/`
-  - `setup/` - Interactive configuration wizard (`/setup`)
-  - `review-standards/` - Update coding standards (`/review-standards`)
-
-- **Scripts**: `.claude/scripts/`
-  - `notification.sh` - Play notification sounds
-  - `edaf-status.sh` - Status line integration
-  - `update-edaf-phase.sh` - Update workflow phase
-  - `check-evaluator-score.sh` - Validate evaluator scores
-  - `verify-ui.sh` - Automated UI verification
-  - `add-frontmatter.sh` - Add YAML frontmatter to docs
-
-- **Configuration**: `.claude/`
-  - `agent-models.yml` - Model recommendations
-  - `edaf-config.yml` - EDAF settings
-  - `settings.json.example` - Claude Code settings
+```
+実行 → 評価 → 失敗
+  ↓
+フィードバック読み取り
+  ↓
+修正
+  ↓
+全評価者を再実行（失敗したものだけでなく）
+  ↓
+全て合格まで繰り返し
+```
 
 ---
 
-## 🤝 Contributing
+## 使用方法
 
-Contributions are welcome! To add support for a new language/framework:
+### インストール
 
-1. Add tool detection patterns to relevant evaluator/worker
-2. Test with real project
-3. Submit PR with examples
+```bash
+# 1. 既存プロジェクトにクローン
+cd /path/to/your/project
+git clone https://github.com/Tsuchiya2/evaluator-driven-agent-flow.git
 
-**No new templates needed** - just update detection logic!
+# 2. インストールスクリプト実行
+bash evaluator-driven-agent-flow/scripts/install.sh
+
+# 3. Claude Code再起動
+claude
+
+# 4. 対話的セットアップ
+/setup
+```
+
+### 使用例
+
+```bash
+# 完全なEDAFワークフロー（推奨）
+"ユーザー認証機能をEDAFワークフローで実装してください"
+
+# 個別Workerの使用（クイック実装）
+"database-workerでUserモデルを作成してください"
+"backend-workerでREST APIを生成してください"
+```
 
 ---
 
-## 📄 License
+## 動作環境
 
-MIT License - see [LICENSE](LICENSE) file
+| 環境 | 対応状況 | UI検証 |
+|------|---------|--------|
+| macOS | ✅ 完全対応 | ✅ 自動 |
+| Windows | ✅ 完全対応 | ✅ 自動 |
+| Linux | ✅ 完全対応 | ✅ 自動 |
+| WSL2 | ✅ 完全対応 | ✅ 自動 |
+
+**必要条件:**
+- Claude Code CLI
+- Git
+- Node.js
 
 ---
 
-## 🙏 Acknowledgments
+## プロジェクト構成
 
-Built with [Claude Code](https://claude.com/claude-code) by Anthropic.
+```
+.claude/
+├── agents/           # エージェント定義（9種）
+│   ├── workers/      # ワーカーエージェント（6種）
+│   └── evaluators/   # 評価エージェント（40種）
+├── skills/           # スキル定義
+│   ├── edaf-orchestration/  # フェーズワークフロー
+│   ├── edaf-evaluation/     # 評価フレームワーク
+│   └── setup/               # セットアップウィザード
+├── scripts/          # ユーティリティスクリプト
+├── sounds/           # 通知サウンド
+└── CLAUDE.md         # Claude Code設定
+```
 
 ---
 
-## 🎵 Sound Assets Attribution
+## サウンドアセットの帰属
 
-EDAF uses the following sound files for notifications:
+EDAFは通知用に以下のサウンドファイルを使用しています：
 
 ### cat-meowing.mp3
-- **Source**: [Chosic](https://www.chosic.com/download-audio/54581/)
-- **License**: CC0 (Public Domain)
-- **Description**: Cat meowing sound for error notifications and attention alerts
+- **出典**: [Chosic](https://www.chosic.com/download-audio/54581/)
+- **ライセンス**: CC0（パブリックドメイン）
+- **用途**: エラー通知・注意喚起
 
 ### bird_song_robin.mp3
-- **Source**: [BigSoundBank - European Robin Single Call](https://bigsoundbank.com/robin-1-s1667.html)
-- **License**: Free for personal and commercial use with attribution
-- **Description**: European Robin bird song for task completion notifications
+- **出典**: [BigSoundBank - European Robin Single Call](https://bigsoundbank.com/robin-1-s1667.html)
+- **ライセンス**: 帰属表示により個人・商用利用可
+- **用途**: タスク完了通知
 
-**Note**: All sound files are located in `.claude/sounds/` and are used in accordance with their respective licenses.
-
----
-
-## 📧 Support
-
-For issues, questions, or feedback:
-- Open an issue on GitHub
-- Read the documentation in `.claude/` directory
+**注記**: すべてのサウンドファイルは `.claude/sounds/` に配置され、各ライセンスに従って使用しています。
 
 ---
 
-**Status**: ✅ Production Ready
-**Maintained**: Yes
-**Last Updated**: 2026-01-03
+## ライセンス
+
+MIT License
+
+---
+
+## 連絡先
+
+- GitHub: [Tsuchiya2](https://github.com/Tsuchiya2)
+- Issues: [GitHub Issues](https://github.com/Tsuchiya2/evaluator-driven-agent-flow/issues)
+
+---
+
+**ステータス**: 本番運用可能
