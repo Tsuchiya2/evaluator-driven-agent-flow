@@ -1,22 +1,28 @@
 {
   "permissions": {
     "allow": [
-      "Bash(docker compose exec:*)",
-      "Bash(docker-compose exec:*)"
+      "Bash(docker compose:*)",
+      "Bash(docker-compose:*)",
+      "Bash(docker build:*)",
+      "Bash(docker run:*)",
+      "Bash(docker ps:*)",
+      "Bash(docker logs:*)",
+      "Bash(docker images:*)"
     ],
     "deny": [
       "Bash(git add:*)",
       "Bash(git commit:*)",
       "Bash(git push:*)",
       "Bash(rm -rf:*)",
-      "Bash(git push --force:*)"
+      "Bash(git push --force:*)",
+      "Bash(docker rm:*)"
     ],
     "ask": []
   },
   "sandbox": {
     "enabled": true,
     "autoAllowBashIfSandboxed": true,
-    "excludedCommands": ["git push", "rm -rf", "docker rm"]
+    "excludedCommands": ["git push", "rm -rf"]
   },
   "hooks": {
     "PermissionRequest": [
