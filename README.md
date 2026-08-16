@@ -1,3 +1,7 @@
+<div align="center">
+  <img src="./assets/edaf-logo.webp" alt="EDAF - Evaluator-Driven Agent Flow" width="640">
+</div>
+
 # EDAF (Evaluator-Driven Agent Flow) - 自己適応型AIコード生成システム
 
 ![Version](https://img.shields.io/badge/version-1.0-blue)
@@ -18,6 +22,12 @@ AIコード生成ツール（GitHub Copilot、ChatGPT等）は便利ですが、
 - 設計・要件との乖離
 
 **EDAF**はこれらの課題を、**9つの専門エージェント**と**40の評価者**による多層的な品質ゲートで解決します。
+
+### 全体像
+
+![EDAFの全体像。左に7フェーズ開発フロー（要件定義7評価者 / 設計7評価者 / 計画7評価者 / 実装1品質ゲート / コードレビュー8評価者+UI検証 / ドキュメント5評価者 / デプロイ検証5評価者）、中央にGenerate → Evaluate → Feedback → Improve の自己改善ループ、右に40評価者をSecurity・Quality・Testing・Performance・Documentation・UX/UI・Architectureの7カテゴリに分類したEvaluator Hub、下部に9つの実装エージェントと入出力の一覧](./assets/edaf-overview.webp)
+
+> 図はシステム全体の要約です。各要素の詳細は以下のセクションで説明します。
 
 ---
 
